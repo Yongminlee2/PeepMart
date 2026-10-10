@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
+import 'engine/catalog.dart';
 import 'engine/game.dart';
 import 'save.dart';
 import 'strings.dart';
 import 'ui/game_screen.dart';
+import 'ui/sfx.dart';
 import 'ui/sprites.dart';
 import 'ui/widgets.dart';
 
@@ -11,6 +13,8 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppLang().load();
   await Sprites.load();
+  await Props.load(products.map((p) => p.id));
+  await Sfx.load();
   final saved = await loadGame();
   runApp(PeepMartApp(saved));
 }

@@ -46,7 +46,7 @@ class Stocker extends Walker {
   Stocker(super.at);
 }
 
-enum FxKind { item, cash, pay, unlock, angry, sad }
+enum FxKind { pick, place, scan, cash, pay, unlock, angry, sad }
 
 /// 화면 연출용 사건. 엔진은 쌓기만 하고 화면이 가져가 비운다.
 class Fx {
@@ -94,8 +94,9 @@ class World {
     if (game.hasStocker) _stockerWork(dt);
     _spawnIn -= dt;
     if (_spawnIn <= 0) {
-      if (customers.length < maxCustomers) _spawn();
-      _spawnIn = 7 / (1 + game.rating * 0.3) * (0.7 + _rng.nextDouble() * 0.6);
+      if (customers.length < 3 + game.openProducts.length) _spawn();
+      // 가게가 작을 땐 천천히, 상품이 늘수록 자주 온다. 별점도 손님을 부른다.
+      _spawnIn = 9 / (1 + game.rating * 0.25) / (0.6 + 0.1 * game.openProducts.length) * (0.7 + _rng.nextDouble() * 0.6);
     }
     for (final c in [...customers]) {
       _updateCustomer(c, dt);
@@ -136,7 +137,7 @@ class World {
       _playerStep = 0;
       _carryWork(player, game.arms);
     }
-    if (player.distTo(layout.till) < 0.6 && time - lastScan >= scanStepPlayer) _scan();
+    if (atTill && time - lastScan >= scanStepPlayer) _scan();
     if (game.cash > 0 && player.distTo(layout.cash) < 0.8) {
       _cashStep += dt;
       if (_cashStep >= 0.05) {
@@ -149,7 +150,7 @@ class World {
       }
     }
     for (final (i, tile) in game.pads) {
-      if (player.distTo(tile) > 0.6 || game.money <= 0) continue;
+      if (player.distTo(tile) > standRadius || game.money <= 0) continue;
       _payCarry += payPerSecond * dt;
       final n = _payCarry.floor();
       if (n == 0) break;
@@ -178,7 +179,7 @@ class World {
       if (w.carry.contains(p) && game.stock[p]! < game.capacity(p) && w.distTo(shelf) <= reach + 0.25) {
         w.carry.remove(p);
         game.stock[p] = game.stock[p]! + 1;
-        fx.add(Fx(FxKind.item, w.x, w.y, tx: shelf.$1.toDouble(), ty: shelf.$2.toDouble(), product: p));
+        fx.add(Fx(FxKind.place, w.x, w.y, tx: shelf.$1.toDouble(), ty: shelf.$2.toDouble(), product: p));
         return true;
       }
     }
@@ -186,11 +187,33 @@ class World {
       final crate = game.crateTile(p);
       if (w.carry.length < arms && w.distTo(crate) <= reach + 0.25) {
         w.carry.add(p);
-        fx.add(Fx(FxKind.item, crate.$1.toDouble(), crate.$2.toDouble(), tx: w.x, ty: w.y, product: p));
+        fx.add(Fx(FxKind.pick, crate.$1.toDouble(), crate.$2.toDouble(), tx: w.x, ty: w.y, product: p));
         return true;
       }
     }
     return false;
+  }
+
+  bool get atTill => player.distTo(layout.till) < standRadius;
+
+  /// 처음 하는 사람에게 다음에 갈 곳. 아무것도 할 게 없으면 null.
+  /// 빈 진열대 채우기 → 계산 → 돈 줍기 → 살 수 있는 구매 칸 순서.
+  Tile? guide() {
+    final low = [
+      for (final p in game.openProducts)
+        if (game.stock[p]! < game.capacity(p) ~/ 2) p
+    ];
+    for (final p in low) {
+      if (player.carry.contains(p)) return game.shelfTile(p);
+    }
+    final front = queue.isNotEmpty && queue.first.arrived ? queue.first : null;
+    if (front != null && !game.hasCashier && !atTill) return layout.till;
+    if (low.isNotEmpty && player.carry.isEmpty) return game.crateTile(low.first);
+    if (game.cash > 0) return layout.cash;
+    for (final (i, t) in game.pads) {
+      if (game.money >= unlocks[i].price - (game.paid[i] ?? 0)) return t;
+    }
+    return null;
   }
 
   void _resetForNewLayout() {
@@ -209,6 +232,7 @@ class World {
     if (!c.arrived || c.goal != layout.queue.first) return false;
     c.scanned++;
     lastScan = time;
+    fx.add(Fx(FxKind.scan, c.x, c.y));
     if (c.scanned < c.carry.length) return true;
     final paid = c.carry.fold(0, (s, p) => s + productById(p).price);
     game.cash += paid;
@@ -249,7 +273,7 @@ class World {
           } else {
             s.carry.add(s.product!);
             final c = game.crateTile(s.product!);
-            fx.add(Fx(FxKind.item, c.$1.toDouble(), c.$2.toDouble(), tx: s.x, ty: s.y, product: s.product!));
+            fx.add(Fx(FxKind.pick, c.$1.toDouble(), c.$2.toDouble(), tx: s.x, ty: s.y, product: s.product!));
           }
         }
       case StockerState.toShelf:
@@ -382,6 +406,7 @@ class World {
 
   Set<Tile> get _blocked => {
         layout.register,
+        ...layout.decor.keys,
         for (final p in game.openProducts) ...[game.shelfTile(p), game.crateTile(p)],
       };
 

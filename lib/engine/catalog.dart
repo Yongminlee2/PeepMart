@@ -16,8 +16,8 @@ class Product {
 
 const products = [
   Product('soda', ShelfKind.fridge, 3),
-  Product('chips', ShelfKind.rack, 3),
-  Product('ramen', ShelfKind.rack, 4),
+  Product('donut', ShelfKind.rack, 3),
+  Product('noodles', ShelfKind.rack, 4),
   Product('sandwich', ShelfKind.fridge, 6),
   Product('icecream', ShelfKind.freezer, 5),
   Product('fruit', ShelfKind.rack, 5),
@@ -54,10 +54,10 @@ class Expand extends Unlock {
   const Expand(super.price);
 }
 
-const startProducts = ['soda', 'chips'];
+const startProducts = ['soda', 'donut'];
 
 const unlocks = <Unlock>[
-  NewProduct('ramen', 30),
+  NewProduct('noodles', 30),
   HireCashier(80),
   NewProduct('sandwich', 60),
   BiggerArms(60),
@@ -81,6 +81,7 @@ class Layout {
   final List<Tile> crates; // 상품 상자 자리, 상품을 연 순서대로
   final List<Tile> shelves; // 진열대 자리, 상품을 연 순서대로
   final List<Tile> pads; // 상품이 아닌 구매 칸 자리
+  final Map<Tile, String> decor; // 꾸미기 소품(못 지나간다)
   const Layout({
     required this.w,
     required this.h,
@@ -92,6 +93,7 @@ class Layout {
     required this.crates,
     required this.shelves,
     required this.pads,
+    required this.decor,
   });
 }
 
@@ -106,6 +108,7 @@ final layouts = [
     crates: [..._row(0, 1, 4), ..._col(0, 1, 4)],
     shelves: [(2, 2), (3, 2), (2, 4), (3, 4), (2, 6), (3, 6)],
     pads: [(6, 5), (6, 6), (4, 7)],
+    decor: {(0, 0): 'plant', (7, 0): 'trash'},
   ),
   Layout(
     w: 11, h: 9,
@@ -114,6 +117,7 @@ final layouts = [
     crates: [..._row(0, 1, 7), ..._col(0, 1, 6)],
     shelves: [(2, 2), (3, 2), (2, 4), (3, 4), (2, 6), (3, 6), (5, 2), (6, 2), (5, 4), (6, 4), (5, 6), (6, 6)],
     pads: [(9, 5), (9, 6), (7, 8)],
+    decor: {(0, 0): 'plant', (10, 0): 'trash'},
   ),
 ];
 
@@ -122,6 +126,7 @@ const customerSpeed = 2.2;
 const stockerSpeed = 2.4;
 const startArms = 4; // 처음에 한 번에 드는 개수
 const reach = 0.9; // 이만큼 가까우면 집거나 놓는다
+const standRadius = 0.85; // 계산대 뒤·구매 칸에 이만큼 가까우면 올라선 것으로 친다
 const moveStep = 0.12; // 물건 하나 옮기는 데 걸리는 초
 const scanStepPlayer = 0.3;
 const scanStepCashier = 0.5;
@@ -130,4 +135,3 @@ const shelfPatience = 20.0; // 빈 진열대 앞에서 기다리는 한계
 const queuePatience = 40.0;
 const pickTime = 0.5;
 const startRating = 3.0;
-const maxCustomers = 10;

@@ -30,8 +30,8 @@ Rect storeBounds(Layout l) =>
 
 Color productColor(String id) => switch (id) {
       'soda' => const Color(0xFFE57373),
-      'chips' => const Color(0xFFFFCA28),
-      'ramen' => const Color(0xFFFF8A65),
+      'donut' => const Color(0xFFF48FB1),
+      'noodles' => const Color(0xFFFF8A65),
       'sandwich' => const Color(0xFFAED581),
       'icecream' => const Color(0xFFF8BBD0),
       'fruit' => const Color(0xFFFFA726),
@@ -50,7 +50,11 @@ class Flight {
   final Fx fx;
   double age = 0;
   Flight(this.fx);
-  double get life => fx.kind == FxKind.item || fx.kind == FxKind.cash ? 0.28 : 1.0;
+  double get life => switch (fx.kind) {
+        FxKind.pick || FxKind.place || FxKind.cash => 0.28,
+        FxKind.scan => 0,
+        _ => 1.0,
+      };
 }
 
 class StorePainter extends CustomPainter {
@@ -63,7 +67,7 @@ class StorePainter extends CustomPainter {
 
   /// 화면에 보일 영역: 가로 viewTiles 칸만큼, 가게 밖은 안 보이게 붙인다.
   static Rect view(Size size, Layout l, Offset camera) {
-    const viewTiles = 4.6;
+    const viewTiles = 6.0;
     final b = storeBounds(l);
     final w = min(b.width, viewTiles * tw), h = w * size.height / size.width;
     double clampTo(double v, double lo, double hi, double half) =>
@@ -105,6 +109,9 @@ class StorePainter extends CustomPainter {
       add(sh.$1 + 0.0, sh.$2 + 0.0, () => _shelf(canvas, sh, p));
     }
     add(l.register.$1 + 0.0, l.register.$2 + 0.0, () => _register(canvas, l.register));
+    for (final MapEntry(key: t, value: name) in l.decor.entries) {
+      add(t.$1 + 0.0, t.$2 + 0.0, () => Props.prop(canvas, name, iso(t.$1 + 0.0, t.$2 + 0.0)));
+    }
     add(l.cash.$1 + 0.0, l.cash.$2 + 0.0, () => _cash(canvas, l.cash));
     if (game.hasCashier) {
       final busy = world.time - world.lastScan < 0.4;
@@ -134,6 +141,12 @@ class StorePainter extends CustomPainter {
     }
     for (final f in flights) {
       _flight(canvas, f);
+    }
+    // 처음 몇 단계 동안만 다음에 갈 곳을 통통 튀는 화살표로 알려 준다.
+    final g = game.bought.length < 2 ? world.guide() : null;
+    if (g != null) {
+      final h = game.openProducts.any((p) => game.shelfTile(p) == g) ? 70.0 : 46.0;
+      _arrow(canvas, iso(g.$1 + 0.0, g.$2 + 0.0) + Offset(0, -h + sin(clock * 6) * 5), big: true);
     }
     canvas.restore();
   }
@@ -230,49 +243,58 @@ class StorePainter extends CustomPainter {
     }
   }
 
-  void _shelf(Canvas canvas, Tile t, String p) {
-    final kind = productById(p).kind;
-    final h = boxHeight(kind);
-    final col = productColor(p);
-    final stock = game.stock[p]!, cap = game.capacity(p);
+  void _shelf(Canvas canvas, Tile t, String id) {
+    final kind = productById(id).kind;
+    var h = boxHeight(kind);
+    final stock = game.stock[id]!, cap = game.capacity(id);
     final (c, r) = t;
     switch (kind) {
       case ShelfKind.rack:
-        _box(canvas, t, h, const Color(0xFFD7A86E), const Color(0xFFBC8A5F), const Color(0xFFA47148));
-        _items(canvas, c, r, h, stock, cap, col, 4);
+        if (Props.prop(canvas, 'rack', iso(c + 0.0, r + 0.0))) {
+          h = 34; // 그림 진열대의 윗판 높이
+        } else {
+          _box(canvas, t, h, const Color(0xFFD7A86E), const Color(0xFFBC8A5F), const Color(0xFFA47148));
+        }
+        _items(canvas, c, r, h, stock, cap, id, 4);
       case ShelfKind.fridge:
         _box(canvas, t, h, const Color(0xFFE3F2FD), const Color(0xFFB3E5FC), const Color(0xFF90CAF9));
         final per = cap ~/ 2;
         for (var i = 0; i < stock; i++) {
           final row = i ~/ per, k = i % per;
-          final p = corner(c + 0.2 + (k + 0.5) * 0.6 / per, r + 0.9) + Offset(0, -h * (0.3 + row * 0.38));
-          _dot(canvas, p, col, 5.5);
+          final at = corner(c + 0.2 + (k + 0.5) * 0.6 / per, r + 0.9) + Offset(0, -h * (0.28 + row * 0.38));
+          _food(canvas, id, at, 12);
         }
       case ShelfKind.freezer:
         _box(canvas, t, h, const Color(0xFFB2EBF2), const Color(0xFFE0F7FA), const Color(0xFF80DEEA));
-        _items(canvas, c, r, h, stock, cap, col, 3);
+        _items(canvas, c, r, h, stock, cap, id, 3);
     }
     if (stock == 0) _bubble(canvas, iso(c + 0.0, r + 0.0) + Offset(0, -h - 26), '!', const Color(0xFFE53935));
   }
 
-  /// 상품 상자: 나무 상자 위에 그 상품이 수북이.
-  void _crate(Canvas canvas, Tile t, String p) {
-    _box(canvas, t, 20, const Color(0xFFFFE0B2), const Color(0xFFD7A86E), const Color(0xFFBC8A5F), inset: 0.16);
+  /// 상품 상자: 열린 종이 상자에서 그 상품이 삐죽.
+  void _crate(Canvas canvas, Tile t, String id) {
     final (c, r) = t;
-    final col = productColor(p);
-    for (var i = 0; i < 5; i++) {
-      final o = [(-8.0, 0.0), (8.0, 0.0), (0.0, -4.0), (0.0, 5.0), (0.0, -11.0)][i];
-      _dot(canvas, iso(c + 0.0, r + 0.0) + Offset(o.$1, -24 + o.$2), col, 6);
+    final feet = iso(c + 0.0, r + 0.0);
+    if (!Props.prop(canvas, 'crate', feet, scale: 1.25)) {
+      _box(canvas, t, 20, const Color(0xFFFFE0B2), const Color(0xFFD7A86E), const Color(0xFFBC8A5F), inset: 0.16);
+    }
+    for (final (dx, dy) in const [(-7.0, -28.0), (7.0, -27.0), (0.0, -33.0)]) {
+      _food(canvas, id, feet + Offset(dx, dy), 15);
     }
   }
 
-  void _items(Canvas canvas, int c, int r, double h, int stock, int cap, Color col, int cols) {
+  void _items(Canvas canvas, int c, int r, double h, int stock, int cap, String id, int cols) {
     final rows = (cap / cols).ceil();
     for (var i = 0; i < stock; i++) {
       final fx = c - 0.3 + ((i % cols) + 0.5) * 0.6 / cols;
       final fy = r - 0.3 + ((i ~/ cols) + 0.5) * 0.6 / rows;
-      _dot(canvas, iso(fx, fy) + Offset(0, -h - 4), col, 5.5);
+      _food(canvas, id, iso(fx, fy) + Offset(0, -h - 5), 12);
     }
+  }
+
+  /// 음식 아이콘. 그림이 없으면 그 색 동그라미.
+  void _food(Canvas canvas, String id, Offset p, double size) {
+    if (!Props.food(canvas, id, p, size)) _dot(canvas, p, productColor(id), size * 0.45);
   }
 
   void _dot(Canvas canvas, Offset p, Color col, double rad) {
@@ -301,9 +323,10 @@ class StorePainter extends CustomPainter {
           ..strokeWidth = 2);
     canvas.drawRect(Rect.fromCenter(center: p + const Offset(0, -12), width: 16, height: 6),
         Paint()..color = const Color(0xFFC5E1A5));
+    Props.prop(canvas, 'plant-small', p + const Offset(-14, 6), scale: 1.6);
     // 계산 기다리는 손님이 있는데 아무도 없으면 계산대 뒤를 가리킨다
     final q = world.queue;
-    final manned = game.hasCashier || world.player.distTo(game.layout.till) < 0.6;
+    final manned = game.hasCashier || world.atTill;
     if (q.isNotEmpty && q.first.arrived && !manned) {
       final till = iso(game.layout.till.$1 + 0.0, game.layout.till.$2 + 0.0);
       _arrow(canvas, till + Offset(0, -40 + sin(clock * 6) * 4));
@@ -358,7 +381,7 @@ class StorePainter extends CustomPainter {
     final center = iso(c + 0.0, r + 0.0);
     switch (u) {
       case NewProduct(:final product):
-        _dot(canvas, center + const Offset(0, -6), productColor(product), 8);
+        _food(canvas, product, center + const Offset(0, -8), 24);
       case HireCashier():
         _char(canvas, cashierChar, c + 0.0, r + 0.0, Anim.idle, Facing.downLeft, scale: 0.7);
       case HireStocker():
@@ -408,17 +431,9 @@ class StorePainter extends CustomPainter {
     final bob = carrying && w.moving ? -(sin(clock * 16).abs() * 3) : 0.0;
     _char(canvas, who, w.x, w.y, anim, f, lift: bob, fps: w.moving ? 12 : 6);
     // 머리 위로 쌓인 짐
-    final top = iso(w.x, w.y) + Offset(0, -44 + bob);
+    final top = iso(w.x, w.y) + Offset(0, -46 + bob);
     for (var i = 0; i < w.carry.length; i++) {
-      final p = top + Offset(0, -i * 8.0);
-      final r = RRect.fromRectAndRadius(Rect.fromCenter(center: p, width: 20, height: 9), const Radius.circular(3));
-      canvas.drawRRect(r, Paint()..color = productColor(w.carry[i]));
-      canvas.drawRRect(
-          r,
-          Paint()
-            ..color = ink
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 1.5);
+      _food(canvas, w.carry[i], top + Offset(sin(i * 1.7) * 2, -i * 9.0), 15);
     }
   }
 
@@ -440,17 +455,17 @@ class StorePainter extends CustomPainter {
     if (c.state == CState.atShelf && c.timer >= pickTime) {
       // 원하는 물건이 없다: 그 물건 말풍선, 오래 기다릴수록 빨개진다
       final worry = (c.timer / shelfPatience).clamp(0.0, 1.0);
-      _wantBubble(canvas, head, productColor(c.want), Color.lerp(Colors.white, const Color(0xFFFFCDD2), worry)!);
+      _wantBubble(canvas, head, c.want, Color.lerp(Colors.white, const Color(0xFFFFCDD2), worry)!);
     } else if (c.state == CState.toQueue && c.timer > queuePatience * 0.5 && c.scanned == 0) {
       _bubble(canvas, head, '!', const Color(0xFFFB8C00));
     }
     for (var i = 0; i < c.carry.length; i++) {
-      _dot(canvas, iso(c.x, c.y) + Offset(13 + i * 6.0, -14), productColor(c.carry[i]), 4);
+      _food(canvas, c.carry[i], iso(c.x, c.y) + Offset(14 + i * 7.0, -14), 10);
     }
   }
 
-  void _wantBubble(Canvas canvas, Offset p, Color item, Color bg) {
-    final r = RRect.fromRectAndRadius(Rect.fromCenter(center: p, width: 28, height: 24), const Radius.circular(10));
+  void _wantBubble(Canvas canvas, Offset p, String item, Color bg) {
+    final r = RRect.fromRectAndRadius(Rect.fromCenter(center: p, width: 32, height: 28), const Radius.circular(10));
     canvas.drawRRect(r, Paint()..color = bg);
     canvas.drawRRect(
         r,
@@ -458,7 +473,7 @@ class StorePainter extends CustomPainter {
           ..color = ink
           ..style = PaintingStyle.stroke
           ..strokeWidth = 2);
-    _dot(canvas, p, item, 6);
+    _food(canvas, item, p, 18);
   }
 
   // ---------------------------------------------------------------- 연출
@@ -467,11 +482,13 @@ class StorePainter extends CustomPainter {
     final e = f.fx;
     final k = (f.age / f.life).clamp(0.0, 1.0);
     switch (e.kind) {
-      case FxKind.item || FxKind.cash:
+      case FxKind.scan:
+        break;
+      case FxKind.pick || FxKind.place || FxKind.cash:
         final a = iso(e.x, e.y) + const Offset(0, -30), b = iso(e.tx, e.ty) + const Offset(0, -40);
         final p = Offset.lerp(a, b, k)! + Offset(0, -sin(k * pi) * 30);
-        if (e.kind == FxKind.item) {
-          _dot(canvas, p, productColor(e.product), 6);
+        if (e.kind != FxKind.cash) {
+          _food(canvas, e.product, p, 15);
         } else {
           _label(canvas, p, '+${e.amount}', const Color(0xFF2E7D32));
         }
@@ -494,10 +511,11 @@ class StorePainter extends CustomPainter {
 
   void _label(Canvas canvas, Offset p, String text, Color col) => _text(canvas, p, text, col, 15, outline: 1);
 
-  void _arrow(Canvas canvas, Offset p) {
+  void _arrow(Canvas canvas, Offset p, {bool big = false}) {
+    final k = big ? 1.6 : 1.0;
     final a = Path()
-      ..moveTo(p.dx - 9, p.dy - 10)
-      ..lineTo(p.dx + 9, p.dy - 10)
+      ..moveTo(p.dx - 9 * k, p.dy - 10 * k)
+      ..lineTo(p.dx + 9 * k, p.dy - 10 * k)
       ..lineTo(p.dx, p.dy)
       ..close();
     canvas.drawPath(a, Paint()..color = const Color(0xFF43A047));

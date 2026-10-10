@@ -29,7 +29,7 @@ void main() {
   test('자리끼리 겹치지 않고, 진열대·상자 앞에 설 칸이 있다', () {
     for (final l in layouts) {
       final fixed = [l.register, l.till, l.cash, l.door, ...l.queue, ...l.pads];
-      final all = [...fixed, ...l.crates, ...l.shelves];
+      final all = [...fixed, ...l.crates, ...l.shelves, ...l.decor.keys];
       expect(all.toSet().length, all.length, reason: '겹침');
       for (final t in [...l.crates, ...l.shelves]) {
         final (x, y) = t;
@@ -88,7 +88,7 @@ void main() {
     run(w, 3);
     expect(g.bought, contains(first));
     expect(g.money, 100 - price);
-    expect(g.openProducts, contains('ramen'));
+    expect(g.openProducts, contains('noodles'));
     // 진열대가 생긴 자리에 갇히지 않는다
     final x = w.player.x;
     w.input = -1;
@@ -110,7 +110,7 @@ void main() {
   test('손님은 빈 진열대 앞에서 기다렸다가 채워지면 집는다', () {
     final g = Game()
       ..stock['soda'] = 0
-      ..stock['chips'] = 0;
+      ..stock['donut'] = 0;
     final w = World(g, seed: 5);
     stand(w, g.layout.door);
     for (var i = 0; i < 400 && !w.customers.any((c) => c.state == CState.atShelf); i++) {
@@ -125,7 +125,7 @@ void main() {
   test('너무 오래 비어 있으면 손님은 포기한다', () {
     final g = Game()
       ..stock['soda'] = 0
-      ..stock['chips'] = 0;
+      ..stock['donut'] = 0;
     final w = World(g, seed: 6);
     stand(w, g.layout.door);
     run(w, shelfPatience * 2 + 15); // 두 개를 사러 왔으면 두 진열대에서 다 기다린다
@@ -144,7 +144,7 @@ void main() {
   test('진열 알바는 반 넘게 빈 진열대를 상자에서 날라 채운다', () {
     final g = Game()..bought.add(unlocks.indexWhere((u) => u is HireStocker));
     g.stock['soda'] = 0;
-    g.stock['chips'] = 8;
+    g.stock['donut'] = 8;
     final w = World(g, seed: 8);
     stand(w, g.layout.door);
     run(w, 15);
@@ -160,7 +160,7 @@ void main() {
       run(w, 10);
     }
     expect(g.level, 1);
-    expect(g.openProducts, containsAll(['soda', 'chips', 'ramen', 'sandwich', 'icecream', 'fruit']));
+    expect(g.openProducts, containsAll(['soda', 'donut', 'noodles', 'sandwich', 'icecream', 'fruit']));
     expect(g.pads.map((p) => unlocks[p.$1]).whereType<NewProduct>().map((u) => u.product), contains('bento'));
   });
 
@@ -182,6 +182,23 @@ void main() {
     expect(visitors(5), greaterThan(visitors(0)));
   });
 
+  test('안내 화살표: 빈 진열대 상자 → 그 진열대 → 계산대 → 돈 → 살 수 있는 구매 칸', () {
+    final g = Game()..stock['soda'] = 0;
+    final w = World(g, seed: 11);
+    expect(w.guide(), g.crateTile('soda'));
+    w.player.carry.add('soda');
+    expect(w.guide(), g.shelfTile('soda'));
+    w.player.carry.clear();
+    g.stock['soda'] = 6;
+    expect(w.guide(), isNull);
+    g.cash = 5;
+    expect(w.guide(), g.layout.cash);
+    g
+      ..cash = 0
+      ..money = 1000;
+    expect(w.guide(), g.pads.first.$2);
+  });
+
   test('저장했다 불러오면 그대로다', () {
     final g = Game()
       ..money = 777
@@ -189,7 +206,7 @@ void main() {
       ..level = 1;
     g.bought.addAll([0, 1]);
     g.paid[2] = 5;
-    g.stock['ramen'] = 3;
+    g.stock['noodles'] = 3;
     g.rate(4);
     final back = Game.fromJson(jsonDecode(jsonEncode(g.toJson())) as Map<String, dynamic>);
     expect(jsonEncode(back.toJson()), jsonEncode(g.toJson()));

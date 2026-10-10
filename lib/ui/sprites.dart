@@ -43,18 +43,56 @@ Facing facingOf(double dx, double dy) {
 const playerChar = 6, cashierChar = 4, stockerChar = 9;
 const customerChars = [0, 1, 2, 3, 5, 7, 8, 10, 11];
 
+Future<ui.Image?> _image(String asset) async {
+  try {
+    final data = await rootBundle.load(asset);
+    final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+    return (await codec.getNextFrame()).image;
+  } catch (_) {
+    return null; // 그림이 없으면 페인터로 그린다
+  }
+}
+
+/// tool/render_props.py 가 찍은 음식 아이콘과 가구.
+class Props {
+  static final Map<String, ui.Image> _images = {};
+  static const foodFit = 0.8 / 1.25; // 음식이 칸에서 차지하는 비율
+  static const propWorld = 1.9, propFoot = 0.80;
+
+  static Future<void> load(Iterable<String> foods) async {
+    for (final n in [for (final f in foods) 'food-$f', 'prop-crate', 'prop-rack', 'prop-plant', 'prop-plant-small', 'prop-trash']) {
+      final img = await _image('assets/props/$n.png');
+      if (img != null) _images[n] = img;
+    }
+  }
+
+  /// 음식 아이콘. size 는 음식 자체의 크기(그림 좌표). 그림이 없으면 false.
+  static bool food(Canvas canvas, String id, Offset center, double size) {
+    final img = _images['food-$id'];
+    if (img == null) return false;
+    final d = size / foodFit;
+    canvas.drawImageRect(img, Rect.fromLTWH(0, 0, img.width.toDouble(), img.height.toDouble()),
+        Rect.fromCenter(center: center, width: d, height: d), Paint()..filterQuality = FilterQuality.medium);
+    return true;
+  }
+
+  /// 가구 한 점. 바닥 한가운데가 feet 에 온다. scale 로 더 키우거나 줄인다.
+  static bool prop(Canvas canvas, String name, Offset feet, {double scale = 1}) {
+    final img = _images['prop-$name'];
+    if (img == null) return false;
+    final d = propWorld * (tw / 1.41421356) * scale;
+    canvas.drawImageRect(img, Rect.fromLTWH(0, 0, img.width.toDouble(), img.height.toDouble()),
+        Rect.fromLTWH(feet.dx - d / 2, feet.dy - d * propFoot, d, d), Paint()..filterQuality = FilterQuality.medium);
+    return true;
+  }
+}
+
 class Sprites {
   static final List<ui.Image?> sheets = List.filled(characterFiles.length, null);
 
   static Future<void> load() async {
     for (var i = 0; i < characterFiles.length; i++) {
-      try {
-        final data = await rootBundle.load('assets/characters/character-${characterFiles[i]}.png');
-        final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
-        sheets[i] = (await codec.getNextFrame()).image;
-      } catch (_) {
-        // 그림이 없으면 페인터 캐릭터로 그린다.
-      }
+      sheets[i] = await _image('assets/characters/character-${characterFiles[i]}.png');
     }
   }
 

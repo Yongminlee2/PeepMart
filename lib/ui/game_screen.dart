@@ -5,6 +5,7 @@ import '../engine/game.dart';
 import '../engine/world.dart';
 import '../save.dart';
 import '../strings.dart';
+import 'sfx.dart';
 import 'store_painter.dart';
 import 'widgets.dart';
 
@@ -56,9 +57,14 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     _last = now;
     clock += dt;
     world.tick(dt);
-    final target = iso(world.player.x, world.player.y);
+    // 플레이어 쪽으로 60%, 가게 가운데 쪽으로 40%: 계산대처럼 중요한 곳이 화면 밖으로 덜 나간다.
+    final l = game.layout;
+    final target = Offset.lerp(storeBounds(l).center, iso(world.player.x, world.player.y), 0.6)!;
     _camera = _camera == null ? target : Offset.lerp(_camera, target, (dt * 5).clamp(0.0, 1.0));
-    flights.addAll(world.fx.map(Flight.new));
+    for (final e in world.fx) {
+      Sfx.play(e.kind, clock);
+      if (e.kind != FxKind.scan) flights.add(Flight(e));
+    }
     world.fx.clear();
     for (final f in flights) {
       f.age += dt;
