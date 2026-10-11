@@ -483,7 +483,12 @@ class StorePainter extends CustomPainter {
             ..color = const Color(0xFFFFA000)
             ..style = PaintingStyle.stroke
             ..strokeWidth = 3);
-      _sign(canvas, iso(x + plotSize / 2 - 0.5, y + plotSize / 2 - 0.5), '$price', game.money >= price);
+      final at = iso(x + plotSize / 2 - 0.5, y + plotSize / 2 - 0.5);
+      _sign(canvas, at, '$price', game.money >= price);
+      if (game.plots.length - 1 < plotVisitorsMax) {
+        _text(canvas, at + const Offset(0, 8), S.tn('land_bonus', {'n': (plotVisitors * 100).round()}), const Color(0xFF2E7D32), 12,
+            outline: 1);
+      }
     }
   }
 

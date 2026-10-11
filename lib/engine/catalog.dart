@@ -12,7 +12,7 @@ const plotCols = 5, plotRows = 4; // 지도 = 40×32 칸
 const mapW = plotSize * plotCols, mapH = plotSize * plotRows;
 
 /// 지금 땅을 owned 필지 갖고 있을 때 다음 필지 값 (처음 땅은 갖고 시작).
-int plotPrice(int owned) => (400 * pow(1.45, owned - 1)).round();
+int plotPrice(int owned) => (1000 * pow(1.45, owned - 1)).round();
 
 // ------------------------------------------------------------------ 상품
 
@@ -97,25 +97,26 @@ class ItemType {
   bool get rotates => kind == ItemKind.register;
 }
 
+// 값: 예전엔 진열대가 반나절 만에 본전을 뽑아 지을수록 눈덩이로 불어나서 2.5배(꾸미기 2배)로 올렸다.
 const itemTypes = [
-  ItemType('rack', ItemKind.shelf, 40, 1, shelf: ShelfKind.rack),
-  ItemType('fridge', ItemKind.shelf, 80, 1, shelf: ShelfKind.fridge),
-  ItemType('freezer', ItemKind.shelf, 120, 4, shelf: ShelfKind.freezer),
-  ItemType('fruitstand', ItemKind.shelf, 90, 5, shelf: ShelfKind.fruit),
-  ItemType('bakerycase', ItemKind.shelf, 150, 6, shelf: ShelfKind.bakery),
-  ItemType('coffeemachine', ItemKind.shelf, 160, 7, shelf: ShelfKind.coffee),
-  ItemType('hotcounter', ItemKind.shelf, 220, 9, shelf: ShelfKind.hot),
-  ItemType('box', ItemKind.box, 20, 1),
-  ItemType('register', ItemKind.register, 100, 1),
-  ItemType('entrance', ItemKind.entrance, 50, 3, walkable: true),
-  ItemType('plant', ItemKind.decor, 15, 1),
-  ItemType('flowers', ItemKind.decor, 25, 3),
-  ItemType('lamp', ItemKind.decor, 30, 5),
-  ItemType('rug', ItemKind.decor, 20, 3, walkable: true),
-  ItemType('bin', ItemKind.bin, 25, 2),
-  ItemType('chair', ItemKind.seat, 35, 7, walkable: true),
-  ItemType('table', ItemKind.decor, 45, 7),
-  ItemType('claw', ItemKind.decor, 180, 6), // 인형뽑기: 지나가는 손님이 가끔 하고 간다
+  ItemType('rack', ItemKind.shelf, 100, 1, shelf: ShelfKind.rack),
+  ItemType('fridge', ItemKind.shelf, 200, 1, shelf: ShelfKind.fridge),
+  ItemType('freezer', ItemKind.shelf, 300, 4, shelf: ShelfKind.freezer),
+  ItemType('fruitstand', ItemKind.shelf, 225, 5, shelf: ShelfKind.fruit),
+  ItemType('bakerycase', ItemKind.shelf, 375, 6, shelf: ShelfKind.bakery),
+  ItemType('coffeemachine', ItemKind.shelf, 400, 7, shelf: ShelfKind.coffee),
+  ItemType('hotcounter', ItemKind.shelf, 550, 9, shelf: ShelfKind.hot),
+  ItemType('box', ItemKind.box, 50, 1),
+  ItemType('register', ItemKind.register, 250, 1),
+  ItemType('entrance', ItemKind.entrance, 125, 3, walkable: true),
+  ItemType('plant', ItemKind.decor, 30, 1),
+  ItemType('flowers', ItemKind.decor, 50, 3),
+  ItemType('lamp', ItemKind.decor, 60, 5),
+  ItemType('rug', ItemKind.decor, 40, 3, walkable: true),
+  ItemType('bin', ItemKind.bin, 50, 2),
+  ItemType('chair', ItemKind.seat, 70, 7, walkable: true),
+  ItemType('table', ItemKind.decor, 90, 7),
+  ItemType('claw', ItemKind.decor, 360, 6), // 인형뽑기: 지나가는 손님이 가끔 하고 간다
   ItemType('floor-pink', ItemKind.floor, 2, 1, walkable: true),
   ItemType('floor-mint', ItemKind.floor, 2, 1, walkable: true),
   ItemType('floor-blue', ItemKind.floor, 2, 2, walkable: true),
@@ -137,9 +138,9 @@ class StaffSpec {
 }
 
 const staffSpecs = {
-  Staff.cashier: StaffSpec(60, 4, 2, 20), // 계산대 수까지만 일한다
-  Staff.stocker: StaffSpec(100, 6, 4, 8),
-  Staff.janitor: StaffSpec(80, 5, 6, 4),
+  Staff.cashier: StaffSpec(150, 14, 2, 20), // 계산대 수까지만 일한다
+  Staff.stocker: StaffSpec(250, 18, 4, 8),
+  Staff.janitor: StaffSpec(200, 12, 6, 4),
 };
 
 enum Upgrade { shoes, arms, autoOrder }
@@ -461,7 +462,7 @@ double patienceFactor(int rank) => 1 - 0.07 * rank; // 등급이 오를수록 �
 // 하루 운영비: 땅 한 필지 임대료 × (1 + 0.3 × 등급) + 진열대마다 관리비
 const rentPerPlot = 24;
 const rentPerRank = 0.3;
-const upkeepPerShelf = 3;
+const upkeepPerShelf = 6;
 
 // ------------------------------------------------------------------ 진열 세트 (카이로소프트식 콤보)
 
@@ -533,10 +534,10 @@ const inspectReward = 0.3, inspectFine = 0.2; // 오늘 목표 대비
 
 /// 상자 하나에 [boxSize] 개. 꺼낼 때마다 줄고, 비면 다시 주문해야 한다(알바는 빈 상자로 못 채운다).
 /// 주문은 도매가(판매가 × [wholesaleRate]) × [boxSize], [restockDelay] 초 뒤 도착. 매니저 코너도 한 개마다 도매가를 낸다.
-const boxSize = 24;
+const boxSize = 16;
 const boxMax = boxSize * 2; // 주문이 쌓여도 상자에 이만큼까지
-const wholesaleRate = 0.4;
-const restockDelay = 15.0;
+const wholesaleRate = 0.55; // 남는 건 45%: 많이 팔아야 남는다
+const restockDelay = 20.0;
 int wholesale(String product) => max(1, (productById(product).price * wholesaleRate).round());
 int reorderCost(String product) => wholesale(product) * boxSize;
 
@@ -586,3 +587,16 @@ BranchRule ruleOf(String branch) => branchRules[branch] ?? const BranchRule();
 /// 목표를 다 이루면 끝없이 이어지는 목표: 그때부터 손님 [extraGoalStep] 명마다.
 const extraGoalStep = 500;
 int extraGoalReward(int i) => 2000 + 500 * i;
+
+// ------------------------------------------------------------------ 땅 보너스·손님 장바구니
+
+/// 땅을 넓힐수록 손님이 는다: 필지마다 [plotVisitors] (최대 [plotVisitorsMax] 필지분). 임대료가 오르는 만큼의 보람.
+const plotVisitors = 0.06;
+const plotVisitorsMax = 12;
+double plotBonus(int plots) => plotVisitors * min(plots - 1, plotVisitorsMax);
+
+/// 손님 한 명이 담는 개수: 보통 2~4개(같은 상품을 여러 개 사기도 한다). 진열대가 금방 빈다.
+const basketMin = 2, basketMax = 4;
+
+/// 처음 안내 중에는 손님을 이만큼만(안내가 끝나야 1일째 시계가 가서, 그동안 돈이 끝없이 쌓이던 것).
+const tutorialCustomers = 2;

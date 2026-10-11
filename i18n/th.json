@@ -460,5 +460,7 @@
   "up_autoOrder_desc": "Reorders boxes before they run out (25% extra cost)",
   "b_beach_rule": "Rule: 20% more customers, but they're impatient",
   "b_night_rule": "Rule: twice the VIPs, and twice the shoplifters",
-  "b_snow_rule": "Rule: customers walk slowly on the snow, and machines break down often"
+  "b_snow_rule": "Rule: customers walk slowly on the snow, and machines break down often",
+  "land_bonus": "Customers +{n}%",
+  "land_hint2": "Tap a glowing plot to buy it (next: {n}) · Your land brings +{b}% customers"
 }

@@ -48,11 +48,12 @@ void main() {
     test('놓으면 돈이 빠지고, 팔면 절반을 돌려받는다. 마지막 계산대·입구는 못 판다', () {
       final g = Game()..money = 1000;
       expect(g.place('rack', (5, 5), product: 'donut'), isTrue);
-      expect(g.money, 1000 - 40);
+      final price = itemType('rack').price;
+      expect(g.money, 1000 - price);
       final rack = g.at((5, 5))!;
       expect(rack.stock, rack.capacity);
       expect(g.sell(rack), isTrue);
-      expect(g.money, 1000 - 40 + 20);
+      expect(g.money, 1000 - price + price ~/ 2);
       expect(g.sell(first(g, 'register')), isFalse);
       expect(g.sell(first(g, 'entrance')), isFalse);
     });
@@ -496,6 +497,7 @@ void main() {
       expect(g.hireManager(managers.firstWhere((m) => m.kind == ShelfKind.rack)), isTrue);
       expect(g.salePrice(rack, 'donut'), greaterThanOrEqualTo(before));
       expect(g.offlineHours, hours + 1);
+      g.owner.tutorial = TutorialStep.done; // 닫힌 가게: 손님이 안 사 가서 채워진 것만 본다
       final w = World(g, seed: 41);
       stand(w, (0, 7));
       run(w, managerRestock * 3 + 0.1);
@@ -775,21 +777,29 @@ void main() {
     });
 
     test('날씨 상품이 진열돼 있으면 손님이 그걸 더 자주 고른다', () {
-      int firstSoda(Weather wx, int seed) {
-        final g = shop(5)..weather = wx;
-        final w = World(g, seed: seed)..openDay();
-        var n = 0;
-        for (var i = 0; i < 4000; i++) {
-          w.tick(0.05);
-          for (final s in g.shelves) {
-            s.stock = s.capacity;
+      // 처음 가게는 콜라·도넛뿐: 더운 날엔 맨 먼저 콜라를 집는 손님이 많다
+      double firstSoda(Weather wx) {
+        var soda = 0, all = 0;
+        for (var seed = 0; seed < 3; seed++) {
+          final g = shop(5)..weather = wx;
+          final w = World(g, seed: seed)..openDay();
+          final seen = <Customer>{};
+          for (var i = 0; i < 3000; i++) {
+            w.tick(0.05);
+            for (final s in g.shelves) {
+              s.stock = s.capacity;
+            }
+            for (final c in w.customers) {
+              if (c.wants.isNotEmpty && seen.add(c)) {
+                all++;
+                if (c.wants.first == 'soda') soda++;
+              }
+            }
           }
         }
-        // 처음 가게는 콜라·도넛뿐: 더운 날엔 콜라가 먼저
-        n = w.daySold['soda'] ?? 0;
-        return n - (w.daySold['donut'] ?? 0);
+        return soda / all;
       }
-      expect(firstSoda(Weather.hot, 3), greaterThan(firstSoda(Weather.sunny, 3)));
+      expect(firstSoda(Weather.hot), greaterThan(firstSoda(Weather.sunny)));
     });
 
     test('닫을 때 다음 날 날씨를 정하고 저장된다', () {

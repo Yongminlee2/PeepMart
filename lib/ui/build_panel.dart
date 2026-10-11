@@ -205,7 +205,9 @@ class _BuildPanelState extends State<BuildPanel> {
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Text(
-                game.plotsForSale.isEmpty ? S.t('land_all') : S.tn('land_hint', {'n': game.nextPlotPrice}),
+                game.plotsForSale.isEmpty
+                    ? S.t('land_all')
+                    : S.tn('land_hint2', {'n': game.nextPlotPrice, 'b': (plotBonus(game.plots.length) * 100).round()}),
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 17, color: inkColor),
               ),

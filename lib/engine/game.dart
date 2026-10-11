@@ -235,7 +235,8 @@ class Game {
   int get rank => owner.rank;
 
   /// 손님이 오는 평균 간격(초): 진열대·별점·꾸미기, 그리고 가게 등급.
-  double get spawnGap => spawnInterval(shelves.length, rating, decorCount) / (1 + rankVisitorBonus * rank);
+  double get spawnGap =>
+      spawnInterval(shelves.length, rating, decorCount) / (1 + rankVisitorBonus * rank + plotBonus(plots.length));
 
   // ---------------------------------------------------------------- 조회
 
@@ -609,7 +610,7 @@ class Game {
     final avg = sale.map((p) => productById(p).price).reduce((a, b) => a + b) / sale.length;
     // 마감 전 몰림까지 치면 손님이 15% 더 오고, 한 사람이 평균 두 개쯤 산다
     final visitors = dayLength / spawnGap * 1.15;
-    return (visitors, visitors * avg * 2);
+    return (visitors, visitors * avg * (basketMin + basketMax) / 2);
   }
 
   /// 다음에 여는 날의 날씨. 동네 편의점 전에는 늘 맑음.

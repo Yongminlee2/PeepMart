@@ -647,7 +647,7 @@ class World {
     final last = _clockRuns && dayLeft < lastCall ? lastCallFactor : 1.0;
     _spawnIn -= dt * (event == EventKind.rush ? rushFactor : 1) * last * _visitorFactor;
     if (_spawnIn <= 0 && phase == DayPhase.open) {
-      final cap = min(60, 3 + 2 * game.shelves.length);
+      final cap = _clockRuns ? min(60, 3 + 2 * game.shelves.length) : tutorialCustomers;
       if (customers.length < cap) _spawn();
       // 소풍날: 단체 손님이 줄줄이 들어온다
       if (special == SpecialDay.picnic && _rng.nextDouble() < 0.3) {
@@ -1137,8 +1137,9 @@ class World {
     final vip = _vipQueue > 0 ||
         (game.rating >= vipMinRating &&
             _rng.nextDouble() < vipChance * (game.rank >= rankVip ? 2 : 1) * ruleOf(game.branch).vip);
-    final n = vip ? min(sale.length, 2 + _rng.nextInt(2)) : 1 + _rng.nextInt(min(3, sale.length));
-    final wants = sale.take(n).toList();
+    final n = vip ? basketMax + 1 : basketMin + _rng.nextInt(basketMax - basketMin + 1);
+    // 여러 상품을 고르되, 종류가 모자라면 같은 상품을 더 산다
+    final wants = [for (var i = 0; i < n; i++) sale[i < sale.length ? i : _rng.nextInt(sale.length)]];
     final fav = game.favored.toList()..sort();
     if (fav.isNotEmpty && _rng.nextDouble() < favoredPull) {
       final f = fav[_rng.nextInt(fav.length)];
