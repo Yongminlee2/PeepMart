@@ -24,6 +24,7 @@ ROWS = [          # (동작, 방향)
     ("emote-yes", "front"), ("emote-no", "front"),
     ("interact-right", "front"),
     ("holding-both", "front"), ("holding-both", "back"),
+    ("sit", "front"), ("sit", "back"),
 ]
 ALL = [f"character-{g}-{c}" for g in ("female", "male") for c in "abcdef"]
 

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:peep_mart/engine/catalog.dart';
@@ -15,237 +16,320 @@ void stand(World w, Tile t) => w.player
   ..x = t.$1.toDouble()
   ..y = t.$2.toDouble();
 
-/// 막힌 칸 바로 아래(앞) 칸.
-Tile below(Tile t) => (t.$1, t.$2 + 1);
+Item first(Game g, String type) => g.items.firstWhere((i) => i.type == type);
 
 void main() {
-  test('넓힌 가게는 이전 가게의 상자·진열대 자리를 전부 가진다', () {
-    for (var i = 1; i < layouts.length; i++) {
-      expect(layouts[i].crates.toSet().containsAll(layouts[i - 1].crates), isTrue);
-      expect(layouts[i].shelves.toSet().containsAll(layouts[i - 1].shelves), isTrue);
-    }
-  });
+  group('짓기', () {
+    test('처음 가게: 빈 자리에 놓을 수 있고 계산대 줄이 있다', () {
+      final g = Game();
+      expect(g.canPlace('plant', (5, 5)), PlaceResult.ok);
+      expect(g.queueTiles(first(g, 'register')), isNotEmpty);
+    });
 
-  test('자리끼리 겹치지 않고, 진열대·상자 앞에 설 칸이 있다', () {
-    for (final l in layouts) {
-      final fixed = [l.register, l.till, l.cash, l.door, ...l.queue, ...l.pads];
-      final all = [...fixed, ...l.crates, ...l.shelves, ...l.decor.keys];
-      expect(all.toSet().length, all.length, reason: '겹침');
-      for (final t in [...l.crates, ...l.shelves]) {
-        final (x, y) = t;
-        final open = [(x, y + 1), (x + 1, y), (x - 1, y), (x, y - 1)]
-            .where((n) => n.$1 >= 0 && n.$2 >= 0 && n.$1 < l.w && n.$2 < l.h && !all.contains(n) || fixed.contains(n));
-        expect(open, isNotEmpty, reason: '$t 앞에 설 칸이 없다');
+    test('잠긴 것·돈 모자람·남의 땅·겹침은 못 놓는다', () {
+      final g = Game()..money = 100000;
+      expect(g.canPlace('freezer', (5, 5)), PlaceResult.locked);
+      expect(g.canPlace('rack', (9, 1)), PlaceResult.notOwned);
+      expect(g.canPlace('rack', (2, 3)), PlaceResult.occupied); // 냉장고 자리
+      final reg = first(g, 'register');
+      expect(g.canPlace('rack', reg.till), PlaceResult.occupied);
+      expect(g.canPlace('rack', reg.front), PlaceResult.occupied);
+      g.money = 10;
+      expect(g.canPlace('rack', (5, 5)), PlaceResult.money);
+    });
+
+    test('입구를 막아 가게가 갇히게는 못 짓는다', () {
+      final g = Game()..money = 100000;
+      final e = first(g, 'entrance').tile; // (7,7) 구석
+      expect(g.place('plant', (e.$1 - 1, e.$2)), isTrue);
+      expect(g.canPlace('plant', (e.$1, e.$2 - 1)), PlaceResult.blocksPath);
+    });
+
+    test('놓으면 돈이 빠지고, 팔면 절반을 돌려받는다. 마지막 계산대·입구는 못 판다', () {
+      final g = Game()..money = 1000;
+      expect(g.place('rack', (5, 5), product: 'donut'), isTrue);
+      expect(g.money, 1000 - 40);
+      final rack = g.at((5, 5))!;
+      expect(rack.stock, rack.capacity);
+      expect(g.sell(rack), isTrue);
+      expect(g.money, 1000 - 40 + 20);
+      expect(g.sell(first(g, 'register')), isFalse);
+      expect(g.sell(first(g, 'entrance')), isFalse);
+    });
+
+    test('계산대를 돌리면 계산 자리가 바뀌고 줄이 남는다', () {
+      final g = Game();
+      final reg = first(g, 'register');
+      final till = reg.till;
+      expect(g.rotate(reg), isTrue);
+      expect(reg.till, isNot(till));
+      expect(g.queueTiles(reg), isNotEmpty);
+    });
+
+    test('상품 바꾸기: 맞는 진열대·열린 상품만, 바꾸면 비워진다', () {
+      final g = Game();
+      final rack = first(g, 'rack');
+      expect(g.setProduct(rack, 'soda'), isFalse); // 냉장 상품
+      expect(g.setProduct(rack, 'noodles'), isFalse); // 레벨 2
+      g.level = 2;
+      expect(g.setProduct(rack, 'noodles'), isTrue);
+      expect(rack.stock, 0);
+    });
+
+    test('땅은 맞닿은 필지만 살 수 있고, 사면 그 칸들이 내 땅이 된다', () {
+      final g = Game()..money = 100000;
+      expect(g.plotsForSale, {(1, 0), (0, 1)});
+      expect(g.buyPlot((2, 0)), isFalse);
+      final price = g.nextPlotPrice;
+      expect(g.buyPlot((1, 0)), isTrue);
+      expect(g.money, 100000 - price);
+      expect(g.owns((9, 3)), isTrue);
+      expect(g.nextPlotPrice, greaterThan(price));
+      expect(g.plotsForSale, containsAll([(2, 0), (1, 1), (0, 1)]));
+    });
+
+    test('땅을 전부 사면 지도 전체가 내 것이 된다', () {
+      final g = Game()..money = 1 << 40;
+      while (g.plotsForSale.isNotEmpty) {
+        expect(g.buyPlot(g.plotsForSale.first), isTrue);
       }
-    }
+      expect(g.plots.length, plotCols * plotRows);
+      expect(g.owns((mapW - 1, mapH - 1)), isTrue);
+    });
+
+    test('바닥 칠하기는 진열대 밑에도 된다', () {
+      final g = Game();
+      expect(g.place('floor-pink', (2, 3)), isTrue);
+      expect(g.floors[(2, 3)], 'floor-pink');
+    });
   });
 
-  test('모든 상품이 마지막 가게에 자리가 있고, 넓히기 전에 여는 상품은 첫 가게에 자리가 있다', () {
-    expect(Game.slotOf.length, products.length);
-    expect(Game.slotOf.values.every((s) => s < layouts.last.shelves.length && s < layouts.last.crates.length), isTrue);
-    final beforeExpand = unlocks.takeWhile((u) => u is! Expand).whereType<NewProduct>();
-    for (final u in beforeExpand) {
-      expect(Game.slotOf[u.product]! < layouts.first.shelves.length, isTrue, reason: u.product);
-    }
+  group('레벨·직원·업그레이드', () {
+    test('경험치가 차면 레벨이 오르고 남은 경험치는 이월된다', () {
+      final g = Game();
+      final need = xpToNext(1) + xpToNext(2);
+      expect(g.addXp(need + 3), 2);
+      expect(g.level, 3);
+      expect(g.xp, 3);
+    });
+
+    test('모든 상품·가구는 최고 레벨 안에서 열린다', () {
+      expect(products.every((p) => p.level <= maxLevel), isTrue);
+      expect(itemTypes.every((t) => t.level <= maxLevel), isTrue);
+      for (final k in ShelfKind.values) {
+        expect(itemTypes.any((t) => t.shelf == k), isTrue, reason: '$k 진열대가 없다');
+        expect(products.any((p) => p.kind == k), isTrue, reason: '$k 상품이 없다');
+      }
+    });
+
+    test('직원은 레벨이 되고 돈이 있어야 고용하고, 일당이 매겨진다', () {
+      final g = Game()..money = 1000;
+      expect(g.hire(Staff.cashier), isFalse); // 레벨 2부터
+      g.level = 2;
+      expect(g.hire(Staff.cashier), isTrue);
+      expect(g.money, 1000 - staffSpecs[Staff.cashier]!.hire);
+      expect(g.wages, staffSpecs[Staff.cashier]!.wage);
+    });
+
+    test('일당은 주기마다 빠진다', () {
+      final g = Game()..staff[Staff.janitor] = 2;
+      g.items.removeWhere((i) => i.t.kind == ItemKind.shelf); // 손님이 안 오게
+      final w = World(g, seed: 1);
+      final m = g.money;
+      run(w, wagePeriod + 0.1);
+      expect(g.money, m - 2 * staffSpecs[Staff.janitor]!.wage);
+    });
+
+    test('업그레이드는 단계마다 레벨·값이 필요하고 끝이 있다', () {
+      final g = Game()..money = 100000;
+      expect(g.buyUpgrade(Upgrade.shoes), isFalse);
+      g.level = 30;
+      for (var i = 0; i < upgradeSteps[Upgrade.shoes]!.length; i++) {
+        expect(g.buyUpgrade(Upgrade.shoes), isTrue);
+      }
+      expect(g.buyUpgrade(Upgrade.shoes), isFalse);
+      expect(g.speed, playerSpeed * 1.75);
+    });
   });
 
-  test('상자 옆에 서면 팔 개수만큼 들고, 진열대 옆에 서면 채운다', () {
-    final g = Game()..stock['soda'] = 0;
-    final w = World(g, seed: 1);
-    stand(w, below(g.crateTile('soda')));
-    run(w, 2);
-    expect(w.player.carry, List.filled(g.arms, 'soda'));
-    stand(w, below(g.shelfTile('soda')));
-    run(w, 2);
-    expect(w.player.carry, isEmpty);
-    expect(g.stock['soda'], g.arms);
-  });
+  group('손님과 일', () {
+    test('상자 옆에 서면 들고, 진열대 옆에 서면 채운다', () {
+      final g = Game();
+      final fridge = first(g, 'fridge')..stock = 0;
+      final w = World(g, seed: 2);
+      stand(w, (1, 1)); // 콜라 상자 (1,0) 앞
+      run(w, 2);
+      expect(w.player.carry, List.filled(g.arms, 'soda'));
+      stand(w, (2, 4)); // 냉장고 (2,3) 앞
+      run(w, 2);
+      expect(fridge.stock, greaterThanOrEqualTo(g.arms - 1)); // 그새 손님이 하나 집을 수 있다
+    });
 
-  test('계산대 뒤에 서면 계산되고, 돈은 옆에 쌓였다가 주워야 들어온다', () {
-    final g = Game();
-    final w = World(g, seed: 2);
-    stand(w, g.layout.till);
-    for (var i = 0; i < 2000 && g.cash == 0; i++) {
-      w.tick(0.05);
-    }
-    expect(g.cash, greaterThan(0));
-    expect(g.money, 0);
-    final cash = g.cash;
-    stand(w, g.layout.cash);
-    run(w, 1);
-    expect(g.cash, 0);
-    expect(g.money, greaterThanOrEqualTo(cash));
-  });
-
-  test('구매 칸에 서면 돈이 조금씩 빠지고, 다 채우면 열린다', () {
-    final g = Game()..money = 100;
-    final w = World(g, seed: 3);
-    final (first, tile) = g.pads.first;
-    final price = unlocks[first].price;
-    stand(w, tile);
-    run(w, 0.2);
-    expect(g.money, inExclusiveRange(100 - price, 100), reason: '한 번에 다 빠지면 안 된다');
-    run(w, 3);
-    expect(g.bought, contains(first));
-    expect(g.money, 100 - price);
-    expect(g.openProducts, contains('noodles'));
-    // 진열대가 생긴 자리에 갇히지 않는다
-    final x = w.player.x;
-    w.input = -1;
-    run(w, 0.5);
-    expect(w.player.x, isNot(x));
-  });
-
-  test('돈이 모자라면 낸 만큼만 남고, 다음에 이어서 낸다', () {
-    final g = Game()..money = 10;
-    final w = World(g, seed: 4);
-    final (first, tile) = g.pads.first;
-    stand(w, tile);
-    run(w, 2);
-    expect(g.money, 0);
-    expect(g.paid[first], 10);
-    expect(g.bought, isNot(contains(first)));
-  });
-
-  test('손님은 빈 진열대 앞에서 기다렸다가 채워지면 집는다', () {
-    final g = Game()
-      ..stock['soda'] = 0
-      ..stock['donut'] = 0;
-    final w = World(g, seed: 5);
-    stand(w, g.layout.door);
-    for (var i = 0; i < 400 && !w.customers.any((c) => c.state == CState.atShelf); i++) {
-      w.tick(0.05);
-    }
-    final c = w.customers.firstWhere((c) => c.state == CState.atShelf);
-    g.stock[c.want] = 3;
-    run(w, 1);
-    expect(c.carry, isNotEmpty);
-  });
-
-  test('너무 오래 비어 있으면 손님은 포기한다', () {
-    final g = Game()
-      ..stock['soda'] = 0
-      ..stock['donut'] = 0;
-    final w = World(g, seed: 6);
-    stand(w, g.layout.door);
-    run(w, shelfPatience * 2 + 15); // 두 개를 사러 왔으면 두 진열대에서 다 기다린다
-    expect(g.recent, contains(1));
-    expect(w.queue, isEmpty);
-  });
-
-  test('계산 알바가 있으면 사람이 없어도 계산된다', () {
-    final g = Game()..bought.add(unlocks.indexWhere((u) => u is HireCashier));
-    final w = World(g, seed: 7);
-    stand(w, g.layout.door);
-    run(w, 60);
-    expect(g.cash, greaterThan(0));
-  });
-
-  test('진열 알바는 반 넘게 빈 진열대를 상자에서 날라 채운다', () {
-    final g = Game()..bought.add(unlocks.indexWhere((u) => u is HireStocker));
-    g.stock['soda'] = 0;
-    g.stock['donut'] = 8;
-    final w = World(g, seed: 8);
-    stand(w, g.layout.door);
-    run(w, 15);
-    expect(g.stock['soda'], greaterThanOrEqualTo(startArms - 2)); // 그새 손님이 집어갈 수 있다
-  });
-
-  test('가게를 넓혀도 상품과 재고가 그대로다', () {
-    final g = Game()..money = 100000;
-    final w = World(g, seed: 9);
-    for (var i = 0; i < 50 && g.level == 0; i++) {
-      final (_, tile) = g.pads.first;
-      stand(w, tile);
-      run(w, 10);
-    }
-    expect(g.level, 1);
-    expect(g.openProducts, containsAll(['soda', 'donut', 'noodles', 'sandwich', 'icecream', 'fruit']));
-    expect(g.pads.map((p) => unlocks[p.$1]).whereType<NewProduct>().map((u) => u.product), contains('bento'));
-  });
-
-  test('돈만 있으면 구매 칸을 끝까지 전부 살 수 있다 (자리·순서가 막히지 않는다)', () {
-    final g = Game()..money = 1 << 30;
-    final w = World(g, seed: 12);
-    for (var guard = 0; guard < 100 && g.pads.isNotEmpty; guard++) {
-      final (i, tile) = g.pads.first;
-      stand(w, tile);
-      run(w, unlocks[i].price / payPerSecond + 0.5);
-      expect(g.bought, contains(i), reason: '$i 번을 사지 못했다');
-    }
-    expect(g.bought.length, unlocks.length);
-    expect(g.level, layouts.length - 1);
-    expect(g.openProducts.toSet(), products.map((p) => p.id).toSet());
-    expect(g.stockers, 2);
-    expect(g.speed, greaterThan(playerSpeed));
-  });
-
-  test('꺼 둔 동안 번 돈: 계산 알바가 있어야 하고, 두 시간까지만', () {
-    final g = Game();
-    expect(g.offlineEarnings(3600), 0);
-    g.bought.add(unlocks.indexWhere((u) => u is HireCashier));
-    final hour = g.offlineEarnings(3600);
-    expect(hour, greaterThan(0));
-    expect(g.offlineEarnings(7200), greaterThan(hour));
-    expect(g.offlineEarnings(100000), g.offlineEarnings(7200));
-  });
-
-  test('진열 알바 둘은 같은 상품을 나눠 맡지 않는다', () {
-    final g = Game();
-    g.bought.addAll([for (final (i, u) in unlocks.indexed) if (u is HireStocker) i]);
-    g.stock['soda'] = 0;
-    g.stock['donut'] = 0;
-    final w = World(g, seed: 13);
-    stand(w, g.layout.door);
-    run(w, 0.2);
-    expect(w.stockers.map((s) => s.product).toSet(), {'soda', 'donut'});
-  });
-
-  test('별점이 높으면 손님이 더 많이 온다', () {
-    int visitors(int score) {
-      final g = Game()..recent.addAll(List.filled(20, score));
-      final w = World(g, seed: 10);
-      var count = 0;
-      final seen = <Customer>{};
-      for (var i = 0; i < 2400; i++) {
+    test('내가 계산하면 돈이 계산대 옆에 쌓였다 들어오고, 경험치가 오른다', () {
+      final g = Game();
+      final reg = first(g, 'register');
+      final w = World(g, seed: 3);
+      stand(w, reg.till);
+      final m = g.money;
+      for (var i = 0; i < 3000 && g.served == 0; i++) {
         w.tick(0.05);
-        for (final c in w.customers) {
-          if (seen.add(c)) count++;
+      }
+      expect(g.served, 1);
+      run(w, 1);
+      expect(reg.cash, 0);
+      expect(g.money, greaterThan(m));
+      expect(g.level > 1 || g.xp > 0, isTrue);
+    });
+
+    test('계산원이 서 있으면 돈이 바로 들어온다', () {
+      final g = Game()..staff[Staff.cashier] = 1;
+      final w = World(g, seed: 4);
+      stand(w, (0, 7));
+      run(w, 50);
+      expect(g.served, greaterThan(0));
+      expect(first(g, 'register').cash, 0);
+    });
+
+    test('진열원은 상자가 있는 상품만 채운다', () {
+      final g = Game()..staff[Staff.stocker] = 1;
+      final fridge = first(g, 'fridge')..stock = 0;
+      final rack = first(g, 'rack')..stock = 0;
+      g.sell(g.items.firstWhere((i) => i.type == 'box' && i.product == 'donut'));
+      final w = World(g, seed: 5);
+      stand(w, (0, 7));
+      run(w, 12);
+      expect(fridge.stock, greaterThan(0));
+      expect(rack.stock, 0);
+    });
+
+    test('휴지통이 멀면 쓰레기가 생기고, 플레이어와 청소부가 치운다', () {
+      final g = Game()..staff[Staff.cashier] = 1;
+      g.sell(first(g, 'bin'));
+      final w = World(g, seed: 6);
+      stand(w, (0, 7));
+      for (var i = 0; i < 40000 && g.trash.isEmpty; i++) {
+        w.tick(0.05);
+        for (final s in g.shelves) {
+          s.stock = s.capacity; // 손님이 계속 사게
         }
       }
-      return count;
-    }
+      expect(g.trash, isNotEmpty);
+      final t = g.trash.first;
+      stand(w, t);
+      run(w, 0.1);
+      expect(g.trash.contains(t), isFalse);
+      stand(w, (0, 7));
+      g.trash.add((5, 6));
+      g.staff[Staff.janitor] = 1;
+      run(w, 15);
+      expect(g.trash.contains((5, 6)), isFalse);
+    });
 
-    expect(visitors(5), greaterThan(visitors(0)));
+    test('빈 진열대 앞에서 기다리다 포기한다', () {
+      final g = Game();
+      first(g, 'fridge').stock = 0;
+      first(g, 'rack').stock = 0;
+      final w = World(g, seed: 7);
+      stand(w, (0, 7));
+      run(w, shelfPatience * 3 + 20);
+      expect(g.recent, contains(1));
+    });
+
+    test('앉아 먹는 상품을 사면 빈 의자에 앉았다 간다', () {
+      final g = Game()
+        ..level = 7
+        ..money = 10000
+        ..staff[Staff.cashier] = 1;
+      g.sell(first(g, 'fridge'));
+      expect(g.place('coffeemachine', (2, 3), product: 'coffee'), isTrue);
+      expect(g.place('chair', (1, 5)), isTrue);
+      final w = World(g, seed: 8);
+      stand(w, (0, 7));
+      var sat = false;
+      for (var i = 0; i < 6000 && !sat; i++) {
+        w.tick(0.05);
+        sat = w.customers.any((c) => c.state == CState.sitting);
+        for (final s in g.shelves) {
+          s.stock = s.capacity;
+        }
+      }
+      expect(sat, isTrue);
+    });
+
+    test('계산대가 둘이면 손님이 짧은 줄로 나뉜다', () {
+      final g = Game()..money = 10000;
+      expect(g.place('register', (6, 5)), isTrue);
+      g.place('rack', (4, 5), product: 'donut');
+      g.place('fridge', (2, 5), product: 'soda');
+      final w = World(g, seed: 9);
+      stand(w, (0, 7));
+      var both = false;
+      for (var i = 0; i < 6000 && !both; i++) {
+        w.tick(0.05);
+        both = w.queues.values.where((q) => q.isNotEmpty).length >= 2;
+      }
+      expect(both, isTrue);
+    });
+
+    test('짓고 팔기를 마구 해도 멈추지 않고, 가게가 갇히지 않는다', () {
+      final rng = Random(42);
+      final g = Game()
+        ..money = 1 << 30
+        ..level = 30;
+      for (final p in [(1, 0), (0, 1), (1, 1)]) {
+        g.buyPlot(p);
+      }
+      g.staff
+        ..[Staff.cashier] = 2
+        ..[Staff.stocker] = 2
+        ..[Staff.janitor] = 1;
+      final w = World(g, seed: 10);
+      final types = itemTypes.map((t) => t.id).toList();
+      for (var step = 0; step < 400; step++) {
+        final t = (rng.nextInt(16), rng.nextInt(16));
+        final type = itemType(types[rng.nextInt(types.length)]);
+        final fits = products.where((p) => type.kind == ItemKind.box || p.kind == type.shelf).toList();
+        final product = type.needsProduct ? fits[rng.nextInt(fits.length)].id : null;
+        if (rng.nextBool()) {
+          g.place(type.id, t, rot: rng.nextInt(4), product: product);
+        } else if (g.at(t) case final i?) {
+          g.sell(i);
+        }
+        run(w, 0.5);
+      }
+      run(w, 30);
+      expect(g.entrances, isNotEmpty);
+      expect(g.registers, isNotEmpty);
+      for (final r in g.registers) {
+        expect(g.queueTiles(r), isNotEmpty);
+      }
+    });
   });
 
-  test('안내 화살표: 빈 진열대 상자 → 그 진열대 → 계산대 → 돈 → 살 수 있는 구매 칸', () {
-    final g = Game()..stock['soda'] = 0;
-    final w = World(g, seed: 11);
-    expect(w.guide(), g.crateTile('soda'));
-    w.player.carry.add('soda');
-    expect(w.guide(), g.shelfTile('soda'));
-    w.player.carry.clear();
-    g.stock['soda'] = 6;
-    expect(w.guide(), isNull);
-    g.cash = 5;
-    expect(w.guide(), g.layout.cash);
-    g
-      ..cash = 0
-      ..money = 1000;
-    expect(w.guide(), g.pads.first.$2);
+  test('꺼 둔 동안 번 돈: 계산원이 있어야 하고 두 시간까지만', () {
+    final g = Game();
+    expect(g.offlineEarnings(3600), 0);
+    g.staff[Staff.cashier] = 1;
+    final hour = g.offlineEarnings(3600);
+    expect(hour, greaterThan(0));
+    expect(g.offlineEarnings(100000), g.offlineEarnings(7200));
   });
 
   test('저장했다 불러오면 그대로다', () {
     final g = Game()
-      ..money = 777
-      ..cash = 12
-      ..level = 1;
-    g.bought.addAll([0, 1]);
-    g.paid[2] = 5;
-    g.stock['noodles'] = 3;
+      ..money = 5000
+      ..level = 5
+      ..xp = 12;
+    g.buyPlot((1, 0));
+    g.place('rug', (5, 5));
+    g.place('floor-mint', (4, 4));
+    g.staff[Staff.stocker] = 2;
+    g.upgrades[Upgrade.arms] = 1;
+    g.trash.add((6, 6));
+    first(g, 'register').cash = 9;
     g.rate(4);
     final back = Game.fromJson(jsonDecode(jsonEncode(g.toJson())) as Map<String, dynamic>);
     expect(jsonEncode(back.toJson()), jsonEncode(g.toJson()));
+    expect(back.at((5, 5))?.type, 'rug');
   });
 }

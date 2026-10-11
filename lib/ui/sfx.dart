@@ -47,8 +47,9 @@ class Sfx {
     FxKind.scan: 'scan',
     FxKind.pay: 'pay',
     FxKind.cash: 'cash',
-    FxKind.unlock: 'unlock',
+    FxKind.levelUp: 'unlock',
     FxKind.angry: 'angry',
+    FxKind.clean: 'pick',
   };
 
   static Future<void> load() async {
@@ -67,7 +68,7 @@ class Sfx {
     if (Settings.i.sound) _sounds[k]?.start();
     if (!Settings.i.vibration) return;
     switch (k) {
-      case FxKind.unlock:
+      case FxKind.levelUp:
         HapticFeedback.mediumImpact();
       case FxKind.pay || FxKind.place:
         HapticFeedback.selectionClick();

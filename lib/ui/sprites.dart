@@ -12,7 +12,7 @@ const footY = 0.85;
 const orthoWorld = 1.15; // 한 칸에 담긴 세계 크기
 const charScale = 1.2; // 바닥 한 칸(1) 대비 캐릭터 크기
 
-enum Anim { idle, walk, pickUp, yes, no, interact, carry }
+enum Anim { idle, walk, pickUp, yes, no, interact, carry, sit }
 
 enum Facing { downLeft, downRight, upLeft, upRight }
 
@@ -25,6 +25,7 @@ int _row(Anim a, bool back) => switch (a) {
       Anim.no => 7,
       Anim.interact => 8,
       Anim.carry => back ? 10 : 9,
+      Anim.sit => back ? 12 : 11,
     };
 
 const characterFiles = [
@@ -40,8 +41,8 @@ Facing facingOf(double dx, double dy) {
 }
 
 /// 시트 번호: 플레이어·알바는 고정, 손님은 나머지에서 고른다.
-const playerChar = 6, cashierChar = 4, stockerChar = 9;
-const customerChars = [0, 1, 2, 3, 5, 7, 8, 10, 11];
+const playerChar = 6, cashierChar = 4, stockerChar = 9, janitorChar = 5;
+const customerChars = [0, 1, 2, 3, 7, 8, 10, 11];
 
 Future<ui.Image?> _image(String asset) async {
   try {
@@ -60,7 +61,7 @@ class Props {
   static const propWorld = 1.9, propFoot = 0.80;
 
   static Future<void> load(Iterable<String> foods) async {
-    for (final n in [for (final f in foods) 'food-$f', 'prop-crate', 'prop-rack', 'prop-plant', 'prop-plant-small', 'prop-trash']) {
+    for (final n in [for (final f in foods) 'food-$f', 'prop-crate', 'prop-rack', 'prop-plant', 'prop-plant-small', 'prop-trash', 'prop-flowers', 'prop-lamp', 'prop-chair', 'prop-table']) {
       final img = await _image('assets/props/$n.png');
       if (img != null) _images[n] = img;
     }
@@ -103,7 +104,9 @@ class Sprites {
     final back = facing == Facing.upLeft || facing == Facing.upRight;
     final flip = facing == Facing.downRight || facing == Facing.upLeft;
     final frame = (t * fps).floor() % frameCols;
-    final src = Rect.fromLTWH(frame * frameSize, _row(anim, back) * frameSize, frameSize, frameSize);
+    var row = _row(anim, back);
+    if ((row + 1) * frameSize > img.height) row = back ? 1 : 0; // 옛 시트에 없는 동작은 서 있기로
+    final src = Rect.fromLTWH(frame * frameSize, row * frameSize, frameSize, frameSize);
     final size = orthoWorld * (tw / 1.41421356) * charScale;
     final dst = Rect.fromLTWH(-size / 2, -size * footY, size, size);
     canvas.save();

@@ -18,14 +18,20 @@ FOOT_Y = 0.80
 # 출력 이름: 원본 파일
 FOOD = {
     "soda": "soda-can", "donut": "donut-sprinkles", "noodles": "chinese", "sandwich": "sandwich",
-    "icecream": "popsicle", "fruit": "apple", "bento": "styrofoam-dinner", "cake": "cake",
-    "milk": "carton", "riceball": "rice-ball",
+    "icecream": "ice-cream", "fruit": "apple", "banana": "banana", "croissant": "croissant",
+    "coffee": "cup-coffee", "milk": "carton", "cookie": "cookie-chocolate", "hotdog": "hot-dog",
+    "cake": "cake", "muffin": "muffin", "watermelon": "watermelon", "strawberry": "strawberry",
+    "burger": "burger", "frappe": "frappe", "bento": "styrofoam-dinner", "chocolate": "chocolate",
+    "pizza": "pizza", "cupcake": "cupcake", "sundae": "sundae", "riceball": "rice-ball",
+    "fries": "fries", "tea": "cup-tea", "sushi": "sushi-salmon", "grapes": "grapes",
+    "popsicle": "popsicle", "pie": "pie",
 }
 FR_FOOD, ORTHO_FOOD, FOOD_FIT = 96, 1.25, 0.8
-FOOD_FIT_EXTRA = {"sandwich": 1.9}  # 납작해서 작아 보이는 것
+FOOD_FIT_EXTRA = {"sandwich": 1.9, "pizza": 1.3, "chocolate": 1.2, "cookie-chocolate": 1.2, "cookie": 1.3}  # 납작해서 작아 보이는 것
 
 PROPS = {"crate": "cardboardBoxOpen", "rack": "bookcaseOpenLow", "plant": "pottedPlant",
-         "plant-small": "plantSmall2", "trash": "trashcan"}
+         "plant-small": "plantSmall2", "trash": "trashcan", "flowers": "plantSmall1", "lamp": "lampRoundFloor",
+         "chair": "chairCushion", "table": "tableRound"}
 FR_PROP, ORTHO_PROP = 192, 1.9
 RACK_WIDTH = 0.92  # 진열대 가로가 칸의 이만큼이 되도록 가구 전체 배율을 정한다
 
