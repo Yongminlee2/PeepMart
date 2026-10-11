@@ -218,7 +218,7 @@ const goals = [
 // ------------------------------------------------------------------ 손님 종류·행사
 
 /// 보통 / 급한 손님(참을성 절반, 팁 50%) / VIP(여러 개 사고 두 배로 낸다, 별점 4 이상일 때만).
-enum CustomerKind { normal, hurry, vip, thief, lost }
+enum CustomerKind { normal, hurry, vip, thief, lost, grumpy }
 
 const hurryChance = 0.15;
 const vipChance = 0.05;
@@ -332,9 +332,9 @@ const dayLength = 180.0;
 const lastCall = 30.0; // 마감 전 이만큼은 손님이 더 몰린다
 const lastCallFactor = 1.5;
 const dayTargetShare = 1.0; // 첫날 목표 = 진열대가 늘 차 있을 때 벌 돈의 이만큼(× 처음 며칠 낮춤)
-const dayTargetGrowth = 1.0; // 둘째 날부터 목표 = 최근 하루 평균(평소만큼 = 별 둘, 더 잘하면 셋)
+const dayTargetGrowth = 1.1; // 둘째 날부터 목표 = 최근 하루 평균의 1.1배 (평소만큼이면 별 하나, 더 잘해야 둘·셋)
 const dayAverageWeight = 0.4; // 오늘이 평균에 얼마나 들어가나
-const dayStars = [0.7, 1.0, 1.25]; // 목표의 이만큼 벌면 별 1·2·3개
+const dayStars = [0.7, 1.0, 1.3]; // 목표의 이만큼 벌면 별 1·2·3개
 const dayBonus = [0.0, 0.1, 0.2, 0.3]; // 별 개수별 보너스 (그날 번 돈 대비)
 const dayTaskReward = 0.15; // 할 일 하나 = 목표의 이만큼
 const calmLimit = 2; // "실망한 손님 n명 이하"
@@ -357,7 +357,8 @@ int rankOf(int level) => rankLevels.lastIndexWhere((l) => level >= l);
 const rankVisitorBonus = 0.08; // 등급마다 손님 8% 더
 const rankWeather = 1; // 날씨 예보
 const rankSpecialDay = 2; // 5일마다 특별한 날
-const rankIncidents = 2; // 도둑·길 잃은 아이
+const rankIncidents = 1; // 도둑·길 잃은 아이·고장
+const rankGrumpy = 2; // 진상 손님
 const rankDelivery = 3; // 배달 주문
 const rankFestival = 4; // 특별한 날에 동네 축제가 끼어든다
 const rankVip = 5; // VIP 가 두 배로 자주
@@ -445,3 +446,17 @@ const chapters = [
   Chapter('snow', [Npc.mayor, Npc.bori, Npc.me]),
   Chapter('finale', [Npc.grandma, Npc.rival, Npc.rival, Npc.me, Npc.grandma, Npc.me]),
 ];
+
+// ------------------------------------------------------------------ 어려움 (알바를 다 둬도 할 일이 남게)
+
+/// 하루에 끼어드는 사건 수: 1 + 등급 (+0~1). 알바가 못 하는 일이라 가게가 커질수록 바빠진다.
+int incidentsPerDay(int rank, int extra) => rank + 1 + extra;
+const breakableShelves = {ShelfKind.fridge, ShelfKind.freezer, ShelfKind.coffee, ShelfKind.hot}; // 고장 나는 전기 진열대
+const repairTime = 1.2; // 고장 난 진열대 옆에 멈춰 서 있으면 이만큼 뒤 고친다
+const grumpyPatience = 30.0; // 진상 손님이 참는 초
+const grumpyAngerRate = 2; // 못 달래면 실망 손님으로 이만큼 센다
+double patienceFactor(int rank) => 1 - 0.06 * rank; // 등급이 오를수록 손님이 덜 참는다
+// 하루 운영비: 땅 한 필지 임대료 × (1 + 0.3 × 등급) + 진열대마다 관리비
+const rentPerPlot = 20;
+const rentPerRank = 0.3;
+const upkeepPerShelf = 3;

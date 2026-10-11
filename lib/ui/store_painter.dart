@@ -200,6 +200,7 @@ class StorePainter extends CustomPainter {
           highlight: b?.selected == i,
           level: i.level,
           managed: i.t.shelf != null && game.managers.contains(i.t.shelf)));
+      if (i.broken) add(i.c + 0.01, i.r + 0.01, () => _brokenMark(canvas, i));
     }
     for (final s in world.staff) {
       final who = switch (s.kind) {
@@ -518,8 +519,8 @@ class StorePainter extends CustomPainter {
       anim = c.happy ? Anim.yes : Anim.no;
     } else if (c.state == CState.sitting) {
       anim = Anim.sit;
-    } else if (c.kind == CustomerKind.lost && c.state == CState.atShelf) {
-      anim = Anim.no; // 울고 있다
+    } else if ((c.kind == CustomerKind.lost || c.kind == CustomerKind.grumpy) && c.state == CState.atShelf) {
+      anim = Anim.no; // 울거나 화내고 있다
     } else if (c.state == CState.atShelf && c.timer < pickTime) {
       anim = Anim.pickUp;
     } else if (c.moving) {
@@ -527,7 +528,7 @@ class StorePainter extends CustomPainter {
     } else {
       anim = Anim.idle;
     }
-    final kid = c.kind == CustomerKind.lost;
+    final kid = c.kind == CustomerKind.lost, grumpy = c.kind == CustomerKind.grumpy;
     _char(canvas, who, c.x, c.y, anim, f, fps: c.moving ? 12 : 8, scale: kid ? kidScale : 1);
     final crownAt = iso(c.x, c.y) + const Offset(0, -40);
     if (c.fleeing) {
@@ -538,13 +539,13 @@ class StorePainter extends CustomPainter {
         _food(canvas, c.carry[i], iso(c.x, c.y) + Offset(10, -22 - i * 8.0), 12);
       }
     }
-    if (kid && c.state == CState.atShelf) {
-      final p = iso(c.x, c.y) + Offset(0, -34 + sin(clock * 4) * 2);
-      canvas.drawCircle(p, 10, Paint()..color = Colors.white);
+    if ((kid || grumpy) && c.state == CState.atShelf) {
+      final p = iso(c.x, c.y) + Offset(sin(clock * (grumpy ? 30 : 0)) * 1.5, (grumpy ? -58 : -34) + sin(clock * 4) * 2);
+      canvas.drawCircle(p, 10, Paint()..color = grumpy ? const Color(0xFFFFEBEE) : Colors.white);
       canvas.drawCircle(p, 10, _stroke(1.5));
-      _text(canvas, p, '?', const Color(0xFF42A5F5), 15);
+      _text(canvas, p, grumpy ? '!!' : '?', grumpy ? const Color(0xFFE53935) : const Color(0xFF42A5F5), 15);
       // 남은 참을성
-      final k = (1 - c.timer / lostPatience).clamp(0.0, 1.0);
+      final k = (1 - c.timer / (grumpy ? grumpyPatience : lostPatience)).clamp(0.0, 1.0);
       canvas.drawLine(p + const Offset(-10, 14), p + Offset(-10 + 20 * k, 14),
           Paint()
             ..color = const Color(0xFFFF7043)
@@ -678,6 +679,20 @@ class StorePainter extends CustomPainter {
     final p = iso(e.x, e.y) + Offset(0, -56 - k * 40);
     final a = 1 - k;
     _text(canvas, p, text, col.withValues(alpha: a), size, outline: a);
+  }
+
+  /// 고장 난 진열대: 연기와 빨간 공구 표시.
+  void _brokenMark(Canvas canvas, Item i) {
+    final p = iso(i.c + 0.0, i.r + 0.0) + Offset(0, -itemHeight(i.type) - 8);
+    for (var k = 0; k < 3; k++) {
+      final t = (clock * 0.8 + k / 3) % 1.0;
+      canvas.drawCircle(p + Offset(sin(t * 6 + k) * 6, -t * 26), 5 + t * 7,
+          Paint()..color = Color.fromRGBO(120, 120, 120, 0.45 * (1 - t)));
+    }
+    final a = 0.65 + 0.35 * sin(clock * 10);
+    canvas.drawCircle(p, 11, Paint()..color = Color.fromRGBO(229, 57, 53, a));
+    canvas.drawCircle(p, 11, _stroke(1.5));
+    _text(canvas, p, '🔧', Colors.white, 12);
   }
 
   /// 첫 땅 뒤쪽 벽의 간판: 가게 등급 이름.

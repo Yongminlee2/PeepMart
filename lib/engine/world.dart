@@ -29,11 +29,14 @@ enum DayPhase { closed, open, closing }
 
 /// 막 끝난 하루. 화면이 결과 창으로 보여 준다.
 class DayResult {
-  final int day, sales, target, served, upset, stars, bonus, taskReward;
+  final int day, sales, target, served, upset, stars, bonus, taskReward, cost;
   final bool best;
   final List<(DayTask, bool)> tasks;
   const DayResult(this.day, this.sales, this.target, this.served, this.upset, this.stars, this.bonus,
-      this.taskReward, this.best, this.tasks);
+      this.taskReward, this.best, this.tasks, {this.cost = 0});
+
+  /// 오늘 남은 돈: 매출 + 보너스 + 상금 - 운영비 (일당은 장사 중에 이미 나갔다).
+  int get profit => sales + bonus + taskReward - cost;
 }
 
 class Customer extends Walker {
@@ -78,7 +81,10 @@ const dayLastCall = 0, dayClosing = 1, dayClosed = 2;
 
 /// FxKind.incident 의 amount (돈이 걸린 건 product 에 금액 문자열).
 /// 도장을 받았을 때 FxKind.stamp (product = 상품, amount = 상금).
-enum Incident { thiefFlee, thiefCaught, thiefEscaped, kidLost, kidFound, kidGone, orderIn, orderDone, orderLate }
+enum Incident {
+  thiefFlee, thiefCaught, thiefEscaped, kidLost, kidFound, kidGone, orderIn, orderDone, orderLate,
+  brokeDown, repaired, grumpyIn, grumpyCalmed, grumpyLeft
+}
 
 /// 배달 주문: 진열대를 돌며 상품을 챙기고(진열대에서 빠진다) 입구까지 들고 가면 끝.
 class Order {
@@ -133,7 +139,7 @@ class World {
   SpecialDay? special; // 오늘이 특별한 날이면
   Order? order; // 들어온 배달 주문
   Customer? chase; // 쫓고 있는 도둑
-  double _chaseStep = 0;
+  double _chaseStep = 0, _repairStill = 0;
   final List<(double, Incident)> _incidents = []; // 오늘 일어날 일 (시각, 종류)
   DayResult? result; // 방금 끝난 하루. 화면이 보여 주고 null 로 지운다
 
@@ -168,8 +174,12 @@ class World {
     order = null;
     double at() => incidentWindow.$1 + _rng.nextDouble() * (incidentWindow.$2 - incidentWindow.$1);
     if (game.rank >= rankIncidents) {
-      for (var i = 0, n = 1 + _rng.nextInt(2); i < n; i++) {
-        _incidents.add((at(), _rng.nextBool() ? Incident.thiefFlee : Incident.kidLost));
+      final kinds = [
+        Incident.thiefFlee, Incident.kidLost, Incident.brokeDown,
+        if (game.rank >= rankGrumpy) ...[Incident.grumpyIn, Incident.thiefFlee],
+      ];
+      for (var i = 0, n = incidentsPerDay(game.rank, _rng.nextInt(2)); i < n; i++) {
+        _incidents.add((at(), kinds[_rng.nextInt(kinds.length)]));
       }
     }
     if (game.rank >= rankDelivery) {
@@ -192,6 +202,14 @@ class World {
             _spawnSpecial(CustomerKind.thief);
           case Incident.kidLost:
             _spawnSpecial(CustomerKind.lost);
+          case Incident.grumpyIn:
+            _spawnSpecial(CustomerKind.grumpy);
+          case Incident.brokeDown:
+            final can = game.shelves.where((s) => !s.broken && breakableShelves.contains(s.t.shelf)).toList();
+            if (can.isNotEmpty) {
+              final s = can[_rng.nextInt(can.length)]..broken = true;
+              fx.add(Fx(FxKind.incident, s.c.toDouble(), s.r.toDouble(), amount: Incident.brokeDown.index));
+            }
           default:
             final sale = game.onSale.toList()..sort();
             if (order == null && sale.isNotEmpty) {
@@ -201,6 +219,18 @@ class World {
             }
         }
       }
+    }
+    // 고장: 옆에 멈춰 서 있으면 고친다
+    if (!player.moving) {
+      _repairStill += dt;
+      for (final s in game.shelves) {
+        if (s.broken && player.distTo(s.tile) < 1.6 && _repairStill >= repairTime) {
+          s.broken = false;
+          fx.add(Fx(FxKind.incident, s.c.toDouble(), s.r.toDouble(), amount: Incident.repaired.index));
+        }
+      }
+    } else {
+      _repairStill = 0;
     }
     // 도둑: 가까이 가면 잡는다. 누른 도둑은 계속 쫓아간다.
     for (final c in customers) {
@@ -256,19 +286,24 @@ class World {
       _toShelf(c);
       return;
     }
-    // 아이: 가게 안 빈 칸 아무 데나 가서 운다
-    final spots = [
+    // 아이: 가게 안 빈 칸 아무 데나 가서 운다. 진상 손님: 계산대 가까이에서 화를 낸다.
+    var spots = [
       for (var y = 0; y < mapH; y++)
         for (var x = 0; x < mapW; x++)
           if (game.walkable((x, y)) && game.at((x, y)) == null && !game.trash.contains((x, y))) (x, y)
     ];
+    if (kind == CustomerKind.grumpy) {
+      final regs = game.registers.toList();
+      final near = spots.where((t) => regs.any((r) => (r.c - t.$1).abs() + (r.r - t.$2).abs() <= 3 && t != r.till && t != r.front)).toList();
+      if (near.isNotEmpty) spots = near;
+    }
     if (spots.isEmpty) {
       customers.remove(c);
       return;
     }
     c.state = CState.toShelf;
     _walkTo(c, spots[_rng.nextInt(spots.length)]);
-    _fx(Incident.kidLost);
+    _fx(kind == CustomerKind.grumpy ? Incident.grumpyIn : Incident.kidLost);
   }
 
   void _updateLost(Customer c, double dt) {
@@ -286,24 +321,30 @@ class World {
         }
       case CState.atShelf:
         c.timer += dt;
+        final grumpy = c.kind == CustomerKind.grumpy;
         if (sqrt(pow(player.x - c.x, 2) + pow(player.y - c.y, 2)) < catchRange) {
-          final reward = max(20, (dayTarget * lostReward).round());
+          // 아이는 사례금, 진상 손님은 달래면 조용히 간다(별점은 지킨다)
+          final reward = grumpy ? 0 : max(20, (dayTarget * lostReward).round());
           game.money += reward;
-          game.rate(5);
+          game.rate(grumpy ? 4 : 5);
           c
             ..happy = true
             ..react = 1.0
             ..state = CState.leaving;
           _walkTo(c, game.entrances.first.tile);
-          _fx(Incident.kidFound, money: reward);
-        } else if (c.timer > lostPatience) {
-          dayUpset++;
+          _fx(grumpy ? Incident.grumpyCalmed : Incident.kidFound, money: reward);
+        } else if (c.timer > (grumpy ? grumpyPatience : lostPatience)) {
+          dayUpset += grumpy ? grumpyAngerRate : 1;
+          if (grumpy) {
+            game.rate(0);
+            game.rate(0);
+          }
           c
             ..happy = false
             ..react = 0.8
             ..state = CState.leaving;
           _walkTo(c, game.entrances.first.tile);
-          _fx(Incident.kidGone);
+          _fx(grumpy ? Incident.grumpyLeft : Incident.kidGone);
         }
       case CState.leaving:
         if (c.arrived) c.state = CState.gone;
@@ -384,8 +425,12 @@ class World {
     final best = daySales > game.bestSales;
     if (best) game.bestSales = daySales;
     game.recordDay(daySales, dayServed);
-    game.money += bonus + taskReward;
-    result = DayResult(game.day, daySales, dayTarget, dayServed, dayUpset, stars, bonus, taskReward, best, done);
+    final cost = game.dailyCost;
+    game.money += bonus + taskReward - cost;
+    for (final s in game.shelves) {
+      s.broken = false; // 밤사이 수리 기사가 고친다
+    }
+    result = DayResult(game.day, daySales, dayTarget, dayServed, dayUpset, stars, bonus, taskReward, best, done, cost: cost);
     game.day++;
     game.weather = _pickWeather();
     order = null;
@@ -495,8 +540,8 @@ class World {
     final items = game.items.toSet();
     for (final c in customers) {
       // 가던 진열대·계산대·의자가 없어졌거나 바뀌었으면 다시 고른다
-      if (c.kind == CustomerKind.lost) {
-        // 아이는 진열대와 상관없다
+      if (c.kind == CustomerKind.lost || c.kind == CustomerKind.grumpy) {
+        // 아이·진상 손님은 진열대와 상관없다
       } else if (c.state == CState.toShelf || c.state == CState.atShelf) {
         if (c.shelf == null || !items.contains(c.shelf) || c.shelf!.product != c.want) _toShelf(c);
       } else if (c.state == CState.toQueue && !regs.contains(c.register)) {
@@ -562,6 +607,7 @@ class World {
     }
     final item = game.at(t);
     final p = item?.product;
+    if (item != null && item.broken) return walkPlayerTo(t);
     if (item != null && item.t.kind == ItemKind.shelf && p != null && !player.carry.contains(p)) {
       final box = game.boxOf(p);
       if (box != null && walkPlayerTo(box.tile) != null) {
@@ -704,7 +750,7 @@ class World {
     final paid = switch (c.kind) {
       CustomerKind.vip => base * 2,
       CustomerKind.hurry => (base * 1.5).round(),
-      CustomerKind.normal || CustomerKind.thief || CustomerKind.lost => base,
+      CustomerKind.normal || CustomerKind.thief || CustomerKind.lost || CustomerKind.grumpy => base,
     };
     if (staffed) {
       game.money += paid;
@@ -959,7 +1005,7 @@ class World {
   }
 
   void _updateCustomer(Customer c, double dt) {
-    if (c.kind == CustomerKind.lost) {
+    if (c.kind == CustomerKind.lost || c.kind == CustomerKind.grumpy) {
       _updateLost(c, dt);
       return;
     }
@@ -975,12 +1021,12 @@ class World {
       case CState.atShelf:
         c.timer += dt;
         final s = c.shelf!;
-        if (c.timer >= pickTime && s.stock > 0) {
+        if (c.timer >= pickTime && s.stock > 0 && !s.broken) {
           s.stock--;
           c.carry.add(c.want);
           c.prices.add(game.salePrice(s, c.want));
           _nextWant(c);
-        } else if (c.timer > shelfPatience * c.patience) {
+        } else if (c.timer > shelfPatience * c.patience * patienceFactor(game.rank)) {
           c
             ..missed += 1
             ..react = 0.8
@@ -999,7 +1045,7 @@ class World {
         final i = queues[c.register]!.indexOf(c);
         final spot = tiles[min(i, tiles.length - 1)];
         if (c.goal != spot) _walkTo(c, spot);
-        if (c.waited > queuePatience * c.patience && c.scanned == 0) {
+        if (c.waited > queuePatience * c.patience * patienceFactor(game.rank) && c.scanned == 0) {
           queues[c.register]?.remove(c);
           _rate(0);
           fx.add(Fx(FxKind.angry, c.x, c.y));

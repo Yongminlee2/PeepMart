@@ -659,7 +659,7 @@ void main() {
       expect(g.day, 2);
       expect(r.sales, w.daySales);
       expect(r.stars, inInclusiveRange(0, 3));
-      expect(g.money, greaterThanOrEqualTo(before + r.bonus + r.taskReward - g.wages * 2));
+      expect(g.money, greaterThanOrEqualTo(before + r.bonus + r.taskReward - r.cost - g.wages * 2));
       expect(g.bestSales, r.sales);
     });
 
@@ -683,7 +683,7 @@ void main() {
       expect(w.taskDone(calm), isFalse);
     });
 
-    test('별: 목표의 0.7·1·1.25배에서 하나씩, 보너스는 별에 따라', () {
+    test('별: 목표의 0.7·1·1.3배에서 하나씩, 보너스는 별에 따라, 운영비가 빠진다', () {
       final g = ready();
       final w = World(g, seed: 5)..openDay();
       w
@@ -697,7 +697,9 @@ void main() {
       w.customers.clear();
       w.tick(0.01); // 닫기
       expect(w.result!.stars, 3);
-      expect(g.money - before, greaterThanOrEqualTo((140 * dayBonus[3]).round() - g.wages));
+      expect(g.money - before, greaterThanOrEqualTo((140 * dayBonus[3]).round() - g.wages - g.dailyCost));
+      expect(w.result!.cost, g.dailyCost);
+      expect(w.result!.profit, 140 + w.result!.bonus - g.dailyCost);
     });
 
     test('날짜·최고 매출·최근 평균은 저장된다', () {
@@ -713,14 +715,14 @@ void main() {
       expect(back.avgServed, 30);
     });
 
-    test('둘째 날부터 목표는 최근 평균이다(가게 크기와 상관없이)', () {
+    test('둘째 날부터 목표는 최근 평균의 1.1배(가게 크기와 상관없이)', () {
       final g = ready();
       expect(g.hasHistory, isFalse);
       g.recordDay(200, 30);
-      expect(g.dayTarget, 200);
+      expect(g.dayTarget, 220);
       g.recordDay(100, 20); // 못한 날은 목표도 내려간다
       expect(g.avgSales, closeTo(160, 0.01));
-      expect(g.dayTarget, 160);
+      expect(g.dayTarget, 180);
     });
   });
 
@@ -1001,6 +1003,85 @@ void main() {
       g.owner.story.addAll(['opening', 'rival']);
       final back = Game.fromJson(jsonDecode(jsonEncode(g.toJson())) as Map<String, dynamic>);
       expect(back.owner.story, {'opening', 'rival'});
+    });
+  });
+
+  group('어려움: 고장·진상 손님·운영비', () {
+    (Game, World) shop(int level, int seed) {
+      final g = Game()
+        ..money = 5000
+        ..level = level;
+      g.owner.tutorial = TutorialStep.done;
+      g.hire(Staff.cashier);
+      final w = World(g, seed: seed)..openDay();
+      return (g, w);
+    }
+
+    test('고장 난 진열대에서는 못 사고, 옆에 멈춰 서 있으면 고친다', () {
+      final (g, w) = shop(5, 1);
+      final fridge = first(g, 'fridge')
+        ..stock = 10
+        ..broken = true;
+      run(w, 30);
+      expect(fridge.stock, 10); // 아무도 못 집었다
+      stand(w, (fridge.c + 1, fridge.r));
+      run(w, repairTime + 0.5);
+      expect(fridge.broken, isFalse);
+    });
+
+    test('고장은 하루가 끝나면 고쳐진다', () {
+      final (g, w) = shop(5, 2);
+      final fridge = first(g, 'fridge')..broken = true;
+      w.dayTime = dayLength;
+      w.customers.clear();
+      w.tick(0.01);
+      w.customers.clear();
+      w.tick(0.01);
+      expect(w.phase, DayPhase.closed);
+      expect(fridge.broken, isFalse);
+    });
+
+    test('진상 손님: 못 달래면 실망 손님 2명, 가서 달래면 조용히 간다', () {
+      for (final calm in [false, true]) {
+        final (g, w) = shop(10, 3);
+        w.customers.add(Customer(0, g.entrances.first.tile, [])..kind = CustomerKind.grumpy);
+        w.customers.last
+          ..state = CState.atShelf
+          ..timer = 0;
+        stand(w, calm ? w.customers.last.tile : (0, 6)); // 안 달랠 때는 멀리 선다
+        final upset = w.dayUpset;
+        run(w, grumpyPatience + 1);
+        expect(w.dayUpset - upset, calm ? lessThan(grumpyAngerRate) : greaterThanOrEqualTo(grumpyAngerRate));
+      }
+    });
+
+    test('사건은 동네 편의점부터, 등급이 오를수록 많다', () {
+      int count(int level) {
+        var n = 0;
+        for (var seed = 0; seed < 10; seed++) {
+          final (g, w) = shop(level, seed);
+          for (var i = 0; i < 3600; i++) {
+            for (final s in g.shelves) {
+              s.stock = s.capacity;
+            }
+            w.tick(0.05);
+            n += w.fx.where((e) => e.kind == FxKind.incident && [Incident.thiefFlee, Incident.kidLost, Incident.brokeDown, Incident.grumpyIn].contains(Incident.values[e.amount])).length;
+            w.fx.clear();
+          }
+        }
+        return n;
+      }
+      expect(count(4), 0);
+      final low = count(5), high = count(20);
+      expect(low, greaterThan(0));
+      expect(high, greaterThan(low));
+    });
+
+    test('운영비: 땅이 넓고 등급이 높을수록 크다', () {
+      final g = Game();
+      final small = g.dailyCost;
+      g.level = 20;
+      expect(g.dailyCost, greaterThan(small));
     });
   });
 }

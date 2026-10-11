@@ -1054,6 +1054,9 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                       ? Coins(perTask, size: 14)
                       : const Icon(Icons.close_rounded, size: 18, color: Color(0xFFE53935))),
             if (r.bonus > 0) row(S.t('day_bonus'), Coins(r.bonus, size: 14)),
+            row(S.t('day_cost'), Coins(-r.cost, size: 14)),
+            const Divider(),
+            row(S.t('day_profit'), Coins(r.profit, size: 18)),
           ]),
         ),
         actions: [

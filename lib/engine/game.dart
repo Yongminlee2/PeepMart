@@ -12,6 +12,7 @@ class Item {
   int stock = 0; // 진열대 재고
   int cash = 0; // 계산대 옆에 쌓인 돈
   int level = 1; // 가구 레벨 (진열대·계산대)
+  bool broken = false; // 고장 (그날만, 저장 안 함)
   Item(this.type, this.c, this.r, {this.rot = 0, this.product});
 
   ItemType get t => itemType(type);
@@ -550,6 +551,9 @@ class Game {
         ...weatherGoods[todayWeather]!,
         ...?specialGoods[todaySpecial],
       }.intersection(onSale);
+
+  /// 하루 운영비: 임대료 + 진열대 관리비.
+  int get dailyCost => (plots.length * rentPerPlot * (1 + rentPerRank * rank)).round() + shelves.length * upkeepPerShelf;
 
   /// 해 본 날이 있는가. 있으면 목표·할 일을 최근 평균으로 정한다.
   /// (가게 크기로 어림하면 계산대·알바가 모자란 큰 가게에서 목표가 터무니없이 높아진다.)
