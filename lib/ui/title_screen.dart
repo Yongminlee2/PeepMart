@@ -9,6 +9,7 @@ import 'hub_screens.dart';
 import 'more_games_screen.dart';
 import 'settings_sheet.dart';
 import 'sprites.dart';
+import 'store_painter.dart';
 import 'widgets.dart';
 
 /// 첫 화면: 이어서 하기·새로 시작·동네 지도·단골 수첩·게임 방법·설정.
@@ -75,7 +76,17 @@ class _TitleScreenState extends State<TitleScreen> {
       backgroundColor: bg,
       body: SafeArea(
         child: Stack(children: [
-          Center(
+          // 하늘에서 크림색으로, 아래엔 작은 동네
+          const Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                      begin: Alignment.topCenter, end: Alignment.center, colors: [Color(0xFFDDF1FF), bg])),
+            ),
+          ),
+          Positioned(left: 0, right: 0, bottom: 0, height: 320, child: CustomPaint(painter: TitleTown())),
+          Align(
+            alignment: const Alignment(0, -0.5),
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 28),
               child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -121,6 +132,7 @@ class _TitleScreenState extends State<TitleScreen> {
             Align(
               alignment: const Alignment(0, 0.97),
               child: TextButton.icon(
+                style: TextButton.styleFrom(backgroundColor: Colors.white.withValues(alpha: 0.9), elevation: 2),
                 icon: const Icon(Icons.sports_esports_rounded, color: inkColor),
                 label: Text(S.t('more_title'), style: const TextStyle(fontSize: 16, color: inkColor)),
                 onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MoreGamesScreen())),

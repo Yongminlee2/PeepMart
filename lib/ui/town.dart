@@ -791,3 +791,43 @@ Iterable<(double, double, double, double, int)> _walkers(double t) sync* {
     yield alongX ? (along, fixed, dir.toDouble(), 0.0, look) : (fixed, along, 0.0, dir.toDouble(), look);
   }
 }
+
+/// 첫 화면 아래에 깔리는 작은 동네: 네거리 뒤쪽 절반만 언덕처럼 보인다.
+class TitleTown extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final lk = _lookOf('piyak');
+    final s = size.width / 500;
+    canvas.translate(size.width / 2, size.height - 176 * s); // 다이아몬드 양 끝이 화면 바닥에 닿게
+    canvas.scale(s);
+    bool road(int x, int y) => x == 4 || y == 4;
+    for (var y = 0; y < 10; y++) {
+      for (var x = 0; x < 10 - y; x++) {
+        final walk = !road(x, y) && ((x - 4).abs() == 1 || (y - 4).abs() == 1);
+        final col = road(x, y) ? lk.road : walk ? lk.walk : ((x + y).isEven ? lk.ground : lk.ground2);
+        canvas.drawPath(_diamond(x.toDouble(), y.toDouble(), 1, 1), Paint()..color = col);
+      }
+    }
+    final line = Paint()
+      ..color = Colors.white70
+      ..strokeWidth = 2;
+    for (var i = 0; i < 6; i += 2) {
+      if (i == 4) continue;
+      canvas.drawLine(iso(i - 0.3, 4), iso(i + 0.3, 4), line);
+      canvas.drawLine(iso(4, i - 0.3), iso(4, i + 0.3), line);
+    }
+    // 뒤에서 앞으로
+    _tree(canvas, lk, iso(0.2, 2.8), 0.4);
+    _building(canvas, lk, 0, 0, 3, 2, 0.62, street: true);
+    _tree(canvas, lk, iso(2.7, 2.7), 0.7);
+    _lamp(canvas, lk, iso(3, 3));
+    _building(canvas, lk, 6, 0, 3, 2, 0.81, street: true);
+    _building(canvas, lk, 0, 6, 2, 3, 0.5, street: true);
+    _tree(canvas, lk, iso(6.6, 2.6), 0.2);
+    _car(canvas, 0.9, 4, true, 1, const Color(0xFFEF5350));
+    _car(canvas, 4, 2.0, false, -1, const Color(0xFF42A5F5));
+  }
+
+  @override
+  bool shouldRepaint(TitleTown old) => false;
+}
