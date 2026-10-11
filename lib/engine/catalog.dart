@@ -44,7 +44,10 @@ const products = [
   Product('soda', ShelfKind.fridge, 3, 1),
   Product('donut', ShelfKind.rack, 3, 1),
   Product('noodles', ShelfKind.rack, 4, 2),
+  Product('riceball', ShelfKind.rack, 4, 2),
+  Product('gimbap', ShelfKind.fridge, 6, 2),
   Product('sandwich', ShelfKind.fridge, 6, 3),
+  Product('bananamilk', ShelfKind.fridge, 4, 3),
   Product('icecream', ShelfKind.freezer, 5, 4),
   Product('fruit', ShelfKind.fruit, 4, 5),
   Product('banana', ShelfKind.fruit, 4, 5),
@@ -53,9 +56,12 @@ const products = [
   Product('milk', ShelfKind.fridge, 5, 8),
   Product('cookie', ShelfKind.rack, 4, 8),
   Product('hotdog', ShelfKind.hot, 8, 9),
+  Product('cupramen', ShelfKind.hot, 7, 9),
   Product('cake', ShelfKind.bakery, 12, 10),
   Product('muffin', ShelfKind.bakery, 7, 10),
+  Product('tteokkochi', ShelfKind.hot, 6, 10),
   Product('watermelon', ShelfKind.fruit, 9, 11),
+  Product('hoppang', ShelfKind.hot, 6, 11),
   Product('strawberry', ShelfKind.fruit, 6, 11),
   Product('burger', ShelfKind.hot, 10, 12),
   Product('frappe', ShelfKind.coffee, 8, 12),
@@ -64,7 +70,6 @@ const products = [
   Product('pizza', ShelfKind.hot, 12, 14),
   Product('cupcake', ShelfKind.bakery, 8, 14),
   Product('sundae', ShelfKind.freezer, 9, 15),
-  Product('riceball', ShelfKind.rack, 10, 15),
   Product('fries', ShelfKind.hot, 7, 16),
   Product('tea', ShelfKind.coffee, 5, 16),
   Product('sushi', ShelfKind.fridge, 14, 18),
@@ -276,10 +281,10 @@ class Branch {
 }
 
 const branches = [
-  Branch('piyak', 1, 0, ['soda', 'donut', 'sandwich', 'milk']),
+  Branch('piyak', 1, 0, ['soda', 'donut', 'gimbap', 'bananamilk']),
   Branch('beach', 10, 5000, ['icecream', 'popsicle', 'sundae', 'watermelon', 'soda']),
-  Branch('night', 18, 30000, ['hotdog', 'burger', 'pizza', 'fries', 'noodles']),
-  Branch('snow', 25, 150000, ['coffee', 'tea', 'cake', 'pie', 'croissant']),
+  Branch('night', 18, 30000, ['hotdog', 'cupramen', 'tteokkochi', 'pizza', 'fries']),
+  Branch('snow', 25, 150000, ['coffee', 'tea', 'hoppang', 'cake', 'croissant']),
 ];
 
 Branch branchById(String id) => branches.firstWhere((b) => b.id == id);
@@ -300,13 +305,13 @@ class Regular {
 
 const regulars = [
   Regular('mina', 'piyak', 0, 'donut', 1),
-  Regular('jun', 'piyak', 7, 'sandwich', 3),
-  Regular('sora', 'beach', 3, 'icecream', 10),
+  Regular('jun', 'piyak', 10, 'sandwich', 3),
+  Regular('sora', 'beach', 33, 'icecream', 10),
   Regular('taeo', 'beach', 8, 'watermelon', 12),
   Regular('rin', 'night', 1, 'pizza', 18),
-  Regular('dal', 'night', 10, 'hotdog', 20),
-  Regular('yuki', 'snow', 2, 'coffee', 25),
-  Regular('bom', 'snow', 11, 'cake', 27),
+  Regular('dal', 'night', 30, 'hotdog', 20),
+  Regular('yuki', 'snow', 25, 'coffee', 25),
+  Regular('bom', 'snow', 32, 'cake', 27),
 ];
 
 Regular regularById(String id) => regulars.firstWhere((r) => r.id == id);

@@ -25,6 +25,8 @@ FOOD = {
     "pizza": "pizza", "cupcake": "cupcake", "sundae": "sundae", "riceball": "rice-ball",
     "fries": "fries", "tea": "cup-tea", "sushi": "sushi-salmon", "grapes": "grapes",
     "popsicle": "popsicle", "pie": "pie",
+    "gimbap": "maki-vegetable", "bananamilk": "carton-small", "cupramen": "bowl-broth",
+    "tteokkochi": "skewer", "hoppang": "dim-sum",
 }
 FR_FOOD, ORTHO_FOOD, FOOD_FIT = 96, 1.25, 0.8
 FOOD_FIT_EXTRA = {"sandwich": 1.9, "pizza": 1.3, "chocolate": 1.2, "cookie-chocolate": 1.2, "cookie": 1.3}  # 납작해서 작아 보이는 것
@@ -101,13 +103,17 @@ def shoot(sc, out):
 
 def main():
     a = sys.argv[sys.argv.index("--") + 1:]
-    food_dir, furn_dir, out = a
+    food_dir, furn_dir, out, only = a[0], a[1], a[2], a[3:]  # only: 이 음식만 다시 찍는다(가구는 건너뜀)
     os.makedirs(out, exist_ok=True)
     for name, src in FOOD.items():
+        if only and name not in only:
+            continue
         sc = scene(FR_FOOD, ORTHO_FOOD, 0.5)
         meshes, lo, hi = load(os.path.join(food_dir, src + ".glb"))
         place(meshes, lo, hi, FOOD_FIT * FOOD_FIT_EXTRA.get(name, 1) / max(hi - lo), True)
         shoot(sc, os.path.join(out, f"food-{name}.png"))
+    if only:
+        return
     scene(FR_PROP, ORTHO_PROP, FOOT_Y)
     _, lo, hi = load(os.path.join(furn_dir, PROPS["rack"] + ".obj"))
     k = RACK_WIDTH / max(hi[0] - lo[0], hi[1] - lo[1])
