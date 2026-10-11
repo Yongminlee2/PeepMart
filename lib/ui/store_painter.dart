@@ -6,7 +6,11 @@ import 'package:flutter/material.dart';
 import '../engine/catalog.dart';
 import '../engine/game.dart';
 import '../engine/world.dart';
+import '../strings.dart';
 import 'sprites.dart';
+
+/// 단골 이름 (화면 글자 표에서).
+String regularName(String id) => S.t('reg_${id}_name');
 
 // 가구는 일부(진열 선반·상자·화분·의자·탁자·전등·휴지통)만 그림이고 나머지는 페인터 그림이다.
 
@@ -60,6 +64,25 @@ Rect get mapBounds => Rect.fromLTRB(-mapH * tw / 2, -wallH, mapW * tw / 2, (mapW
 
 Color productColor(String id) => Color(0xFF000000 | ((id.hashCode * 2654435761) & 0x7F7F7F) + 0x606060);
 
+/// 동네마다 다른 색: (잔디 두 톤, 바닥 두 톤, 왼벽, 오른벽, 띠).
+class MapTheme {
+  final Color grassA, grassB, floorA, floorB, wallL, wallR, band, sky;
+  const MapTheme(this.grassA, this.grassB, this.floorA, this.floorB, this.wallL, this.wallR, this.band, this.sky);
+}
+
+const themes = {
+  'piyak': MapTheme(Color(0xFFC5E1A5), Color(0xFFB9DB94), Color(0xFFFFF8E1), Color(0xFFFFECB3), Color(0xFFF8BBD0),
+      Color(0xFFFCE4EC), Color(0xFFF48FB1), Color(0xFFDCEDC8)),
+  'beach': MapTheme(Color(0xFFFFE9B0), Color(0xFFFFE09A), Color(0xFFE0F7FA), Color(0xFFB2EBF2), Color(0xFF80DEEA),
+      Color(0xFFB2EBF2), Color(0xFF26C6DA), Color(0xFFB3E5FC)),
+  'night': MapTheme(Color(0xFF455A64), Color(0xFF3E4F58), Color(0xFFD1C4E9), Color(0xFFB39DDB), Color(0xFF7E57C2),
+      Color(0xFF9575CD), Color(0xFFFF4081), Color(0xFF37474F)),
+  'snow': MapTheme(Color(0xFFF5F7FA), Color(0xFFE8EEF4), Color(0xFFFFF3E0), Color(0xFFFFE0B2), Color(0xFFBCAAA4),
+      Color(0xFFD7CCC8), Color(0xFF8D6E63), Color(0xFFE3F2FD)),
+};
+
+MapTheme themeOf(String branch) => themes[branch] ?? themes['piyak']!;
+
 /// 날아가는 물건·돈, 떠오르는 글자.
 class Flight {
   final Fx fx;
@@ -68,7 +91,7 @@ class Flight {
   double get life => switch (fx.kind) {
         FxKind.pick || FxKind.place || FxKind.cash => 0.28,
         FxKind.scan => 0,
-        FxKind.levelUp || FxKind.goal => 1.6,
+        FxKind.levelUp || FxKind.goal || FxKind.regular => 1.6,
         FxKind.event => 0,
         _ => 1.0,
       };
@@ -106,8 +129,9 @@ class StorePainter extends CustomPainter {
   final Camera camera;
   final BuildView? build;
   final Tile? dest; // 누른 곳(걸어가는 목적지)
+  final Tile? guide; // 처음 안내가 가리키는 칸
 
-  StorePainter(this.world, this.flights, this.clock, this.camera, this.build, {this.dest});
+  StorePainter(this.world, this.flights, this.clock, this.camera, this.build, {this.dest, this.guide});
 
   Game get game => world.game;
 
@@ -163,7 +187,14 @@ class StorePainter extends CustomPainter {
     for (final i in game.items) {
       if (i.type == 'rug' || i.type == 'entrance') continue;
       add(i.c + 0.0, i.r + 0.0, () => drawItem(canvas, i.type, i.tile,
-          product: i.product, stock: i.stock, rot: i.rot, cash: i.cash, clock: clock, highlight: b?.selected == i));
+          product: i.product,
+          stock: i.stock,
+          rot: i.rot,
+          cash: i.cash,
+          clock: clock,
+          highlight: b?.selected == i,
+          level: i.level,
+          managed: i.t.shelf != null && game.managers.contains(i.t.shelf)));
     }
     for (final s in world.staff) {
       final who = switch (s.kind) {
@@ -208,6 +239,16 @@ class StorePainter extends CustomPainter {
     for (final f in flights) {
       _flight(canvas, f);
     }
+    final g = guide;
+    if (g != null) {
+      final h = itemHeight(game.at(g)?.type ?? '') + 26;
+      final p = iso(g.$1 + 0.0, g.$2 + 0.0) + Offset(0, -h + sin(clock * 6) * 6);
+      canvas.save();
+      canvas.translate(p.dx, p.dy);
+      canvas.scale(1.8);
+      _arrow(canvas, Offset.zero);
+      canvas.restore();
+    }
     canvas.restore();
   }
 
@@ -239,10 +280,11 @@ class StorePainter extends CustomPainter {
         }
       }
     }
-    c.drawPath(grassA, Paint()..color = const Color(0xFFC5E1A5));
-    c.drawPath(grassB, Paint()..color = const Color(0xFFB9DB94));
-    c.drawPath(floorA, Paint()..color = const Color(0xFFFFF8E1));
-    c.drawPath(floorB, Paint()..color = const Color(0xFFFFECB3));
+    final th0 = themeOf(g.branch);
+    c.drawPath(grassA, Paint()..color = th0.grassA);
+    c.drawPath(grassB, Paint()..color = th0.grassB);
+    c.drawPath(floorA, Paint()..color = th0.floorA);
+    c.drawPath(floorB, Paint()..color = th0.floorB);
     for (final e in painted.entries) {
       c.drawPath(e.value, Paint()..color = floorColor(e.key));
     }
@@ -260,8 +302,8 @@ class StorePainter extends CustomPainter {
       }
     }
     // 뒤쪽 벽: 내 땅의 위(r-1)·왼쪽(c-1)이 남의 땅이면 벽을 세운다
-    final wallL = Paint()..color = const Color(0xFFF8BBD0), wallR = Paint()..color = const Color(0xFFFCE4EC);
-    final band = Paint()..color = const Color(0xFFF48FB1);
+    final wallL = Paint()..color = th0.wallL, wallR = Paint()..color = th0.wallR;
+    final band = Paint()..color = th0.band;
     final edge = _stroke(2);
     const up = Offset(0, -wallH);
     for (var r = 0; r < mapH; r++) {
@@ -372,6 +414,13 @@ class StorePainter extends CustomPainter {
     }
     _char(canvas, who, c.x, c.y, anim, f, fps: c.moving ? 12 : 8);
     final crownAt = iso(c.x, c.y) + const Offset(0, -40);
+    if (c.regular != null) {
+      // 단골: 머리 위 하트와 이름
+      final hearts = game.owner.heartsOf(c.regular!);
+      _text(canvas, crownAt + const Offset(0, -4), '♥', const Color(0xFFEC407A), 16, outline: 1);
+      _text(canvas, iso(c.x, c.y) + const Offset(0, 12), '${regularName(c.regular!)} ${'♥' * hearts}',
+          const Color(0xFFAD1457), 11, outline: 1);
+    }
     if (c.kind == CustomerKind.vip) {
       // 금관
       final cr = Path()
@@ -480,6 +529,8 @@ class StorePainter extends CustomPainter {
         _float(canvas, e, k, '+${e.amount}', const Color(0xFF43A047), size: 24);
       case FxKind.event:
         break; // 화면 위 알림으로 보여 준다
+      case FxKind.regular:
+        _float(canvas, e, k, e.amount > 0 ? '♥' * e.amount : '♥', const Color(0xFFEC407A), size: 22);
     }
   }
 
@@ -607,7 +658,14 @@ void _items(Canvas canvas, int c, int r, double h, int stock, int cap, String? i
 
 /// 놓인 물건 하나를 그린다. 건설 미리보기·메뉴 아이콘도 이걸 쓴다.
 void drawItem(Canvas canvas, String type, Tile t,
-    {String? product, int stock = 0, int rot = 0, int cash = 0, double clock = 0, bool highlight = false}) {
+    {String? product,
+    int stock = 0,
+    int rot = 0,
+    int cash = 0,
+    double clock = 0,
+    bool highlight = false,
+    int level = 1,
+    bool managed = false}) {
   final (c, r) = t;
   final feet = iso(c + 0.0, r + 0.0);
   final shelf = itemType(type).shelf;
@@ -722,7 +780,15 @@ void drawItem(Canvas canvas, String type, Tile t,
         canvas.drawPath(_diamond(c + 0.0, r + 0.0, 1, 1, 0.02), _stroke(1));
       }
   }
-  if (shelf != null && stock == 0 && product != null) {
+  // 가구 레벨: 노란 별 / 매니저가 맡은 코너: 넥타이 표시
+  if (level > 1) {
+    final p = feet + const Offset(-20, 10);
+    for (var k = 0; k < level - 1; k++) {
+      _text(canvas, p + Offset(k * 8.0, 0), '★', const Color(0xFFFFB300), 11, outline: 1);
+    }
+  }
+  if (managed) _text(canvas, feet + const Offset(20, 10), 'M', const Color(0xFF5C6BC0), 12, outline: 1);
+  if (shelf != null && stock == 0 && product != null && !managed) {
     canvas.drawCircle(feet + const Offset(0, -80), 10, Paint()..color = const Color(0xFFE53935));
     _text(canvas, feet + const Offset(0, -80), '!', Colors.white, 13);
   }

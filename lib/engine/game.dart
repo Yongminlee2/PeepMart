@@ -11,6 +11,7 @@ class Item {
   String? product; // 진열대·상자에 든 상품
   int stock = 0; // 진열대 재고
   int cash = 0; // 계산대 옆에 쌓인 돈
+  int level = 1; // 가구 레벨 (진열대·계산대)
   Item(this.type, this.c, this.r, {this.rot = 0, this.product});
 
   ItemType get t => itemType(type);
@@ -18,31 +19,129 @@ class Item {
   Tile get _d => rotations[rot];
   Tile get till => (c + _d.$1, r + _d.$2); // 계산하는 사람 자리
   Tile get front => (c - _d.$1, r - _d.$2); // 손님 맨 앞 자리
-  int get capacity => shelfCapacity[t.shelf]!;
+  int get capacity => levelCapacity(shelfCapacity[t.shelf]!, level);
+  bool get levels => t.kind == ItemKind.shelf || t.kind == ItemKind.register;
 }
 
 enum PlaceResult { ok, locked, money, notOwned, occupied, blocksPath }
 
-/// 꺼도 남는 상태와 짓기 규칙. 화면은 이걸 고치고, 움직이는 건 [World] 가 맡는다.
-class Game {
+/// 지점끼리 함께 쓰는 것: 돈·레벨·목표·업그레이드·단골·처음 안내·지점들.
+class Owner {
   int money = startMoney;
   int level = 1, xp = 0;
-  int served = 0; // 지금까지 계산한 손님
+  int served = 0; // 지금까지 계산한 손님 (모든 지점)
+  int goal = 0; // 지금 목표 (goals 의 번호, 다 하면 goals.length)
+  final Map<Upgrade, int> upgrades = {};
+  final Map<String, int> hearts = {}; // 단골 → 하트 수
+  TutorialStep tutorial = TutorialStep.pickBox;
+  int savedAt = 0; // 마지막 저장 시각(밀리초). 꺼 둔 동안 번 돈 계산용
+  final Map<String, Game> branches = {}; // 연 지점들
+  String current = 'piyak';
+
+  Owner() {
+    Game._(this, 'piyak');
+  }
+
+  Game get game => branches[current]!;
+
+  int heartsOf(String regular) => hearts[regular] ?? 0;
+
+  /// 처음 안내가 [step] 에 있으면 다음으로 넘긴다.
+  void advance(TutorialStep step) {
+    if (tutorial == step) tutorial = TutorialStep.values[step.index + 1];
+  }
+
+  /// 경험치를 더한다. 오른 레벨 수를 돌려준다.
+  int addXp(int n) {
+    var ups = 0;
+    xp += n;
+    while (level < maxLevel && xp >= xpToNext(level)) {
+      xp -= xpToNext(level);
+      level++;
+      ups++;
+    }
+    return ups;
+  }
+
+  bool canOpen(String branch) {
+    final b = branchById(branch);
+    return !branches.containsKey(branch) && level >= b.level && money >= b.price;
+  }
+
+  /// 새 지점을 연다(돈을 내고). 열려 있으면 그리로 옮기기만 한다.
+  bool open(String branch) {
+    if (branches.containsKey(branch)) {
+      current = branch;
+      return true;
+    }
+    if (!canOpen(branch)) return false;
+    money -= branchById(branch).price;
+    Game._(this, branch);
+    current = branch;
+    return true;
+  }
+
+  /// 꺼 둔 동안 모든 지점이 번 돈.
+  int offlineEarnings(double seconds) => branches.values.fold(0, (s, g) => s + g.offlineEarnings(seconds));
+
+  Map<String, Object> toJson() => {
+        'money': money,
+        'level': level,
+        'xp': xp,
+        'served': served,
+        'goal': goal,
+        'upgrades': {for (final e in upgrades.entries) e.key.name: e.value},
+        'hearts': hearts,
+        'tutorial': tutorial.name,
+        'savedAt': savedAt,
+        'current': current,
+        'branches': {for (final e in branches.entries) e.key: e.value._toJson()},
+      };
+
+  static Owner fromJson(Map<String, dynamic> j) {
+    final o = Owner()
+      ..money = j['money'] as int
+      ..level = j['level'] as int
+      ..xp = j['xp'] as int
+      ..served = j['served'] as int
+      ..goal = j['goal'] as int
+      ..tutorial = TutorialStep.values.byName(j['tutorial'] as String)
+      ..savedAt = j['savedAt'] as int? ?? 0;
+    for (final e in (j['upgrades'] as Map).entries) {
+      o.upgrades[Upgrade.values.byName(e.key as String)] = e.value as int;
+    }
+    o.hearts.addAll((j['hearts'] as Map).cast<String, int>());
+    o.branches.clear();
+    for (final e in (j['branches'] as Map).entries) {
+      Game._(o, e.key as String)._fromJson(e.value as Map<String, dynamic>);
+    }
+    o.current = o.branches.containsKey(j['current']) ? j['current'] as String : 'piyak';
+    return o;
+  }
+}
+
+/// 지점 하나: 땅·가구·직원·매니저·쓰레기·별점과 짓기 규칙.
+/// 움직이는 건 [World] 가 맡는다.
+class Game {
+  final Owner owner;
+  final String branch;
   final Set<Tile> plots = {(0, 0)}; // 가진 땅 (필지 좌표)
   final List<Item> items = [];
   final Map<Tile, String> floors = {}; // 칠한 바닥
   final Map<Staff, int> staff = {};
-  final Map<Upgrade, int> upgrades = {};
+  final Set<ShelfKind> managers = {};
   final Set<Tile> trash = {};
   final List<int> recent = []; // 최근 손님 만족도 0~5
-  int savedAt = 0; // 마지막 저장 시각(밀리초). 꺼 둔 동안 번 돈 계산용
-  int goal = 0; // 지금 목표 (goals 의 번호, 다 하면 goals.length)
 
   /// 바뀔 때마다 1씩 오른다. [World] 가 길을 다시 찾을지 보는 데 쓴다.
   int layoutVersion = 0;
   final Map<Tile, Item> _at = {};
 
-  Game() {
+  /// 새 게임: 주인과 첫 지점(삐약동).
+  factory Game() => Owner().game;
+
+  Game._(this.owner, this.branch) {
+    owner.branches[branch] = this;
     for (final i in [
       Item('box', 1, 0, product: 'soda'),
       Item('box', 2, 0, product: 'donut'),
@@ -59,6 +158,24 @@ class Game {
     _reindex();
   }
 
+  // 함께 쓰는 값은 주인에게서
+  int get money => owner.money;
+  set money(int v) => owner.money = v;
+  int get level => owner.level;
+  set level(int v) => owner.level = v;
+  int get xp => owner.xp;
+  set xp(int v) => owner.xp = v;
+  int get served => owner.served;
+  set served(int v) => owner.served = v;
+  int get goal => owner.goal;
+  set goal(int v) => owner.goal = v;
+  int get savedAt => owner.savedAt;
+  set savedAt(int v) => owner.savedAt = v;
+  Map<Upgrade, int> get upgrades => owner.upgrades;
+  int addXp(int n) => owner.addXp(n);
+
+  Branch get info => branchById(branch);
+
   // ---------------------------------------------------------------- 조회
 
   bool owns(Tile t) =>
@@ -72,6 +189,7 @@ class Game {
   Iterable<Item> get shelves => ofKind(ItemKind.shelf).where((i) => i.product != null);
   Iterable<Item> get registers => ofKind(ItemKind.register);
   Iterable<Item> get entrances => ofKind(ItemKind.entrance);
+  Item? boxOf(String product) => ofKind(ItemKind.box).where((b) => b.product == product).firstOrNull;
 
   /// 진열대에 올라 있는 상품들 (손님이 사러 올 수 있는 것).
   Set<String> get onSale => {for (final s in shelves) s.product!};
@@ -93,6 +211,19 @@ class Game {
     if (recent.length > 30) recent.removeAt(0);
   }
 
+  /// 이 진열대에서 이 상품 하나를 팔면 받는 값: 가구 레벨·지점 대표 상품·매니저가 올린다.
+  int salePrice(Item shelf, String product) {
+    final p = productById(product);
+    var v = p.price * levelPrice(shelf.level);
+    if (info.featured.contains(product)) v *= featuredPrice;
+    if (managers.contains(p.kind)) v *= managerPrice;
+    return max(1, v.round());
+  }
+
+  /// 계산대 맨 앞에서 물건 하나 찍는 데 걸리는 초.
+  double scanTime(Item reg, {required bool cashier}) =>
+      (cashier ? scanStepCashier : scanStepPlayer) / levelScan(reg.level);
+
   /// 계산대 앞으로 이어지는 줄 자리 (맨 앞부터). 막히면 거기서 끝난다.
   List<Tile> queueTiles(Item reg) {
     final d = rotations[reg.rot];
@@ -108,6 +239,20 @@ class Game {
   /// 다른 계산대의 계산 자리·맨 앞 자리인가 (거기엔 아무것도 못 놓는다).
   bool _reserved(Tile t, {Item? except}) =>
       registers.any((r) => r != except && (r.till == t || r.front == t));
+
+  // ---------------------------------------------------------------- 단골
+
+  /// 이 지점에 찾아올 수 있는 단골.
+  Iterable<Regular> get regularsHere => regulars.where((r) => r.branch == branch && level >= r.level);
+
+  /// 단골의 부탁을 들어줬다: 하트가 오르고 상금. 오른 하트 수(이미 가득이면 null).
+  int? giveHeart(String regular) {
+    final h = owner.heartsOf(regular);
+    if (h >= maxHearts) return null;
+    owner.hearts[regular] = h + 1;
+    money += heartReward(h + 1);
+    return h + 1;
+  }
 
   // ---------------------------------------------------------------- 목표
 
@@ -136,20 +281,6 @@ class Game {
     money += g.reward;
     goal++;
     return g;
-  }
-
-  // ---------------------------------------------------------------- 레벨
-
-  /// 경험치를 더한다. 오른 레벨 수를 돌려준다.
-  int addXp(int n) {
-    var ups = 0;
-    xp += n;
-    while (level < maxLevel && xp >= xpToNext(level)) {
-      xp -= xpToNext(level);
-      level++;
-      ups++;
-    }
-    return ups;
   }
 
   // ---------------------------------------------------------------- 짓기
@@ -182,6 +313,7 @@ class Game {
       final i = Item(typeId, t.$1, t.$2, rot: rot, product: product);
       if (type.kind == ItemKind.shelf && product != null) i.stock = i.capacity;
       items.add(i);
+      owner.advance(TutorialStep.build);
     }
     _changed();
     return true;
@@ -206,7 +338,8 @@ class Game {
     if (res == PlaceResult.ok) {
       items.add(Item(i.type, t.$1, t.$2, rot: r, product: i.product)
         ..stock = i.stock
-        ..cash = i.cash);
+        ..cash = i.cash
+        ..level = i.level);
     } else {
       items.add(i);
     }
@@ -214,12 +347,16 @@ class Game {
     return res;
   }
 
-  /// 판다(값의 절반을 돌려받는다). 마지막 입구·마지막 계산대는 못 판다.
+  /// 판다(값의 절반을 돌려받는다, 올린 레벨 값도 절반). 마지막 입구·마지막 계산대는 못 판다.
   bool sell(Item i) {
     if (i.t.kind == ItemKind.entrance && entrances.length <= 1) return false;
     if (i.t.kind == ItemKind.register && registers.length <= 1) return false;
     items.remove(i);
-    money += (i.t.price * sellRefund).round() + i.cash;
+    var spent = i.t.price;
+    for (var l = 1; l < i.level; l++) {
+      spent += itemUpgradeCost(i.t, l);
+    }
+    money += (spent * sellRefund).round() + i.cash;
     _changed();
     return true;
   }
@@ -239,8 +376,7 @@ class Game {
     for (var k = 1; k <= 4; k++) {
       final n = (old + k) % 4;
       final probe = Item(i.type, i.c, i.r, rot: n);
-      final ok = [probe.till, probe.front]
-          .every((s) => owns(s) && _at[s]?.t.walkable != false && !_reserved(s));
+      final ok = [probe.till, probe.front].every((s) => owns(s) && _at[s]?.t.walkable != false && !_reserved(s));
       if (ok && _stillReachable(add: probe)) {
         i.rot = n;
         break;
@@ -263,6 +399,17 @@ class Game {
     return true;
   }
 
+  /// 가구 레벨업 값 (다 올렸거나 못 올리는 가구면 null).
+  int? levelUpCost(Item i) => i.levels && i.level < maxItemLevel ? itemUpgradeCost(i.t, i.level) : null;
+
+  bool levelUp(Item i) {
+    final cost = levelUpCost(i);
+    if (cost == null || money < cost) return false;
+    money -= cost;
+    i.level++;
+    return true;
+  }
+
   // ---------------------------------------------------------------- 땅
 
   /// 지금 살 수 있는 필지: 가진 땅과 맞닿은 것.
@@ -282,7 +429,7 @@ class Game {
     return true;
   }
 
-  // ---------------------------------------------------------------- 직원·업그레이드
+  // ---------------------------------------------------------------- 직원·매니저·업그레이드
 
   bool canHire(Staff s) {
     final spec = staffSpecs[s]!;
@@ -302,6 +449,15 @@ class Game {
     return true;
   }
 
+  bool canHireManager(ManagerSpec m) => !managers.contains(m.kind) && level >= m.level && money >= m.price;
+
+  bool hireManager(ManagerSpec m) {
+    if (!canHireManager(m)) return false;
+    money -= m.price;
+    managers.add(m.kind);
+    return true;
+  }
+
   /// 다음 단계 (값, 필요 레벨). 다 샀으면 null.
   (int, int)? nextUpgrade(Upgrade u) {
     final steps = upgradeSteps[u]!;
@@ -318,15 +474,18 @@ class Game {
 
   // ---------------------------------------------------------------- 꺼 둔 동안
 
-  /// 앱을 꺼 둔 동안 번 돈. 계산원이 서 있는 계산대가 있어야 벌고, 두 시간까지만.
-  /// 켜 둔 것보다 덜 벌어야(대략 1/3) 들어와서 하는 맛이 남는다.
+  /// 꺼 둔 동안 버는 시간 한계: 두 시간 + 매니저마다 한 시간 (최대 여덟 시간).
+  double get offlineHours => min(offlineMaxHours, offlineBaseHours + offlineHoursPerManager * managers.length);
+
+  /// 앱을 꺼 둔 동안 이 지점이 번 돈. 계산원이나 매니저가 있어야 번다.
+  /// 켜 둔 것보다 덜 벌어야(대략 1/3) 들어와서 하는 맛이 남는다. 매니저마다 15% 더.
   int offlineEarnings(double seconds) {
     final tills = min(count(Staff.cashier), registers.length);
     final sale = onSale;
-    if (tills == 0 || sale.isEmpty || seconds <= 0) return 0;
+    if ((tills == 0 && managers.isEmpty) || sale.isEmpty || seconds <= 0) return 0;
     final avg = sale.map((p) => productById(p).price).reduce((a, b) => a + b) / sale.length;
-    final perSecond = avg * 1.5 / spawnInterval(shelves.length, rating, decorCount);
-    return (min(seconds, 7200) * perSecond / 3).floor();
+    final perSecond = avg * 1.5 / spawnInterval(shelves.length, rating, decorCount) * (1 + 0.15 * managers.length);
+    return (min(seconds, offlineHours * 3600) * perSecond / 3).floor();
   }
 
   // ---------------------------------------------------------------- 내부
@@ -370,37 +529,30 @@ class Game {
 
   // ---------------------------------------------------------------- 저장
 
-  Map<String, Object> toJson() => {
-        'money': money,
-        'level': level,
-        'xp': xp,
-        'served': served,
+  /// 저장: 주인(과 모든 지점)을 통째로.
+  Map<String, Object> toJson() => owner.toJson();
+
+  /// 불러오기: 마지막으로 있던 지점을 돌려준다.
+  static Game fromJson(Map<String, dynamic> j) => Owner.fromJson(j).game;
+
+  Map<String, Object> _toJson() => {
         'plots': [for (final p in plots) [p.$1, p.$2]],
         'items': [
-          for (final i in items) [i.type, i.c, i.r, i.rot, i.product ?? '', i.stock, i.cash]
+          for (final i in items) [i.type, i.c, i.r, i.rot, i.product ?? '', i.stock, i.cash, i.level]
         ],
         'floors': [for (final e in floors.entries) [e.key.$1, e.key.$2, e.value]],
         'staff': {for (final e in staff.entries) e.key.name: e.value},
-        'upgrades': {for (final e in upgrades.entries) e.key.name: e.value},
+        'managers': [for (final m in managers) m.name],
         'trash': [for (final t in trash) [t.$1, t.$2]],
         'recent': recent,
-        'savedAt': savedAt,
-        'goal': goal,
       };
 
-  static Game fromJson(Map<String, dynamic> j) {
-    final g = Game()
-      ..money = j['money'] as int
-      ..level = j['level'] as int
-      ..xp = j['xp'] as int
-      ..served = j['served'] as int
-      ..savedAt = j['savedAt'] as int? ?? 0
-      ..goal = j['goal'] as int? ?? 0;
+  void _fromJson(Map<String, dynamic> j) {
     Tile tile(List l) => (l[0] as int, l[1] as int);
-    g.plots
+    plots
       ..clear()
       ..addAll([for (final p in j['plots'] as List) tile(p as List)]);
-    g.items
+    items
       ..clear()
       ..addAll([
         for (final l in (j['items'] as List).cast<List>())
@@ -408,20 +560,18 @@ class Game {
               rot: l[3] as int, product: (l[4] as String).isEmpty ? null : l[4] as String)
             ..stock = l[5] as int
             ..cash = l[6] as int
+            ..level = l.length > 7 ? l[7] as int : 1
       ]);
     for (final l in (j['floors'] as List).cast<List>()) {
-      g.floors[tile(l)] = l[2] as String;
+      floors[tile(l)] = l[2] as String;
     }
     for (final e in (j['staff'] as Map).entries) {
-      g.staff[Staff.values.byName(e.key as String)] = e.value as int;
+      staff[Staff.values.byName(e.key as String)] = e.value as int;
     }
-    for (final e in (j['upgrades'] as Map).entries) {
-      g.upgrades[Upgrade.values.byName(e.key as String)] = e.value as int;
-    }
-    g.trash.addAll([for (final t in j['trash'] as List) tile(t as List)]);
-    g.recent.addAll((j['recent'] as List).cast<int>());
-    g._reindex();
-    return g;
+    managers.addAll([for (final m in j['managers'] as List) ShelfKind.values.byName(m as String)]);
+    trash.addAll([for (final t in j['trash'] as List) tile(t as List)]);
+    recent.addAll((j['recent'] as List).cast<int>());
+    _reindex();
   }
 }
 

@@ -8,6 +8,9 @@ import '../save.dart';
 import '../settings.dart';
 import '../strings.dart';
 import 'build_panel.dart';
+import 'hub_screens.dart';
+import 'sprites.dart';
+import 'title_screen.dart';
 import 'settings_sheet.dart';
 import 'sfx.dart';
 import 'store_painter.dart';
@@ -33,6 +36,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
   double clock = 0, _sinceSave = 0;
   String? _toast;
   double _toastLeft = 0;
+  (String, int)? _regularNews; // (단골, 오른 하트) — 이야기 카드
+  double _regularLeft = 0;
 
   // 손가락
   Offset? _stickBase, _lastFocal;
@@ -113,6 +118,15 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
       } else if (e.kind == FxKind.event) {
         toast(S.t(EventKind.values[e.amount] == EventKind.rush ? 'event_rush' : 'event_vip'));
         Sfx.play(FxKind.levelUp, clock);
+      } else if (e.kind == FxKind.regular) {
+        if (e.amount > 0) {
+          _regularNews = (e.product, e.amount);
+          _regularLeft = 7;
+          Sfx.play(FxKind.levelUp, clock);
+        } else if (e.amount < 0) {
+          final want = world.customers.where((c) => c.regular == e.product).firstOrNull?.wants.first;
+          toast(S.tn('regular_arrive', {'name': regularName(e.product), 'item': want == null ? '' : S.t('p_$want')}));
+        }
       } else if (e.kind == FxKind.levelUp) {
         _levelUp(e.amount);
       } else {
@@ -126,6 +140,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     }
     flights.removeWhere((f) => f.age > f.life);
     _toastLeft -= dt;
+    _regularLeft -= dt;
     _sinceSave += dt;
     if (_sinceSave > 5) {
       _sinceSave = 0;
@@ -253,7 +268,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     if (b == null) {
       // 누른 곳으로 걸어가서 그 일을 한다
       _touched = true;
-      _dest = world.walkPlayerTo(t);
+      _dest = world.tapAt(t);
       if (_dest != null) _follow = true;
       return;
     }
@@ -294,6 +309,11 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
       if (res == PlaceResult.ok) {
         game.place(b.place!, t, rot: b.rot, product: b.product);
         Sfx.play(FxKind.place, clock);
+        // 하나 놓으면 놓기를 끝낸다: 그래야 방금 놓은 것을 눌러 옮기거나 팔 수 있다
+        b
+          ..place = null
+          ..hover = null;
+        toast(S.t('placed_hint'));
       } else {
         toast(_reason(res, b.place!));
       }
@@ -346,7 +366,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     final b = building;
     return Scaffold(
-      backgroundColor: const Color(0xFFDCEDC8),
+      backgroundColor: themeOf(game.branch).sky,
       body: SafeArea(
         child: Column(children: [
           Expanded(
@@ -360,12 +380,19 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                     onScaleUpdate: _onScaleUpdate,
                     onScaleEnd: (_) => _onScaleEnd(),
                     onTapUp: (d) => _onTap(d.localPosition),
-                    child: CustomPaint(size: _size, painter: StorePainter(world, flights, clock, camera, b, dest: _dest)),
+                    child: CustomPaint(
+                        size: _size,
+                        painter: StorePainter(world, flights, clock, camera, b,
+                            dest: _dest, guide: b == null ? _guideTile() : null)),
                   );
                 }),
               ),
               Positioned(left: 8, right: 8, top: 6, child: _hud()),
-              if (b == null) Positioned(left: 8, top: 58, child: _goalCard()),
+              if (b == null && game.owner.tutorial == TutorialStep.done) Positioned(left: 8, top: 58, child: _goalCard()),
+              if (game.owner.tutorial != TutorialStep.done && (b == null || game.owner.tutorial == TutorialStep.build))
+                Positioned(left: 0, right: 0, top: 58, child: _tutorialCard(game.owner.tutorial)),
+              if (_regularNews != null && _regularLeft > 0)
+                Positioned(left: 0, right: 0, top: 150, child: _regularCard(_regularNews!)),
               if (_toast != null && _toastLeft > 0)
                 Align(
                   alignment: const Alignment(0, -0.62),
@@ -389,6 +416,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                       style: const TextStyle(fontSize: 16, color: Colors.black45)),
                 ),
               if (b != null && b.ghostType != null && b.hover != null) Positioned(left: 0, right: 0, bottom: 14, child: _ghostButtons(b)),
+              if (b != null && b.selected != null && b.ghostType == null)
+                Positioned(left: 0, right: 0, bottom: 10, child: _selectedButtons(b, b.selected!)),
               if (_stickBase != null) ..._joystick(),
               if (b == null && !_follow)
                 Positioned(
@@ -402,7 +431,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                     child: const Icon(Icons.my_location_rounded),
                   ),
                 ),
-              if (b == null || b.ghostType == null || b.hover == null) // 미리보기 단추와 겹치지 않게
+              if (b == null || ((b.ghostType == null || b.hover == null) && b.selected == null)) // 단추끼리 겹치지 않게
               Positioned(
                 right: 12,
                 bottom: 12,
@@ -419,6 +448,190 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
           if (b != null) BuildPanel(game: game, view: b, onChanged: _panelChanged, toast: toast),
         ]),
       ),
+    );
+  }
+
+  Future<void> _menu() async {
+    final choice = await showGameMenu(context);
+    if (!mounted || choice == null) return;
+    final nav = Navigator.of(context);
+    switch (choice) {
+      case MenuChoice.map:
+        await saveGame(game);
+        nav.push(MaterialPageRoute(
+            builder: (_) => MapScreen(game.owner, onEnter: (g) {
+                  saveGame(g);
+                  nav.pushAndRemoveUntil(MaterialPageRoute(builder: (_) => GameScreen(g)), (_) => false);
+                })));
+      case MenuChoice.regulars:
+        nav.push(MaterialPageRoute(builder: (_) => RegularsScreen(game.owner)));
+      case MenuChoice.help:
+        nav.push(MaterialPageRoute(builder: (_) => const HelpScreen()));
+      case MenuChoice.settings:
+        showSettings(context);
+      case MenuChoice.title:
+        await saveGame(game);
+        nav.pushReplacement(MaterialPageRoute(builder: (_) => const TitleScreen()));
+    }
+  }
+
+  /// 처음 안내: 지금 단계에서 가리킬 칸 (짓기 단계는 망치 단추를 가리켜서 null).
+  Tile? _guideTile() {
+    final st = game.owner.tutorial;
+    switch (st) {
+      case TutorialStep.pickBox:
+        final low = game.shelves.toList()..sort((a, b) => a.stock.compareTo(b.stock));
+        for (final s in low) {
+          final b = game.boxOf(s.product!);
+          if (b != null) return b.tile;
+        }
+        return game.ofKind(ItemKind.box).firstOrNull?.tile;
+      case TutorialStep.fillShelf:
+        return game.shelves.where((s) => world.player.carry.contains(s.product) && s.stock < s.capacity).firstOrNull?.tile ??
+            game.shelves.firstOrNull?.tile;
+      case TutorialStep.checkout:
+        return game.registers.firstOrNull?.till;
+      case TutorialStep.collect:
+        return (game.registers.where((r) => r.cash > 0).firstOrNull ?? game.registers.firstOrNull)?.tile;
+      case TutorialStep.build || TutorialStep.done:
+        return null;
+    }
+  }
+
+  Widget _tutorialCard(TutorialStep st) => IgnorePointer(
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 14),
+          padding: const EdgeInsets.fromLTRB(8, 8, 14, 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFFDE7),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFFFB300), width: 2.5),
+          ),
+          child: Row(children: [
+            SizedBox(width: 54, height: 54, child: CustomPaint(painter: Portrait(stockerChar, anim: Anim.yes))),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                Text(S.tn('tut_step', {'n': st.index + 1, 'm': TutorialStep.values.length - 1}),
+                    style: const TextStyle(fontSize: 12, color: Color(0xFFFF8F00))),
+                Text(S.t('tut_${st.name}'), style: const TextStyle(fontSize: 15, color: inkColor, height: 1.35)),
+              ]),
+            ),
+          ]),
+        ),
+      );
+
+  Widget _regularCard((String, int) news) {
+    final (id, heart) = news;
+    final r = regularById(id);
+    return GestureDetector(
+      onTap: () => setState(() => _regularLeft = 0),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 14),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFCE4EC),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFEC407A), width: 2.5),
+        ),
+        child: Row(children: [
+          SizedBox(width: 64, height: 64, child: CustomPaint(painter: Portrait(r.look, anim: Anim.yes))),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+              Row(children: [
+                Text(regularName(id), style: const TextStyle(fontSize: 17, color: Color(0xFFAD1457))),
+                const SizedBox(width: 6),
+                Text('♥' * heart, style: const TextStyle(color: Color(0xFFEC407A))),
+                const Spacer(),
+                Coins(heartReward(heart), size: 13),
+              ]),
+              const SizedBox(height: 2),
+              Text(S.t('reg_${id}_h$heart'), style: const TextStyle(fontSize: 14, color: inkColor, height: 1.35)),
+            ]),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  /// 고른 물건으로 할 일: 옮기기 · 상품 · 돌리기 · 레벨업 · 팔기. 글자를 붙인 큰 단추.
+  Widget _selectedButtons(BuildView b, Item i) {
+    void done() => setState(() {});
+    Widget act(IconData icon, String label, VoidCallback onTap, {Color color = Colors.white, Widget? extra}) => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Material(
+              color: color,
+              shape: const CircleBorder(side: BorderSide(color: inkColor, width: 2.5)),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: onTap,
+                child: SizedBox(width: 52, height: 52, child: Icon(icon, color: inkColor, size: 26)),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.9), borderRadius: BorderRadius.circular(8)),
+              child: extra ?? Text(label, style: const TextStyle(fontSize: 12, color: inkColor)),
+            ),
+          ]),
+        );
+    final cost = game.levelUpCost(i);
+    var spent = i.t.price;
+    for (var l = 1; l < i.level; l++) {
+      spent += itemUpgradeCost(i.t, l);
+    }
+    final refund = (spent * sellRefund).round() + i.cash;
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+        act(Icons.open_with_rounded, S.t('act_move'), () {
+          b
+            ..moving = i
+            ..place = null
+            ..rot = i.rot
+            ..hover = i.tile
+            ..selected = null;
+          toast(S.t('drag_hint'));
+          done();
+        }),
+        if (i.t.needsProduct)
+          act(Icons.swap_horiz_rounded, S.t('act_product'), () {
+            showProductPicker(context, game, i.t, (p) {
+              if (!game.setProduct(i, p)) toast(S.t('occupied'));
+              done();
+            }, toast);
+          }),
+        if (i.t.rotates)
+          act(Icons.rotate_right_rounded, S.t('act_rotate'), () {
+            if (!game.rotate(i)) toast(S.t('occupied'));
+            done();
+          }),
+        if (cost != null)
+          act(Icons.keyboard_double_arrow_up_rounded, S.t('act_levelup'), () {
+            if (game.levelUp(i)) {
+              Sfx.play(FxKind.levelUp, clock);
+            } else {
+              toast(S.t('no_money'));
+            }
+            done();
+          }, color: const Color(0xFFFFE0B2), extra: Coins(cost, size: 12)),
+        act(Icons.sell_rounded, S.t('act_sell'), () {
+          if (game.sell(i)) {
+            b.selected = null;
+            Sfx.play(FxKind.cash, clock);
+          } else {
+            toast(S.t('cant_sell'));
+          }
+          done();
+        }, color: const Color(0xFFFFCDD2), extra: Row(mainAxisSize: MainAxisSize.min, children: [
+          Text('${S.t('act_sell')} ', style: const TextStyle(fontSize: 12, color: inkColor)),
+          Coins(refund, size: 12),
+        ])),
+      ]),
     );
   }
 
@@ -569,8 +782,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
       ),
       IconButton(
         visualDensity: VisualDensity.compact,
-        icon: const Icon(Icons.settings_rounded, color: inkColor),
-        onPressed: () => showSettings(context),
+        icon: const Icon(Icons.menu_rounded, color: inkColor),
+        onPressed: _menu,
       ),
     ]);
   }

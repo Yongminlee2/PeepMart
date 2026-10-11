@@ -143,67 +143,25 @@ class _BuildPanelState extends State<BuildPanel> {
     );
   }
 
-  Widget _selectedBar(Item i) {
-    final refund = (i.t.price * sellRefund).round();
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 6, 6, 0),
-      child: Row(children: [
-        Expanded(
-          child: Text(_name(i.type, i.product), style: const TextStyle(fontSize: 16, color: inkColor), overflow: TextOverflow.ellipsis),
-        ),
-        IconButton(
-          tooltip: S.t('move'),
-          icon: const Icon(Icons.open_with_rounded, color: inkColor),
-          onPressed: () {
-            v
-              ..moving = i
-              ..place = null
-              ..rot = i.rot
-              ..hover = i.tile
-              ..selected = null;
-            widget.toast(S.t('drag_hint'));
-            _changed();
-          },
-        ),
-        if (i.t.needsProduct)
-          TextButton.icon(
-            icon: const Icon(Icons.swap_horiz_rounded, color: inkColor),
-            label: Text(S.t('change_product'), style: const TextStyle(color: inkColor)),
-            onPressed: () => _pickProduct(i.t, (p) {
-              if (!game.setProduct(i, p)) widget.toast(S.t('occupied'));
-              _changed();
-            }),
+  /// 고른 물건 이름. 할 일 단추(옮기기·팔기 등)는 지도 위에 크게 뜬다.
+  Widget _selectedBar(Item i) => Padding(
+        padding: const EdgeInsets.fromLTRB(12, 6, 6, 0),
+        child: Row(children: [
+          Expanded(
+            child: Text(_name(i.type, i.product, i.level),
+                style: const TextStyle(fontSize: 16, color: inkColor), overflow: TextOverflow.ellipsis),
           ),
-        if (i.t.rotates)
           IconButton(
-            icon: const Icon(Icons.rotate_right_rounded, color: inkColor),
+            icon: const Icon(Icons.close_rounded, color: inkColor),
             onPressed: () {
-              if (!game.rotate(i)) widget.toast(S.t('occupied'));
+              v.selected = null;
               _changed();
             },
           ),
-        TextButton.icon(
-          icon: const Icon(Icons.sell_rounded, color: Color(0xFFE53935)),
-          label: Text('+$refund', style: const TextStyle(color: Color(0xFFE53935))),
-          onPressed: () {
-            if (game.sell(i)) {
-              v.selected = null;
-            } else {
-              widget.toast(S.t('cant_sell'));
-            }
-            _changed();
-          },
-        ),
-        IconButton(
-          icon: const Icon(Icons.close_rounded, color: inkColor),
-          onPressed: () {
-            v.selected = null;
-            _changed();
-          },
-        ),
-      ]),
-    );
-  }
+        ]),
+      );
+
+
 
   // ---------------------------------------------------------------- 칸들
 
@@ -255,7 +213,13 @@ class _BuildPanelState extends State<BuildPanel> {
           ),
         BuildTab.staff => ListView(
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            children: [for (final s in Staff.values) _staffRow(s)],
+            children: [
+              for (final s in Staff.values) _staffRow(s),
+              const Divider(),
+              Text(S.t('managers_title'), style: const TextStyle(fontSize: 15, color: inkColor)),
+              Text(S.t('managers_desc'), style: const TextStyle(fontSize: 12, color: Colors.black45)),
+              for (final m in managers) _managerRow(m),
+            ],
           ),
         BuildTab.upgrades => ListView(
             padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -328,6 +292,37 @@ class _BuildPanelState extends State<BuildPanel> {
     );
   }
 
+  Widget _managerRow(ManagerSpec m) {
+    final has = game.managers.contains(m.kind);
+    final shelf = itemTypes.firstWhere((t) => t.shelf == m.kind);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(children: [
+        SizedBox(width: 36, height: 36, child: CustomPaint(painter: ItemPreview(shelf.id))),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(S.tn('manager_of', {'item': S.t('i_${shelf.id}')}), style: const TextStyle(fontSize: 15, color: inkColor)),
+            Text(has ? S.t('manager_working') : (game.level < m.level ? S.tn('need_level', {'n': m.level}) : S.t('manager_effect')),
+                style: const TextStyle(fontSize: 12, color: Colors.black45)),
+          ]),
+        ),
+        if (has)
+          const Icon(Icons.check_circle_rounded, color: Color(0xFF66BB6A))
+        else
+          FilledButton.tonal(
+            onPressed: game.canHireManager(m)
+                ? () {
+                    game.hireManager(m);
+                    _changed();
+                  }
+                : null,
+            child: Coins(m.price, size: 14),
+          ),
+      ]),
+    );
+  }
+
   Widget _staffRow(Staff s) {
     final spec = staffSpecs[s]!;
     final locked = game.level < spec.level;
@@ -394,57 +389,60 @@ class _BuildPanelState extends State<BuildPanel> {
     );
   }
 
-  // ---------------------------------------------------------------- 상품 고르기
+  void _pickProduct(ItemType t, void Function(String) done) => showProductPicker(context, game, t, done, widget.toast);
 
-  void _pickProduct(ItemType t, void Function(String) done) {
-    final options = products.where((p) => t.kind == ItemKind.box || p.kind == t.shelf).toList();
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: bg,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (c) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text(S.tn('pick_product', {'item': S.t('i_${t.id}')}), style: const TextStyle(fontSize: 20, color: inkColor)),
-            const SizedBox(height: 10),
-            Wrap(spacing: 8, runSpacing: 8, children: [
-              for (final p in options)
-                InkWell(
-                  borderRadius: BorderRadius.circular(14),
-                  onTap: game.unlockedProduct(p)
-                      ? () {
-                          Navigator.pop(c);
-                          done(p.id);
-                        }
-                      : () => widget.toast(S.tn('need_level', {'n': p.level})),
-                  child: Container(
-                    width: 84,
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: game.unlockedProduct(p) ? Colors.white : const Color(0xFFEEEEEE),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: inkColor, width: 1.5),
-                    ),
-                    child: Column(children: [
-                      Opacity(
-                        opacity: game.unlockedProduct(p) ? 1 : 0.35,
-                        child: SizedBox(width: 44, height: 44, child: CustomPaint(painter: FoodPreview(p.id))),
-                      ),
-                      Text(S.t('p_${p.id}'), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, color: inkColor)),
-                      game.unlockedProduct(p)
-                          ? Coins(p.price, size: 12)
-                          : Text(S.tn('level_n', {'n': p.level}), style: const TextStyle(fontSize: 12, color: Colors.black45)),
-                    ]),
-                  ),
-                ),
-            ]),
-          ]),
-        ),
-      ),
-    );
+  String _name(String type, String? product, [int level = 1]) {
+    final base = product == null ? S.t('i_$type') : '${S.t('i_$type')} · ${S.t('p_$product')}';
+    return level > 1 ? '$base  Lv.$level' : base;
   }
+}
 
-  String _name(String type, String? product) =>
-      product == null ? S.t('i_$type') : '${S.t('i_$type')} · ${S.t('p_$product')}';
+/// 진열대·상자에 넣을 상품 고르기. 잠긴 상품은 열리는 레벨을 알려 준다.
+void showProductPicker(BuildContext context, Game game, ItemType t, void Function(String) done, void Function(String) toast) {
+  final options = products.where((p) => t.kind == ItemKind.box || p.kind == t.shelf).toList();
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: bg,
+    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+    builder: (c) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text(S.tn('pick_product', {'item': S.t('i_${t.id}')}), style: const TextStyle(fontSize: 20, color: inkColor)),
+          const SizedBox(height: 10),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            for (final p in options)
+              InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: game.unlockedProduct(p)
+                    ? () {
+                        Navigator.pop(c);
+                        done(p.id);
+                      }
+                    : () => toast(S.tn('need_level', {'n': p.level})),
+                child: Container(
+                  width: 84,
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: game.unlockedProduct(p) ? Colors.white : const Color(0xFFEEEEEE),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: inkColor, width: 1.5),
+                  ),
+                  child: Column(children: [
+                    Opacity(
+                      opacity: game.unlockedProduct(p) ? 1 : 0.35,
+                      child: SizedBox(width: 44, height: 44, child: CustomPaint(painter: FoodPreview(p.id))),
+                    ),
+                    Text(S.t('p_${p.id}'), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, color: inkColor)),
+                    game.unlockedProduct(p)
+                        ? Coins(p.price, size: 12)
+                        : Text(S.tn('level_n', {'n': p.level}), style: const TextStyle(fontSize: 12, color: Colors.black45)),
+                  ]),
+                ),
+              ),
+          ]),
+        ]),
+      ),
+    ),
+  );
 }

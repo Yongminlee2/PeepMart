@@ -204,9 +204,9 @@ void main() {
       final g = Game();
       final w = World(g, seed: 22);
       stand(w, (0, 1));
-      w.walkPlayerTo((3, 1)); // (1,1)·(2,1) 을 지나며 콜라·도넛 상자 옆을 지난다
+      w.walkPlayerTo((4, 1)); // (1,1)·(2,1)·(3,1) 을 지나며 콜라·도넛 상자 옆을 지난다
       run(w, 3);
-      expect(w.player.carry, isEmpty); // (3,1) 은 어느 상자와도 붙어 있지 않다
+      expect(w.player.carry, isEmpty); // (4,1) 은 어느 상자에도 손이 안 닿는다
       w.walkPlayerTo(g.items.firstWhere((i) => i.type == 'box' && i.product == 'soda').tile);
       run(w, 3);
       expect(w.player.carry, isNotEmpty);
@@ -449,6 +449,147 @@ void main() {
     test('급한 손님은 절반만 참는다', () {
       final c = Customer(0, (0, 0), ['soda'])..kind = CustomerKind.hurry;
       expect(c.patience, 0.5);
+    });
+  });
+
+  group('갓물주 요소: 가구 레벨업·매니저·지점·단골·처음 안내', () {
+    test('빈 진열대를 누르면 상자에 들렀다가 와서 채운다 (한 번만 누르면 된다)', () {
+      final g = Game();
+      final fridge = first(g, 'fridge')..stock = 0;
+      final w = World(g, seed: 40);
+      w.tapAt(fridge.tile);
+      run(w, 10);
+      expect(fridge.stock, greaterThanOrEqualTo(g.arms - 2));
+    });
+
+    test('가구 레벨업: 더 담고 더 비싸게, 계산대는 더 빨리, 팔면 올린 값도 절반 돌려받는다', () {
+      final g = Game()..money = 100000;
+      final rack = first(g, 'rack');
+      final cap = rack.capacity, price = g.salePrice(rack, 'donut');
+      final cost = g.levelUpCost(rack)!;
+      expect(g.levelUp(rack), isTrue);
+      expect(g.money, 100000 - cost);
+      expect(rack.capacity, cap + 2);
+      expect(g.salePrice(rack, 'donut'), greaterThanOrEqualTo(price));
+      final reg = first(g, 'register');
+      final t = g.scanTime(reg, cashier: false);
+      g.levelUp(reg);
+      expect(g.scanTime(reg, cashier: false), lessThan(t));
+      while (g.levelUpCost(rack) != null) {
+        g.levelUp(rack);
+      }
+      expect(rack.level, maxItemLevel);
+      expect(g.levelUp(rack), isFalse);
+      final m = g.money;
+      g.sell(rack);
+      expect(g.money - m, greaterThan(itemType('rack').price)); // 레벨 올린 값까지 절반
+    });
+
+    test('매니저: 상자 없이 코너가 채워지고, 10% 비싸게 팔고, 꺼 둔 시간이 늘어난다', () {
+      final g = Game()
+        ..money = 100000
+        ..level = 30;
+      final rack = first(g, 'rack')..stock = 0;
+      g.sell(g.items.firstWhere((i) => i.type == 'box' && i.product == 'donut'));
+      final before = g.salePrice(rack, 'donut');
+      final hours = g.offlineHours;
+      expect(g.hireManager(managers.firstWhere((m) => m.kind == ShelfKind.rack)), isTrue);
+      expect(g.salePrice(rack, 'donut'), greaterThanOrEqualTo(before));
+      expect(g.offlineHours, hours + 1);
+      final w = World(g, seed: 41);
+      stand(w, (0, 7));
+      run(w, managerRestock * 3 + 0.1);
+      expect(rack.stock, greaterThan(0));
+    });
+
+    test('지점: 레벨·돈이 있어야 열고, 가구는 따로, 돈·레벨은 함께', () {
+      final g = Game();
+      final o = g.owner;
+      expect(o.open('beach'), isFalse);
+      o
+        ..level = 10
+        ..money = 6000;
+      expect(o.open('beach'), isTrue);
+      expect(o.money, 1000);
+      final beach = o.game;
+      expect(beach.branch, 'beach');
+      expect(identical(beach, g), isFalse);
+      beach.money += 5;
+      expect(g.money, 1005);
+      beach.place('plant', (5, 5));
+      expect(g.at((5, 5)), isNull);
+      expect(o.open('piyak'), isTrue); // 이미 연 곳은 옮기기만
+      expect(o.game, same(g));
+      // 대표 상품은 비싸다
+      final sodaShelf = first(beach, 'fridge');
+      expect(beach.salePrice(sodaShelf, 'soda'), greaterThan(productById('soda').price));
+    });
+
+    test('단골: 이 지점에 찾아오고, 부탁한 걸 사 가면 하트와 상금', () {
+      final g = Game()..staff[Staff.cashier] = 1;
+      final w = World(g, seed: 42);
+      stand(w, (0, 7));
+      String? heartFrom;
+      for (var i = 0; i < 20000 && heartFrom == null; i++) {
+        w.tick(0.05);
+        for (final s in g.shelves) {
+          s.stock = s.capacity;
+        }
+        for (final f in w.fx) {
+          if (f.kind == FxKind.regular && f.amount > 0) heartFrom = f.product; // -1 은 들어올 때 알림
+        }
+        w.fx.clear();
+      }
+      expect(heartFrom, 'mina'); // 삐약동 레벨 1 단골
+      expect(g.owner.heartsOf('mina'), 1);
+    });
+
+    test('하트는 다섯 개까지, 오를 때마다 상금', () {
+      final g = Game();
+      var m = g.money;
+      for (var h = 1; h <= maxHearts; h++) {
+        expect(g.giveHeart('mina'), h);
+        expect(g.money, m + heartReward(h));
+        m = g.money;
+      }
+      expect(g.giveHeart('mina'), isNull);
+    });
+
+    test('처음 안내는 들기 → 채우기 → 계산 → 돈 줍기 → 짓기 순서로 넘어간다', () {
+      final g = Game()..money = 1000;
+      final o = g.owner;
+      final fridge = first(g, 'fridge')..stock = 0;
+      final w = World(g, seed: 43);
+      expect(o.tutorial, TutorialStep.pickBox);
+      w.tapAt(fridge.tile);
+      run(w, 10);
+      expect(o.tutorial.index, greaterThanOrEqualTo(TutorialStep.checkout.index));
+      final reg = first(g, 'register');
+      w.walkPlayerTo(reg.tile);
+      for (var i = 0; i < 4000 && o.tutorial.index < TutorialStep.build.index; i++) {
+        w.tick(0.05);
+        for (final s in g.shelves) {
+          s.stock = s.capacity;
+        }
+      }
+      expect(o.tutorial, TutorialStep.build);
+      g.place('plant', (5, 5));
+      expect(o.tutorial, TutorialStep.done);
+    });
+
+    test('지점 둘을 저장했다 불러와도 그대로다', () {
+      final g = Game()
+        ..level = 12
+        ..money = 9000;
+      g.owner.open('beach');
+      g.owner.game.place('plant', (4, 4));
+      g.owner.hearts['sora'] = 2;
+      g.hireManager(managers.first..toString());
+      final j = jsonEncode(g.toJson());
+      final back = Game.fromJson(jsonDecode(j) as Map<String, dynamic>);
+      expect(jsonEncode(back.toJson()), j);
+      expect(back.branch, 'beach');
+      expect(back.owner.branches.keys.toSet(), {'piyak', 'beach'});
     });
   });
 

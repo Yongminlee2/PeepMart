@@ -152,12 +152,12 @@ const maxLevel = 30;
 
 // ------------------------------------------------------------------ 움직임·시간
 
-const playerSpeed = 3.0; // 칸/초, 신발 단계마다 25% 빨라진다
+const playerSpeed = 3.5; // 칸/초, 신발 단계마다 25% 빨라진다
 const customerSpeed = 2.2;
 const staffSpeed = 2.4;
 const startArms = 4; // 팔 단계마다 +2
 const staffArms = 4;
-const reach = 0.9; // 이만큼 가까우면 집거나 놓는다
+const reach = 1.2; // 이만큼 가까우면 집거나 놓는다 (대각선 옆 칸도 닿는다)
 const standRadius = 0.85; // 계산대 뒤에 이만큼 가까우면 올라선 것으로 친다
 const moveStep = 0.12; // 물건 하나 옮기는 데 걸리는 초
 const scanStepPlayer = 0.3;
@@ -227,3 +227,94 @@ const eventGap = (120.0, 240.0); // 다음 행사까지 (최소, 최대) 초
 const rushTime = 40.0; // 손님 몰림이 이어지는 초
 const rushFactor = 2.5; // 그동안 손님이 이만큼 자주 온다
 const vipVisitors = 3; // VIP 방문 행사 때 연달아 오는 VIP 수
+
+// ------------------------------------------------------------------ 가구 레벨업
+
+const maxItemLevel = 5;
+
+/// [level] → [level]+1 로 올리는 값.
+int itemUpgradeCost(ItemType t, int level) => (t.price * 1.2 * pow(1.7, level)).round();
+
+/// 진열대: 레벨마다 2칸 더 담고 15% 비싸게 판다. 계산대: 레벨마다 25% 빨리 찍는다.
+int levelCapacity(int base, int level) => base + 2 * (level - 1);
+double levelPrice(int level) => 1 + 0.15 * (level - 1);
+double levelScan(int level) => 1 + 0.25 * (level - 1);
+
+// ------------------------------------------------------------------ 매니저
+
+/// 진열대 종류마다 한 명. 그 코너는 상자 없이 저절로 채워지고 10% 비싸게 팔며,
+/// 꺼 둔 동안 버는 돈과 시간이 늘어난다.
+class ManagerSpec {
+  final ShelfKind kind;
+  final int price, level;
+  const ManagerSpec(this.kind, this.price, this.level);
+}
+
+const managers = [
+  ManagerSpec(ShelfKind.rack, 400, 4),
+  ManagerSpec(ShelfKind.fridge, 500, 5),
+  ManagerSpec(ShelfKind.freezer, 900, 8),
+  ManagerSpec(ShelfKind.fruit, 1100, 9),
+  ManagerSpec(ShelfKind.bakery, 1800, 11),
+  ManagerSpec(ShelfKind.coffee, 2400, 12),
+  ManagerSpec(ShelfKind.hot, 3500, 14),
+];
+
+const managerRestock = 2.5; // 이만큼마다 그 코너의 가장 빈 진열대에 1개
+const managerPrice = 1.1;
+const offlineBaseHours = 2.0, offlineHoursPerManager = 1.0, offlineMaxHours = 8.0;
+
+// ------------------------------------------------------------------ 동네(지점)
+
+/// 지점마다 따로 짓고 키운다. 돈·레벨·단골은 함께 쓴다.
+/// 대표 상품은 20% 비싸게 팔린다.
+class Branch {
+  final String id;
+  final int level, price;
+  final List<String> featured;
+  const Branch(this.id, this.level, this.price, this.featured);
+}
+
+const branches = [
+  Branch('piyak', 1, 0, ['soda', 'donut', 'sandwich', 'milk']),
+  Branch('beach', 10, 5000, ['icecream', 'popsicle', 'sundae', 'watermelon', 'soda']),
+  Branch('night', 18, 30000, ['hotdog', 'burger', 'pizza', 'fries', 'noodles']),
+  Branch('snow', 25, 150000, ['coffee', 'tea', 'cake', 'pie', 'croissant']),
+];
+
+Branch branchById(String id) => branches.firstWhere((b) => b.id == id);
+const featuredPrice = 1.2;
+
+// ------------------------------------------------------------------ 단골손님
+
+/// 이름과 이야기가 있는 손님. 좋아하는 상품을 부탁하고, 들어주면 친밀도(하트)가 오른다.
+/// 하트마다 이야기 한 토막과 상금.
+class Regular {
+  final String id;
+  final String branch;
+  final int look; // 캐릭터 시트 번호
+  final String favorite;
+  final int level; // 이 레벨부터 찾아온다
+  const Regular(this.id, this.branch, this.look, this.favorite, this.level);
+}
+
+const regulars = [
+  Regular('mina', 'piyak', 0, 'donut', 1),
+  Regular('jun', 'piyak', 7, 'sandwich', 3),
+  Regular('sora', 'beach', 3, 'icecream', 10),
+  Regular('taeo', 'beach', 8, 'watermelon', 12),
+  Regular('rin', 'night', 1, 'pizza', 18),
+  Regular('dal', 'night', 10, 'hotdog', 20),
+  Regular('yuki', 'snow', 2, 'coffee', 25),
+  Regular('bom', 'snow', 11, 'cake', 27),
+];
+
+Regular regularById(String id) => regulars.firstWhere((r) => r.id == id);
+const maxHearts = 5;
+const regularChance = 0.12; // 손님이 올 때 단골일 확률
+const regularCooldown = 45.0; // 같은 단골이 다시 오기까지 초
+int heartReward(int heart) => 80 * heart * heart;
+
+// ------------------------------------------------------------------ 처음 안내
+
+enum TutorialStep { pickBox, fillShelf, checkout, collect, build, done }

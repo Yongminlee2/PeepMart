@@ -38,6 +38,8 @@ class Customer extends Walker {
   double react = 0; // 남은 반응 시간. 반응하는 동안은 멈춰 선다
   bool happy = false;
   CustomerKind kind = CustomerKind.normal;
+  final List<int> prices = []; // 집은 물건마다 낼 값 (집을 때 정해진다)
+  String? regular; // 단골이면 그 이름
   Customer(this.look, super.at, this.wants);
 
   double get patience => kind == CustomerKind.hurry ? 0.5 : 1.0;
@@ -56,7 +58,7 @@ class StaffAgent extends Walker {
   StaffAgent(this.kind, super.at);
 }
 
-enum FxKind { pick, place, scan, cash, pay, angry, sad, levelUp, litter, clean, goal, event }
+enum FxKind { pick, place, scan, cash, pay, angry, sad, levelUp, litter, clean, goal, event, regular }
 
 /// 화면 연출용 사건. 엔진은 쌓기만 하고 화면이 가져가 비운다.
 class Fx {
@@ -85,6 +87,10 @@ class World {
   EventKind? event; // 지금 벌어지는 행사
   double eventLeft = 0, _eventIn = eventGap.$1;
   int _vipQueue = 0; // VIP 방문 행사로 아직 올 VIP 수
+  final List<Tile> plan = []; // 플레이어가 이어서 갈 곳 (빈 진열대를 누르면 상자 → 진열대)
+  double _still = 0; // 플레이어가 멈춰 선 지 몇 초
+  final Map<String, double> _regularSeen = {}; // 단골이 마지막으로 다녀간 시각
+  final Map<ShelfKind, double> _managerStep = {};
   int _seenLayout = -1;
 
   World(this.game, {int? seed}) : _rng = Random(seed) {
@@ -96,6 +102,8 @@ class World {
     if (_seenLayout != game.layoutVersion) _layoutChanged();
     _movePlayer(dt);
     _playerWork(dt);
+    _followPlan(dt);
+    _managersWork(dt);
     _syncStaff();
     for (final s in [...staff]) {
       _staffWork(s, dt);
@@ -200,6 +208,54 @@ class World {
     return stand;
   }
 
+  /// 화면에서 누른 칸. 진열대를 눌렀는데 그 상품을 안 들고 있으면 상자에 먼저 들렀다 간다.
+  Tile? tapAt(Tile t) {
+    plan.clear();
+    final item = game.at(t);
+    final p = item?.product;
+    if (item != null && item.t.kind == ItemKind.shelf && p != null && !player.carry.contains(p)) {
+      final box = game.boxOf(p);
+      if (box != null && walkPlayerTo(box.tile) != null) {
+        plan.add(t);
+        return _access(box.tile);
+      }
+    }
+    return walkPlayerTo(t);
+  }
+
+  void _followPlan(double dt) {
+    if (player.moving) {
+      _still = 0;
+      return;
+    }
+    _still += dt;
+    // 상자 앞에서 다 들었거나(팔이 꽉 참) 잠시 기다렸으면 다음 곳으로
+    if (plan.isNotEmpty && (player.carry.length >= game.arms || _still > 0.9)) {
+      walkPlayerTo(plan.removeAt(0));
+      _still = 0;
+    }
+  }
+
+  /// 매니저가 있는 코너는 상자 없이 저절로 채워진다.
+  void _managersWork(double dt) {
+    for (final k in game.managers) {
+      final t = (_managerStep[k] ?? 0) + dt;
+      if (t < managerRestock) {
+        _managerStep[k] = t;
+        continue;
+      }
+      _managerStep[k] = 0;
+      Item? low;
+      for (final s in game.shelves) {
+        if (s.t.shelf == k && s.stock < s.capacity && (low == null || s.stock < low.stock)) low = s;
+      }
+      if (low != null) {
+        low.stock++;
+        fx.add(Fx(FxKind.place, low.c + 0.0, low.r - 1.0, tx: low.c + 0.0, ty: low.r + 0.0, product: low.product!));
+      }
+    }
+  }
+
   void _movePlayer(double dt) {
     final len = sqrt(input * input + inputY * inputY);
     if (len <= 0.05) {
@@ -237,10 +293,11 @@ class World {
       _playerStep = 0;
       // 상자에서 집는 건 멈춰 섰을 때만: 지나가다 옆 상자 물건까지 집지 않게 (놓기는 지나가며 해도 좋다)
       _carryWork(player, game.arms, pick: !player.moving);
+      if (player.carry.isNotEmpty) game.owner.advance(TutorialStep.pickBox);
     }
     _cashStep += dt;
     for (final r in game.registers) {
-      if (player.distTo(r.till) < standRadius && time - (lastScan[r] ?? -9) >= scanStepPlayer) {
+      if (player.distTo(r.till) < standRadius && time - (lastScan[r] ?? -9) >= game.scanTime(r, cashier: false)) {
         _scan(r, staffed: false);
       }
       if (r.cash > 0 && player.distTo(r.tile) < 1.5 && _cashStep >= 0.05) {
@@ -248,6 +305,7 @@ class World {
         final take = min(r.cash, max(1, (r.cash * 0.25).ceil()));
         r.cash -= take;
         game.money += take;
+        game.owner.advance(TutorialStep.collect);
         fx.add(Fx(FxKind.cash, r.c.toDouble(), r.r.toDouble(), tx: player.x, ty: player.y, amount: take));
       }
     }
@@ -263,6 +321,7 @@ class World {
       if (w.carry.contains(s.product) && s.stock < s.capacity && w.distTo(s.tile) <= reach + 0.25) {
         w.carry.remove(s.product);
         s.stock++;
+        if (w == player) game.owner.advance(TutorialStep.fillShelf);
         fx.add(Fx(FxKind.place, w.x, w.y, tx: s.c.toDouble(), ty: s.r.toDouble(), product: s.product!));
         return true;
       }
@@ -292,7 +351,7 @@ class World {
     lastScan[reg] = time;
     fx.add(Fx(FxKind.scan, c.x, c.y));
     if (c.scanned < c.carry.length) return;
-    final base = c.carry.fold(0, (s, p) => s + productById(p).price);
+    final base = c.prices.fold(0, (s, p) => s + p);
     final paid = switch (c.kind) {
       CustomerKind.vip => base * 2,
       CustomerKind.hurry => (base * 1.5).round(),
@@ -302,6 +361,12 @@ class World {
       game.money += paid;
     } else {
       reg.cash += paid;
+      game.owner.advance(TutorialStep.checkout);
+    }
+    final reg0 = c.regular;
+    if (reg0 != null && c.carry.contains(c.wants.first)) {
+      final h = game.giveHeart(reg0);
+      fx.add(Fx(FxKind.regular, c.x, c.y, product: reg0, amount: h ?? 0));
     }
     game.served++;
     final ups = game.addXp(paid);
@@ -361,7 +426,7 @@ class World {
         ..dx = -d.$1.toDouble()
         ..dy = -d.$2.toDouble();
       s.step += dt;
-      if (s.step >= scanStepCashier) {
+      if (s.step >= game.scanTime(s.item!, cashier: true)) {
         s.step = 0;
         _scan(s.item!, staffed: true);
       }
@@ -450,6 +515,23 @@ class World {
     final sale = game.onSale.toList()..shuffle(_rng);
     if (doors.isEmpty || sale.isEmpty) return;
     final door = doors[_rng.nextInt(doors.length)].tile;
+    // 단골: 이 지점에 올 수 있고, 지금 가게에 없고, 한동안 안 왔던 사람
+    if (_rng.nextDouble() < regularChance) {
+      final here = {for (final o in customers) o.regular};
+      final cands = game.regularsHere
+          .where((r) => !here.contains(r.id) && time - (_regularSeen[r.id] ?? -999) > regularCooldown)
+          .toList();
+      if (cands.isNotEmpty) {
+        final r = cands[_rng.nextInt(cands.length)];
+        final want = sale.contains(r.favorite) ? r.favorite : sale.first;
+        final c = Customer(r.look, door, [want])..regular = r.id;
+        _regularSeen[r.id] = time;
+        customers.add(c);
+        fx.add(Fx(FxKind.regular, door.$1 + 0.0, door.$2 + 0.0, product: r.id, amount: -1));
+        _toShelf(c);
+        return;
+      }
+    }
     final vip = _vipQueue > 0 || (game.rating >= vipMinRating && _rng.nextDouble() < vipChance);
     final n = vip ? min(sale.length, 2 + _rng.nextInt(2)) : 1 + _rng.nextInt(min(3, sale.length));
     final c = Customer(_rng.nextInt(10), door, sale.take(n).toList());
@@ -526,6 +608,7 @@ class World {
         if (c.timer >= pickTime && s.stock > 0) {
           s.stock--;
           c.carry.add(c.want);
+          c.prices.add(game.salePrice(s, c.want));
           _nextWant(c);
         } else if (c.timer > shelfPatience * c.patience) {
           c

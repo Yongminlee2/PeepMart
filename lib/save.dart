@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'engine/game.dart';
 
-const _key = 'save_v4';
+const _key = 'save_v5';
 
 Future<Game?> loadGame() async {
   final raw = (await SharedPreferences.getInstance()).getString(_key);

@@ -87,6 +87,15 @@ void main() {
       expect(g.items.length, before + 1);
       expect(g.at((5, 5))?.type, 'rack');
       expect(g.at((5, 5))?.product, 'donut');
+      // 놓으면 놓기가 끝나서, 방금 놓은 걸 바로 눌러 팔 수 있다 (실기기에서 받은 제보)
+      expect(find.byIcon(Icons.check_rounded), findsNothing);
+      final m = g.money;
+      await tester.tapAt(center + iso(5, 5) - iso(w.player.x, w.player.y) + const Offset(0, -20));
+      await runFor(tester, 0.3);
+      await tester.tap(find.byIcon(Icons.sell_rounded));
+      await runFor(tester, 0.3);
+      expect(g.at((5, 5)), isNull);
+      expect(g.money, greaterThan(m));
       await tester.pumpWidget(const SizedBox());
     });
   }
