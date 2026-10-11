@@ -13,6 +13,7 @@ class Item {
   int cash = 0; // 계산대 옆에 쌓인 돈
   int level = 1; // 가구 레벨 (진열대·계산대)
   bool broken = false; // 고장 (그날만, 저장 안 함)
+  int price = defaultPrice; // 가격표 (priceLevels 의 번호)
   Item(this.type, this.c, this.r, {this.rot = 0, this.product});
 
   ItemType get t => itemType(type);
@@ -40,6 +41,7 @@ class Owner {
   final Set<int> met = {}; // 만난 손님 (캐릭터 시트 번호)
   final Map<String, int> sold = {}; // 상품마다 지금까지 판 개수
   final Set<String> story = {}; // 본 이야기
+  final Set<String> combosFound = {}; // 한 번이라도 만든 진열 세트
   String current = 'piyak';
 
   Owner() {
@@ -136,6 +138,7 @@ class Owner {
         'branches': {for (final e in branches.entries) e.key: e.value._toJson()},
         'met': met.toList()..sort(),
         'story': story.toList(),
+        'combos': combosFound.toList(),
         'sold': sold,
       };
 
@@ -154,6 +157,7 @@ class Owner {
     o.hearts.addAll((j['hearts'] as Map).cast<String, int>());
     o.met.addAll(((j['met'] as List?) ?? const []).cast<int>());
     o.story.addAll(((j['story'] as List?) ?? const []).cast<String>());
+    o.combosFound.addAll(((j['combos'] as List?) ?? const []).cast<String>());
     o.sold.addAll(((j['sold'] as Map?) ?? const {}).cast<String, int>());
     o.branches.clear();
     for (final e in (j['branches'] as Map).entries) {
@@ -269,8 +273,50 @@ class Game {
     var v = p.price * levelPrice(shelf.level);
     if (info.featured.contains(product)) v *= featuredPrice;
     if (managers.contains(p.kind)) v *= managerPrice;
+    v *= priceLevels[shelf.price.clamp(0, priceLevels.length - 1)];
+    if (inCombo(shelf)) v *= comboPrice;
     return max(1, v.round());
   }
+
+  /// 가격표를 다음 단계로 (싸게 → 보통 → 비싸게 → 프리미엄 → 싸게).
+  void cyclePrice(Item shelf) => shelf.price = (shelf.price + 1) % priceLevels.length;
+
+  List<(Combo, List<Item>)>? _combos;
+  int _combosAt = -1;
+
+  /// 지금 이뤄진 진열 세트와 그 진열대들. 배치가 바뀔 때만 다시 센다.
+  List<(Combo, List<Item>)> get activeCombos {
+    if (_combos != null && _combosAt == layoutVersion) return _combos!;
+    _combosAt = layoutVersion;
+    final out = <(Combo, List<Item>)>[];
+    bool close(Item a, Item b) => max((a.c - b.c).abs(), (a.r - b.r).abs()) <= comboRange;
+    for (final k in combos) {
+      final groups = [for (final p in k.products) shelves.where((s) => s.product == p).toList()];
+      if (groups.any((g) => g.isEmpty)) continue;
+      // 세 진열대가 서로 가까운 짝을 하나 찾는다
+      List<Item>? found;
+      for (final a in groups[0]) {
+        for (final b in groups[1].where((b) => close(a, b))) {
+          final c = groups[2].where((c) => close(a, c) && close(b, c)).firstOrNull;
+          if (c != null) {
+            found = [a, b, c];
+            break;
+          }
+        }
+        if (found != null) break;
+      }
+      if (found != null) out.add((k, found));
+    }
+    return _combos = out;
+  }
+
+  bool inCombo(Item shelf) => activeCombos.any((c) => c.$2.contains(shelf));
+
+  /// 처음 만든 세트들을 기록하고 돌려준다.
+  List<Combo> newCombos() => [
+        for (final (k, _) in activeCombos)
+          if (owner.combosFound.add(k.id)) k
+      ];
 
   /// 계산대 맨 앞에서 물건 하나 찍는 데 걸리는 초.
   double scanTime(Item reg, {required bool cashier}) =>
@@ -638,7 +684,7 @@ class Game {
   Map<String, Object> _toJson() => {
         'plots': [for (final p in plots) [p.$1, p.$2]],
         'items': [
-          for (final i in items) [i.type, i.c, i.r, i.rot, i.product ?? '', i.stock, i.cash, i.level]
+          for (final i in items) [i.type, i.c, i.r, i.rot, i.product ?? '', i.stock, i.cash, i.level, i.price]
         ],
         'floors': [for (final e in floors.entries) [e.key.$1, e.key.$2, e.value]],
         'staff': {for (final e in staff.entries) e.key.name: e.value},
@@ -665,6 +711,7 @@ class Game {
             ..stock = l[5] as int
             ..cash = l[6] as int
             ..level = l.length > 7 ? l[7] as int : 1
+            ..price = l.length > 8 ? l[8] as int : defaultPrice
       ]);
     for (final l in (j['floors'] as List).cast<List>()) {
       floors[tile(l)] = l[2] as String;

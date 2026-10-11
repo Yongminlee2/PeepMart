@@ -56,6 +56,7 @@ class Customer extends Walker {
   final List<int> prices = []; // 집은 물건마다 낼 값 (집을 때 정해진다)
   String? regular; // 단골이면 그 이름
   bool fleeing = false; // 도둑: 물건을 들고 도망치는 중
+  bool balked = false; // 이번 진열대 가격을 이미 봤다
   Customer(this.look, super.at, this.wants);
 
   double get patience => kind == CustomerKind.hurry ? 0.5 : 1.0;
@@ -74,7 +75,7 @@ class StaffAgent extends Walker {
   StaffAgent(this.kind, super.at);
 }
 
-enum FxKind { pick, place, scan, cash, pay, angry, sad, levelUp, litter, clean, goal, event, regular, day, incident, stamp }
+enum FxKind { pick, place, scan, cash, pay, angry, sad, levelUp, litter, clean, goal, event, regular, day, incident, stamp, combo, tip }
 
 /// FxKind.day 의 amount.
 const dayLastCall = 0, dayClosing = 1, dayClosed = 2;
@@ -141,6 +142,7 @@ class World {
   Customer? chase; // 쫓고 있는 도둑
   double _chaseStep = 0, _repairStill = 0;
   final List<(double, Incident)> _incidents = []; // 오늘 일어날 일 (시각, 종류)
+  final Map<Tile, int> tips = {}; // 바닥에 떨어진 팁
   DayResult? result; // 방금 끝난 하루. 화면이 보여 주고 null 로 지운다
 
   World(this.game, {int? seed}) : _rng = Random(seed) {
@@ -218,6 +220,15 @@ class World {
               _fx(Incident.orderIn);
             }
         }
+      }
+    }
+    // 팁: 가까이 가면 줍는다
+    for (final e in tips.entries.toList()) {
+      if (player.distTo(e.key) <= tipRange) {
+        tips.remove(e.key);
+        game.money += e.value;
+        daySales += e.value;
+        fx.add(Fx(FxKind.tip, e.key.$1.toDouble(), e.key.$2.toDouble(), tx: player.x, ty: player.y, amount: e.value));
       }
     }
     // 고장: 옆에 멈춰 서 있으면 고친다
@@ -434,6 +445,7 @@ class World {
     game.day++;
     game.weather = _pickWeather();
     order = null;
+    tips.clear(); // 못 주운 팁은 사라진다
     phase = DayPhase.closed;
     fx.add(Fx(FxKind.day, player.x, player.y, amount: dayClosed));
   }
@@ -535,6 +547,9 @@ class World {
 
   void _layoutChanged() {
     _seenLayout = game.layoutVersion;
+    for (final k in game.newCombos()) {
+      fx.add(Fx(FxKind.combo, player.x, player.y, product: k.id));
+    }
     final regs = game.registers.toSet();
     queues.removeWhere((r, _) => !regs.contains(r));
     final items = game.items.toSet();
@@ -946,6 +961,14 @@ class World {
         ..insert(0, f);
       if (wants.length > n) wants.removeLast();
     }
+    for (final (k, _) in game.activeCombos) {
+      if (wants.any(k.products.contains) && _rng.nextDouble() < comboPull) {
+        for (final p in k.products) {
+          if (!wants.contains(p)) wants.add(p);
+        }
+        break;
+      }
+    }
     final c = Customer(_rng.nextInt(1024), door, wants);
     if (vip) {
       c.kind = CustomerKind.vip;
@@ -968,7 +991,8 @@ class World {
     c
       ..shelf = options.reduce((a, b) => b.stock > a.stock ? b : a)
       ..state = CState.toShelf
-      ..timer = 0;
+      ..timer = 0
+      ..balked = false;
     _walkTo(c, _access(c.shelf!.tile));
   }
 
@@ -1021,6 +1045,20 @@ class World {
       case CState.atShelf:
         c.timer += dt;
         final s = c.shelf!;
+        if (c.timer >= pickTime && s.stock > 0 && !s.broken && !c.balked && c.kind != CustomerKind.thief) {
+          c.balked = true;
+          if (_rng.nextDouble() < priceBalk[s.price.clamp(0, priceBalk.length - 1)]) {
+            // 너무 비싸다: 안 사고 다음 물건으로
+            c
+              ..missed += 1
+              ..react = 0.8
+              ..happy = false;
+            fx.add(Fx(FxKind.sad, c.x, c.y));
+            _nextWant(c);
+            break;
+          }
+          if (s.price == 0) c.bonus = max(c.bonus, 1); // 싸게 샀다
+        }
         if (c.timer >= pickTime && s.stock > 0 && !s.broken) {
           s.stock--;
           c.carry.add(c.want);
@@ -1105,6 +1143,10 @@ class World {
     if (!rated && c.carry.isNotEmpty && c.state != CState.leaving) {
       final sat = 5 - 2 * c.missed - (c.waited > queuePatience / 2 ? 1 : 0) - (game.trash.length > 3 ? 1 : 0) + c.bonus;
       _rate(sat.clamp(1, 5));
+      if (sat >= 5 && phase != DayPhase.closed && _rng.nextDouble() < tipChance && game.walkable(c.tile)) {
+        final tip = max(2, (c.prices.fold(0, (s, p) => s + p) * tipShare).round());
+        tips[c.tile] = (tips[c.tile] ?? 0) + tip;
+      }
       _litter(c);
     }
     c.state = CState.leaving;

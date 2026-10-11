@@ -460,3 +460,45 @@ double patienceFactor(int rank) => 1 - 0.06 * rank; // 등급이 오를수록 �
 const rentPerPlot = 20;
 const rentPerRank = 0.3;
 const upkeepPerShelf = 3;
+
+// ------------------------------------------------------------------ 진열 세트 (카이로소프트식 콤보)
+
+/// 세 상품의 진열대를 가까이(서로 [comboRange] 칸 안) 두면 세트가 된다:
+/// 세트 진열대는 값이 [comboPrice] 배, 세트 상품을 사는 손님은 [comboPull] 확률로 나머지도 함께 산다.
+class Combo {
+  final String id;
+  final List<String> products;
+  const Combo(this.id, this.products);
+}
+
+const combos = [
+  Combo('snack', ['gimbap', 'tteokkochi', 'cupramen']),
+  Combo('breakfast', ['sandwich', 'milk', 'coffee']),
+  Combo('picnic', ['riceball', 'bananamilk', 'banana']),
+  Combo('summer', ['icecream', 'popsicle', 'soda']),
+  Combo('fastfood', ['burger', 'fries', 'soda']),
+  Combo('bakery', ['croissant', 'muffin', 'tea']),
+  Combo('dessert', ['cake', 'cupcake', 'frappe']),
+  Combo('winter', ['hoppang', 'coffee', 'tea']),
+  Combo('fruit', ['strawberry', 'grapes', 'watermelon']),
+  Combo('lunchbox', ['bento', 'riceball', 'tea']),
+  Combo('sweets', ['donut', 'cookie', 'chocolate']),
+  Combo('latenight', ['hotdog', 'pizza', 'cupramen']),
+];
+const comboRange = 2;
+const comboPrice = 1.2;
+const comboPull = 0.4;
+
+// ------------------------------------------------------------------ 가격표 (Supermarket Simulator 식)
+
+/// 진열대마다 가격: 싸게·보통·비싸게·프리미엄. 비쌀수록 남지만 그냥 돌아가는 손님이 생기고, 싸면 손님이 좋아한다.
+const priceLevels = [0.85, 1.0, 1.2, 1.4];
+const priceBalk = [0.0, 0.0, 0.15, 0.35]; // 진열대 앞에서 값을 보고 안 사고 가는 확률
+const defaultPrice = 1;
+
+// ------------------------------------------------------------------ 팁
+
+/// 아주 만족한 손님은 가끔 바닥에 팁을 두고 간다(직접 주워야 한다, 하루가 끝나면 사라진다).
+const tipChance = 0.3;
+const tipShare = 0.3; // 낸 값의 이만큼
+const tipRange = 1.0;

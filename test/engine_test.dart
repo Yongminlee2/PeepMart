@@ -1084,4 +1084,82 @@ void main() {
       expect(g.dailyCost, greaterThan(small));
     });
   });
+
+  group('세트·가격표·팁', () {
+    test('세 상품 진열대를 두 칸 안에 두면 세트가 되고 값이 오른다', () {
+      final g = Game()
+        ..money = 99999
+        ..level = 30;
+      // 콜라 냉장고는 (2,3)에 있다
+      expect(g.place('freezer', (3, 4), product: 'icecream'), isTrue);
+      final ice = g.at((3, 4))!;
+      final before = g.salePrice(ice, 'icecream');
+      expect(g.activeCombos, isEmpty);
+      expect(g.place('freezer', (1, 4), product: 'popsicle'), isTrue);
+      expect(g.activeCombos.map((c) => c.$1.id), contains('summer'));
+      expect(g.salePrice(ice, 'icecream'), greaterThan(before));
+      expect(g.newCombos().map((k) => k.id), ['summer']);
+      expect(g.newCombos(), isEmpty); // 한 번만
+    });
+
+    test('멀리 떨어져 있으면 세트가 아니다', () {
+      final g = Game()
+        ..money = 99999
+        ..level = 30;
+      g.place('freezer', (6, 6), product: 'icecream');
+      g.place('freezer', (0, 6), product: 'popsicle');
+      expect(g.activeCombos, isEmpty);
+    });
+
+    test('가격표: 값이 바뀌고 저장된다', () {
+      final g = Game();
+      final rack = first(g, 'rack');
+      final normal = g.salePrice(rack, 'donut');
+      g.cyclePrice(rack); // 보통 → 비싸게
+      expect(rack.price, 2);
+      expect(g.salePrice(rack, 'donut'), greaterThanOrEqualTo(normal));
+      final back = Game.fromJson(jsonDecode(jsonEncode(g.toJson())) as Map<String, dynamic>);
+      expect(first(back, 'rack').price, 2);
+    });
+
+    test('프리미엄이면 안 사고 가는 손님이 생긴다', () {
+      int sold(int price) {
+        final g = Game()
+          ..money = 5000
+          ..level = 5;
+        g.owner.tutorial = TutorialStep.done;
+        g.hire(Staff.cashier);
+        for (final s in g.shelves) {
+          s.price = price;
+        }
+        final w = World(g, seed: 4)..openDay();
+        for (var i = 0; i < 2400; i++) {
+          for (final s in g.shelves) {
+            s.stock = s.capacity;
+          }
+          w.tick(0.05);
+        }
+        return w.daySold.values.fold(0, (a, b) => a + b);
+      }
+      expect(sold(3), lessThan(sold(1)));
+    });
+
+    test('팁: 가까이 가면 줍고, 하루가 끝나면 사라진다', () {
+      final g = Game()..money = 0;
+      g.owner.tutorial = TutorialStep.done;
+      final w = World(g, seed: 5)..openDay();
+      w.tips[(4, 4)] = 7;
+      w.tips[(1, 6)] = 3;
+      stand(w, (4, 4));
+      w.tick(0.05);
+      expect(w.tips.containsKey((4, 4)), isFalse);
+      expect(g.money, greaterThanOrEqualTo(7));
+      w.dayTime = dayLength;
+      w.customers.clear();
+      w.tick(0.01);
+      w.customers.clear();
+      w.tick(0.01);
+      expect(w.tips, isEmpty);
+    });
+  });
 }

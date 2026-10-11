@@ -130,6 +130,11 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
           final want = world.customers.where((c) => c.regular == e.product).firstOrNull?.wants.first;
           toast(S.tn('regular_arrive', {'name': regularName(e.product), 'item': want == null ? '' : S.t('p_$want')}));
         }
+      } else if (e.kind == FxKind.combo) {
+        toast(S.tn('combo_made', {'name': S.t('combo_${e.product}'), 'n': ((comboPrice - 1) * 100).round()}));
+        Sfx.play(FxKind.levelUp, clock);
+      } else if (e.kind == FxKind.tip) {
+        Sfx.play(FxKind.cash, clock);
       } else if (e.kind == FxKind.stamp) {
         toast(S.tn('stamp_got', {'item': S.t('p_${e.product}'), 'n': stampAt, 'r': e.amount}));
         Sfx.play(FxKind.levelUp, clock);
@@ -657,8 +662,9 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
   /// 고른 물건으로 할 일: 옮기기 · 상품 · 돌리기 · 레벨업 · 팔기. 글자를 붙인 큰 단추.
   Widget _selectedButtons(BuildView b, Item i) {
     void done() => setState(() {});
+    // 단추가 여섯 개까지 늘어도 좁은 폰(360)에서 다 보이게: 46 + 양옆 3
     Widget act(IconData icon, String label, VoidCallback onTap, {Color color = Colors.white, Widget? extra}) => Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 3),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Material(
               color: color,
@@ -666,14 +672,21 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
               child: InkWell(
                 customBorder: const CircleBorder(),
                 onTap: onTap,
-                child: SizedBox(width: 52, height: 52, child: Icon(icon, color: inkColor, size: 26)),
+                child: SizedBox(width: 46, height: 46, child: Icon(icon, color: inkColor, size: 24)),
               ),
             ),
             const SizedBox(height: 2),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.9), borderRadius: BorderRadius.circular(8)),
-              child: extra ?? Text(label, style: const TextStyle(fontSize: 12, color: inkColor)),
+            // 글자가 길어도 단추 줄이 넓어지지 않게 줄여서 맞춘다
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 58),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.9), borderRadius: BorderRadius.circular(8)),
+                  child: extra ?? Text(label, style: const TextStyle(fontSize: 12, color: inkColor)),
+                ),
+              ),
             ),
           ]),
         );
@@ -703,6 +716,12 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
               if (!game.setProduct(i, p)) toast(S.t('occupied'));
               done();
             }, toast);
+          }),
+        if (i.t.kind == ItemKind.shelf)
+          act(Icons.price_change_rounded, S.t('price_${i.price}'), () {
+            game.cyclePrice(i);
+            toast(S.t('price_${i.price}_d'));
+            done();
           }),
         if (i.t.rotates)
           act(Icons.rotate_right_rounded, S.t('act_rotate'), () {

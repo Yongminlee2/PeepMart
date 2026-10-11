@@ -37,15 +37,18 @@ void main() {
     expect(find.byType(Icon), findsWidgets);
   });
 
-  testWidgets('도감: 손님·도장 두 칸이 넘치지 않고 열린다', (tester) async {
+  testWidgets('도감: 손님·도장·세트 세 칸이 넘치지 않고 열린다', (tester) async {
     final o = Game().owner
       ..met.addAll([0, 1, 2])
       ..sold['soda'] = 30
       ..sold['donut'] = 5;
     await show(tester, DexScreen(o));
-    expect(find.byType(Tab), findsNWidgets(2));
-    await tester.tap(find.byType(Tab).last);
+    expect(find.byType(Tab), findsNWidgets(3));
+    await tester.tap(find.byType(Tab).at(1));
     await tester.pumpAndSettle();
     expect(find.text('30/30'), findsOneWidget);
+    await tester.tap(find.byType(Tab).last);
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.star_outline_rounded), findsWidgets);
   });
 }

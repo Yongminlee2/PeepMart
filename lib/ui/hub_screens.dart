@@ -223,6 +223,7 @@ class HelpScreen extends StatelessWidget {
     ('weather', Icons.umbrella_rounded),
     ('incident', Icons.local_police_rounded),
     ('dex', Icons.collections_bookmark_rounded),
+    ('combo', Icons.auto_awesome_rounded),
     ('stock', Icons.inventory_2_rounded),
     ('checkout', Icons.point_of_sale_rounded),
     ('build', Icons.handyman_rounded),
@@ -303,7 +304,7 @@ class DexScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => DefaultTabController(
-        length: 2,
+        length: 3,
         child: Scaffold(
           backgroundColor: bg,
           appBar: AppBar(
@@ -316,10 +317,11 @@ class DexScreen extends StatelessWidget {
               tabs: [
                 Tab(text: S.tn('dex_people', {'n': owner.met.where(customerChars.contains).length, 'm': customerChars.length})),
                 Tab(text: S.tn('dex_stamps', {'n': products.where((p) => (owner.sold[p.id] ?? 0) >= stampAt).length, 'm': products.length})),
+                Tab(text: S.tn('dex_combos', {'n': owner.combosFound.length, 'm': combos.length})),
               ],
             ),
           ),
-          body: SafeArea(child: TabBarView(children: [_people(), _stamps()])),
+          body: SafeArea(child: TabBarView(children: [_people(), _stamps(), _combos()])),
         ),
       );
 
@@ -346,6 +348,33 @@ class DexScreen extends StatelessWidget {
       ),
     ]);
   }
+
+  /// 진열 세트: 무엇을 붙여 놓으면 되는지 다 보여 준다(목표가 되도록).
+  Widget _combos() => ListView(padding: const EdgeInsets.all(14), children: [
+        Text(S.tn('dex_combos_hint', {'n': ((comboPrice - 1) * 100).round()}), style: const TextStyle(fontSize: 13, color: Colors.black54)),
+        const SizedBox(height: 10),
+        for (final k in combos)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Container(
+              decoration: _card(owner.combosFound.contains(k.id) ? const Color(0xFFFFF8E1) : Colors.white),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(children: [
+                Icon(owner.combosFound.contains(k.id) ? Icons.star_rounded : Icons.star_outline_rounded,
+                    color: const Color(0xFFFFC107)),
+                const SizedBox(width: 8),
+                Expanded(child: Text(S.t('combo_${k.id}'), style: const TextStyle(fontSize: 15, color: inkColor))),
+                for (final p in k.products)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4),
+                    child: owner.level >= productById(p).level
+                        ? SizedBox(width: 30, height: 30, child: CustomPaint(painter: FoodPreview(p)))
+                        : const SizedBox(width: 30, child: Text('?', textAlign: TextAlign.center, style: TextStyle(fontSize: 20, color: Colors.black26))),
+                  ),
+              ]),
+            ),
+          ),
+      ]);
 
   Widget _stamps() => ListView(padding: const EdgeInsets.all(14), children: [
         Text(S.tn('dex_stamps_hint', {'n': stampAt}), style: const TextStyle(fontSize: 13, color: Colors.black54)),

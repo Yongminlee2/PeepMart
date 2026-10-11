@@ -92,9 +92,10 @@ class Flight {
   Flight(this.fx);
   double get life => switch (fx.kind) {
         FxKind.pick || FxKind.place || FxKind.cash => 0.28,
+        FxKind.tip => 0.5,
         FxKind.scan => 0,
         FxKind.levelUp || FxKind.goal || FxKind.regular => 1.6,
-        FxKind.event || FxKind.day || FxKind.incident => 0,
+        FxKind.event || FxKind.day || FxKind.incident || FxKind.combo => 0,
         _ => 1.0,
       };
 }
@@ -172,6 +173,17 @@ class StorePainter extends CustomPainter {
     for (final t in game.trash) {
       _trash(canvas, t);
     }
+    // 바닥에 떨어진 팁
+    for (final t in world.tips.keys) {
+      final p = iso(t.$1 + 0.0, t.$2 + 0.0) + Offset(0, sin(clock * 5 + t.$1) * 1.5);
+      for (var k = 0; k < 3; k++) {
+        final q = p + Offset(k * 3.0 - 3, -k * 3.0);
+        canvas.drawOval(Rect.fromCenter(center: q, width: 14, height: 7), Paint()..color = const Color(0xFFFFC107));
+        canvas.drawOval(Rect.fromCenter(center: q, width: 14, height: 7), _stroke(1));
+      }
+      final glint = (clock * 2 + t.$2) % 2.0;
+      if (glint < 0.3) _text(canvas, p + const Offset(6, -14), '✦', Colors.white, 10, outline: 1);
+    }
     if (dest != null && world.player.path.isNotEmpty) {
       final p = iso(dest!.$1 + 0.0, dest!.$2 + 0.0);
       final k = 0.8 + 0.2 * sin(clock * 8);
@@ -201,6 +213,9 @@ class StorePainter extends CustomPainter {
           level: i.level,
           managed: i.t.shelf != null && game.managers.contains(i.t.shelf)));
       if (i.broken) add(i.c + 0.01, i.r + 0.01, () => _brokenMark(canvas, i));
+      if (i.t.kind == ItemKind.shelf && (i.price != defaultPrice || game.inCombo(i))) {
+        add(i.c + 0.01, i.r + 0.01, () => _shelfTags(canvas, i));
+      }
     }
     for (final s in world.staff) {
       final who = switch (s.kind) {
@@ -642,10 +657,10 @@ class StorePainter extends CustomPainter {
     switch (e.kind) {
       case FxKind.scan:
         break;
-      case FxKind.pick || FxKind.place || FxKind.cash:
+      case FxKind.pick || FxKind.place || FxKind.cash || FxKind.tip:
         final a = iso(e.x, e.y) + const Offset(0, -30), b = iso(e.tx, e.ty) + const Offset(0, -40);
         final p = Offset.lerp(a, b, k)! + Offset(0, -sin(k * pi) * 30);
-        if (e.kind != FxKind.cash) {
+        if (e.kind != FxKind.cash && e.kind != FxKind.tip) {
           _food(canvas, e.product, p, 15);
         } else {
           _text(canvas, p, '+${e.amount}', const Color(0xFF2E7D32), 15, outline: 1);
@@ -668,7 +683,7 @@ class StorePainter extends CustomPainter {
             size: e.product == 'new' ? 18 : 24);
       case FxKind.stamp:
         _float(canvas, e, k, '✔ +${e.amount}', const Color(0xFF7E57C2), size: 20);
-      case FxKind.event || FxKind.day || FxKind.incident:
+      case FxKind.event || FxKind.day || FxKind.incident || FxKind.combo:
         break; // 화면 위 알림으로 보여 준다
       case FxKind.regular:
         _float(canvas, e, k, e.amount > 0 ? '♥' * e.amount : '♥', const Color(0xFFEC407A), size: 22);
@@ -679,6 +694,26 @@ class StorePainter extends CustomPainter {
     final p = iso(e.x, e.y) + Offset(0, -56 - k * 40);
     final a = 1 - k;
     _text(canvas, p, text, col.withValues(alpha: a), size, outline: a);
+  }
+
+  /// 진열대 옆 표: 가격표(싸게↓·비싸게↑·프리미엄↑↑)와 세트 별.
+  void _shelfTags(Canvas canvas, Item i) {
+    final base = iso(i.c + 0.0, i.r + 0.0) + const Offset(18, -8);
+    if (i.price != defaultPrice) {
+      final (col, mark) = switch (i.price) {
+        0 => (const Color(0xFF43A047), '↓'),
+        2 => (const Color(0xFFFF9800), '↑'),
+        _ => (const Color(0xFFE53935), '↑↑'),
+      };
+      final r = RRect.fromRectAndRadius(Rect.fromCenter(center: base, width: 20, height: 13), const Radius.circular(4));
+      canvas.drawRRect(r, Paint()..color = col);
+      canvas.drawRRect(r, _stroke(1.2));
+      _text(canvas, base, mark, Colors.white, 10);
+    }
+    if (game.inCombo(i)) {
+      final p = base + const Offset(-36, -4);
+      _text(canvas, p, '★', Color.fromRGBO(255, 193, 7, 0.75 + 0.25 * sin(clock * 4)), 15, outline: 1);
+    }
   }
 
   /// 고장 난 진열대: 연기와 빨간 공구 표시.
