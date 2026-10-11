@@ -233,7 +233,7 @@
   "help_move_t": "Moving",
   "help_move_b": "Tap where to go or what to use, and you'll walk there and do it. Drag with one finger to move the map, pinch with two to zoom. Prefer a joystick? Turn it on in Settings.",
   "help_stock_t": "Stocking and inventory",
-  "help_stock_b": "Tap an empty shelf (red !) to grab that product from its box and fill the shelf. Each box holds 24 and runs down as you take from it. When a box is empty, tap it to reorder at wholesale price; it arrives in 15 seconds. Your staff can't stock from an empty box, so order ahead. You can also select a box in build mode to order before it runs out.",
+  "help_stock_b": "Tap an empty shelf (red !) to grab that product from its box and fill the shelf. Each box holds 24 and runs down as you take from it. New boxes arrive empty, so order stock first. When a box is empty, tap it to reorder at wholesale price; it arrives in 15 seconds. Your staff can't stock from an empty box, so order ahead. You can also select a box in build mode to order before it runs out.",
   "help_checkout_t": "Checkout and money",
   "help_checkout_b": "Tap the register to stand on the blue spot behind it and check out. Money you ring up piles up next to the register, so walk close to collect it. Hire a cashier and money comes straight in.",
   "help_build_t": "Building",

@@ -433,6 +433,7 @@ class Game {
     } else {
       final i = Item(typeId, t.$1, t.$2, rot: rot, product: product);
       if (type.kind == ItemKind.shelf && product != null) i.stock = i.capacity;
+      if (type.kind == ItemKind.box) i.units = 0; // 상자 값엔 물건이 안 들었다: 주문해서 채운다
       items.add(i);
       owner.advance(TutorialStep.build);
     }
@@ -460,7 +461,11 @@ class Game {
       items.add(Item(i.type, t.$1, t.$2, rot: r, product: i.product)
         ..stock = i.stock
         ..cash = i.cash
-        ..level = i.level);
+        ..level = i.level
+        ..price = i.price
+        ..units = i.units
+        ..incoming = i.incoming
+        ..broken = i.broken);
     } else {
       items.add(i);
     }
@@ -514,8 +519,10 @@ class Game {
     if (!i.t.needsProduct || !unlockedProduct(p)) return false;
     if (i.t.kind == ItemKind.shelf && i.t.shelf != p.kind) return false;
     if (i.product == product) return false;
+    if (i.t.kind == ItemKind.box && i.incoming > 0) return false; // 오는 중인 주문이 있으면 못 바꾼다
     i.product = product;
     i.stock = 0;
+    if (i.t.kind == ItemKind.box) i.units = 0;
     _changed();
     return true;
   }

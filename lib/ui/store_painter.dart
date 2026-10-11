@@ -608,7 +608,7 @@ class StorePainter extends CustomPainter {
       canvas.drawPath(drop, _stroke(1.2));
     }
     final head = iso(c.x, c.y) + const Offset(0, -52);
-    if (c.state == CState.atShelf && c.timer >= pickTime) {
+    if (c.state == CState.atShelf && c.timer >= pickTime && c.wants.isNotEmpty) {
       final worry = (c.timer / shelfPatience).clamp(0.0, 1.0);
       _wantBubble(canvas, head, c.want, Color.lerp(Colors.white, const Color(0xFFFFCDD2), worry)!);
     } else if (c.state == CState.toQueue && c.waited > queuePatience * c.patience * 0.5 && c.scanned == 0) {

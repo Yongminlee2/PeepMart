@@ -1429,4 +1429,75 @@ void main() {
       expect(g.currentGoal!.target, 4000 + 2 * extraGoalStep);
     });
   });
+
+  group('점검에서 잡은 버그', () {
+    test('옮겨도 상자 남은 양·주문·가격표·고장이 그대로다(공짜 재고 방지)', () {
+      final g = Game()..money = 1000;
+      final box = g.items.firstWhere((i) => i.type == 'box')..units = 0;
+      expect(g.move(box, (4, 1)), PlaceResult.ok);
+      final moved = g.at((4, 1))!;
+      expect(moved.units, 0);
+      final rack = first(g, 'rack')
+        ..price = 3
+        ..broken = true;
+      expect(g.move(rack, (4, 5)), PlaceResult.ok);
+      expect(g.at((4, 5))!.price, 3);
+      expect(g.at((4, 5))!.broken, isTrue);
+    });
+
+    test('새로 놓은 상자는 비어 있고, 상품을 바꾸면 비운다', () {
+      final g = Game()
+        ..money = 9999
+        ..level = 30;
+      expect(g.place('box', (5, 5), product: 'sushi'), isTrue);
+      expect(g.at((5, 5))!.units, 0);
+      final box = g.items.firstWhere((i) => i.type == 'box' && i.product == 'soda');
+      expect(g.setProduct(box, 'sushi'), isTrue);
+      expect(box.units, 0);
+      g.reorder(box);
+      expect(g.setProduct(box, 'gimbap'), isFalse); // 오는 중엔 못 바꾼다
+    });
+
+    test('장사 중에 떠나면 운영비를 내고 날이 넘어간다', () {
+      final g = Game()..money = 1000;
+      g.owner.tutorial = TutorialStep.done;
+      final w = World(g, seed: 1)..openDay();
+      run(w, 5);
+      final day = g.day, cost = g.dailyCost, money = g.money;
+      w.abandonDay();
+      expect(g.day, day + 1);
+      expect(g.money, money - cost);
+      expect(w.phase, DayPhase.closed);
+    });
+
+    test('출발한 배달이 남아 있으면 마감이 끝날 때까지 기다린다', () {
+      final g = Game()..level = 15;
+      g.owner.tutorial = TutorialStep.done;
+      final w = World(g, seed: 2)..openDay();
+      w.order = Order(['soda'])..started = true;
+      w.dayTime = dayLength;
+      w.customers.clear();
+      w.tick(0.01);
+      w.customers.clear();
+      w.tick(0.01);
+      expect(w.phase, DayPhase.closing);
+      w.order = null;
+      w.tick(0.01);
+      expect(w.phase, DayPhase.closed);
+    });
+
+    test('고장은 그 옆에 멈춰 선 시간만 센다', () {
+      final g = Game()..level = 5;
+      g.owner.tutorial = TutorialStep.done;
+      final w = World(g, seed: 3)..openDay();
+      final fridge = first(g, 'fridge');
+      stand(w, (fridge.c + 1, fridge.r));
+      run(w, 5); // 고장 전에 오래 서 있어도
+      fridge.broken = true;
+      w.tick(0.05);
+      expect(fridge.broken, isTrue); // 바로 고쳐지지 않는다
+      run(w, repairTime + 0.2);
+      expect(fridge.broken, isFalse);
+    });
+  });
 }

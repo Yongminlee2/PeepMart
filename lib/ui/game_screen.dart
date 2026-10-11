@@ -66,6 +66,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    world.abandonDay(); // 장사 중에 나가도 하루는 지나간다
     saveGame(game);
     _ticker.dispose();
     super.dispose();

@@ -138,7 +138,7 @@ const Map<String, String> kEn = {
   'help_regulars_t': 'Regulars',
   'help_staff_b': 'Cashiers run registers, stockers carry boxes to shelves, janitors clean trash. A section manager makes that section restock itself without boxes and sell for more. Staff are paid every minute.',
   'help_staff_t': 'Staff and managers',
-  'help_stock_b': 'Tap an empty shelf (red !) to grab that product from its box and fill the shelf. Each box holds 24 and runs down as you take from it. When a box is empty, tap it to reorder at wholesale price; it arrives in 15 seconds. Your staff can\'t stock from an empty box, so order ahead. You can also select a box in build mode to order before it runs out.',
+  'help_stock_b': 'Tap an empty shelf (red !) to grab that product from its box and fill the shelf. Each box holds 24 and runs down as you take from it. New boxes arrive empty, so order stock first. When a box is empty, tap it to reorder at wholesale price; it arrives in 15 seconds. Your staff can\'t stock from an empty box, so order ahead. You can also select a box in build mode to order before it runs out.',
   'help_stock_t': 'Stocking and inventory',
   'help_weather_b': 'Once you\'re a Convenience Store, a weather forecast appears before you open. Ice cream and drinks sell well on hot days; cup ramyeon, buns and coffee on rainy or cold days, so adjust your shelves. From Big Convenience Store, a special day comes every 5 days (Picnic Day, Exam Week, and from Hypermarket, the Town Festival).',
   'help_weather_t': 'Weather and special days',

@@ -242,7 +242,14 @@ class World {
               sale.shuffle(_rng);
               final kinds = sale.take(min(2, sale.length)).toList();
               final n = bulkCount.$1 + _rng.nextInt(bulkCount.$2 - bulkCount.$1 + 1);
-              order = Order([for (var i = 0; i < n; i++) kinds[i % kinds.length]], bulk: true);
+              // 진열대에 한꺼번에 다 들어갈 만큼만(아니면 영영 못 떠난다)
+              int room(String p) => game.shelves.where((s) => s.product == p).fold(0, (a, s) => a + s.capacity);
+              final want = {for (final p in kinds) p: 0};
+              for (var i = 0; i < n; i++) {
+                final p = kinds[i % kinds.length];
+                if (want[p]! < room(p)) want[p] = want[p]! + 1;
+              }
+              order = Order([for (final e in want.entries) for (var i = 0; i < e.value; i++) e.key], bulk: true);
               _fx(Incident.bulkIn);
             }
           default:
@@ -265,16 +272,15 @@ class World {
       }
     }
     // 고장: 옆에 멈춰 서 있으면 고친다
-    if (!player.moving) {
-      _repairStill += dt;
-      for (final s in game.shelves) {
-        if (s.broken && player.distTo(s.tile) < 1.6 && _repairStill >= repairTime) {
-          s.broken = false;
-          fx.add(Fx(FxKind.incident, s.c.toDouble(), s.r.toDouble(), amount: Incident.repaired.index));
-        }
-      }
-    } else {
+    final near = game.shelves.where((s) => s.broken && player.distTo(s.tile) < 1.6).toList();
+    if (player.moving || near.isEmpty) {
       _repairStill = 0;
+    } else if ((_repairStill += dt) >= repairTime) {
+      _repairStill = 0;
+      for (final s in near) {
+        s.broken = false;
+        fx.add(Fx(FxKind.incident, s.c.toDouble(), s.r.toDouble(), amount: Incident.repaired.index));
+      }
     }
     // 도둑: 가까이 가면 잡는다. 누른 도둑은 계속 쫓아간다.
     for (final c in customers) {
@@ -359,6 +365,7 @@ class World {
 
   /// 점검관: 둘러볼 곳마다 2초씩 서 있다가, 다 보면 점수를 매기고 나간다.
   void _updateInspector(Customer c, double dt) {
+    if (c.react > 0) c.react -= dt;
     _walk(c, dt, customerSpeed * 0.9);
     switch (c.state) {
       case CState.toShelf:
@@ -519,6 +526,22 @@ class World {
     return [sell, other];
   }
 
+  /// 장사 도중에 화면을 떠난다: 하루를 건너뛸 수 없게 운영비를 내고 날짜를 넘긴다(별·보너스 없음).
+  void abandonDay() {
+    if (phase == DayPhase.closed || !_clockRuns) return;
+    game.money -= game.dailyCost;
+    game.recordDay(daySales, dayServed);
+    game.day++;
+    game.weather = _pickWeather();
+    for (final s in game.shelves) {
+      s.broken = false;
+    }
+    customers.clear();
+    order = null;
+    tips.clear();
+    phase = DayPhase.closed;
+  }
+
   /// 할 일이 어디까지 왔나 (calm 은 실망한 손님 수).
   int taskProgress(DayTask t) => switch (t.kind) {
         DayTaskKind.sell => daySold[t.product] ?? 0,
@@ -658,7 +681,8 @@ class World {
         fx.add(Fx(FxKind.day, player.x, player.y, amount: dayClosing));
       }
     }
-    if (phase == DayPhase.closing && customers.isEmpty) _closeDay();
+    if (phase == DayPhase.closing && order != null && !order!.started) order = null; // 안 떠난 주문은 취소
+    if (phase == DayPhase.closing && customers.isEmpty && order == null) _closeDay();
   }
 
   void _events(double dt) {
@@ -1250,7 +1274,8 @@ class World {
         final i = queues[c.register]!.indexOf(c);
         final spot = tiles[min(i, tiles.length - 1)];
         if (c.goal != spot) _walkTo(c, spot);
-        if (c.waited > queuePatience * c.patience * patienceFactor(game.rank) * ruleOf(game.branch).patience && c.scanned == 0) {
+        final limit = queuePatience * c.patience * patienceFactor(game.rank) * ruleOf(game.branch).patience;
+        if (c.waited > (c.scanned == 0 ? limit : limit * 2)) {
           queues[c.register]?.remove(c);
           _rate(0);
           fx.add(Fx(FxKind.angry, c.x, c.y));
