@@ -438,8 +438,7 @@ class StorePainter extends CustomPainter {
 
   void _customer(Canvas canvas, Customer c) {
     final f = facingOf(c.dx, c.dy);
-    // 단골은 정해진 얼굴(시트 번호), 그냥 손님은 손님 시트 중 하나
-    final who = c.regular != null ? c.look : customerChars[c.look % customerChars.length];
+    final who = customerSheet(c);
     final Anim anim;
     if (c.react > 0) {
       anim = c.happy ? Anim.yes : Anim.no;
@@ -589,7 +588,11 @@ class StorePainter extends CustomPainter {
       case FxKind.clean:
         _float(canvas, e, k, '✨', const Color(0xFF42A5F5));
       case FxKind.goal:
-        _float(canvas, e, k, '+${e.amount}', const Color(0xFF43A047), size: 24);
+        _float(canvas, e, k, e.product == 'new' ? 'NEW!' : '+${e.amount}',
+            e.product == 'new' ? const Color(0xFFFF4081) : const Color(0xFF43A047),
+            size: e.product == 'new' ? 18 : 24);
+      case FxKind.stamp:
+        _float(canvas, e, k, '✔ +${e.amount}', const Color(0xFF7E57C2), size: 20);
       case FxKind.event || FxKind.day || FxKind.incident:
         break; // 화면 위 알림으로 보여 준다
       case FxKind.regular:
@@ -991,3 +994,6 @@ Color weatherColor(Weather w) => switch (w) {
       Weather.rain => const Color(0xFF42A5F5),
       Weather.cold => const Color(0xFF4FC3F7),
     };
+
+/// 손님이 쓰는 캐릭터 시트: 단골은 정해진 얼굴, 그냥 손님은 손님 시트 중 하나.
+int customerSheet(Customer c) => c.regular != null ? c.look : customerChars[c.look % customerChars.length];

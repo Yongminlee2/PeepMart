@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 import '../engine/catalog.dart';
@@ -200,7 +202,7 @@ class Portrait extends CustomPainter {
       ..translate(size.width / 2, size.height * 0.98)
       ..scale(size.width / 50);
     if (hidden) canvas.saveLayer(null, Paint()..colorFilter = const ColorFilter.mode(Colors.black54, BlendMode.srcIn));
-    Sprites.draw(canvas, look, Offset.zero, anim, Facing.downLeft, 0.2);
+    Sprites.drawPortrait(canvas, look, anim);
     if (hidden) canvas.restore();
     canvas.restore();
   }
@@ -220,6 +222,7 @@ class HelpScreen extends StatelessWidget {
     ('rank', Icons.storefront_rounded),
     ('weather', Icons.umbrella_rounded),
     ('incident', Icons.local_police_rounded),
+    ('dex', Icons.collections_bookmark_rounded),
     ('stock', Icons.inventory_2_rounded),
     ('checkout', Icons.point_of_sale_rounded),
     ('build', Icons.handyman_rounded),
@@ -260,7 +263,7 @@ class HelpScreen extends StatelessWidget {
 
 // ------------------------------------------------------------------ 게임 중 메뉴
 
-enum MenuChoice { map, regulars, help, settings, title }
+enum MenuChoice { map, regulars, dex, help, settings, title }
 
 Future<MenuChoice?> showGameMenu(BuildContext context) => showModalBottomSheet<MenuChoice>(
       context: context,
@@ -273,6 +276,7 @@ Future<MenuChoice?> showGameMenu(BuildContext context) => showModalBottomSheet<M
             for (final (m, icon, key) in const [
               (MenuChoice.map, Icons.map_rounded, 'btn_map'),
               (MenuChoice.regulars, Icons.favorite_rounded, 'btn_regulars'),
+              (MenuChoice.dex, Icons.collections_bookmark_rounded, 'btn_dex'),
               (MenuChoice.help, Icons.help_rounded, 'btn_help'),
               (MenuChoice.settings, Icons.settings_rounded, 'settings_title'),
               (MenuChoice.title, Icons.home_rounded, 'btn_title'),
@@ -288,3 +292,101 @@ Future<MenuChoice?> showGameMenu(BuildContext context) => showModalBottomSheet<M
         ),
       ),
     );
+
+// ------------------------------------------------------------------ 도감
+
+/// 손님 도감(만난 손님)과 상품 도장(많이 판 상품).
+class DexScreen extends StatelessWidget {
+  final Owner owner;
+  const DexScreen(this.owner, {super.key});
+
+  @override
+  Widget build(BuildContext context) => DefaultTabController(
+        length: 2,
+        child: Scaffold(
+          backgroundColor: bg,
+          appBar: AppBar(
+            backgroundColor: bg,
+            foregroundColor: inkColor,
+            title: Text(S.t('btn_dex'), style: const TextStyle(color: inkColor)),
+            bottom: TabBar(
+              labelColor: inkColor,
+              indicatorColor: const Color(0xFFFF9800),
+              tabs: [
+                Tab(text: S.tn('dex_people', {'n': owner.met.where(customerChars.contains).length, 'm': customerChars.length})),
+                Tab(text: S.tn('dex_stamps', {'n': products.where((p) => (owner.sold[p.id] ?? 0) >= stampAt).length, 'm': products.length})),
+              ],
+            ),
+          ),
+          body: SafeArea(child: TabBarView(children: [_people(), _stamps()])),
+        ),
+      );
+
+  Widget _people() {
+    final n = owner.met.where(customerChars.contains).length;
+    final next = (n ~/ meetEvery + 1) * meetEvery;
+    return ListView(padding: const EdgeInsets.all(14), children: [
+      Text(next <= customerChars.length ? S.tn('dex_people_hint', {'n': next, 'r': meetReward(next ~/ meetEvery)}) : S.t('dex_people_done'),
+          style: const TextStyle(fontSize: 13, color: Colors.black54)),
+      const SizedBox(height: 10),
+      GridView.count(
+        crossAxisCount: 5,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        mainAxisSpacing: 8,
+        crossAxisSpacing: 8,
+        children: [
+          for (final who in customerChars)
+            Container(
+              decoration: _card(owner.met.contains(who) ? Colors.white : const Color(0xFFEEEEEE)),
+              child: CustomPaint(painter: Portrait(who, hidden: !owner.met.contains(who))),
+            ),
+        ],
+      ),
+    ]);
+  }
+
+  Widget _stamps() => ListView(padding: const EdgeInsets.all(14), children: [
+        Text(S.tn('dex_stamps_hint', {'n': stampAt}), style: const TextStyle(fontSize: 13, color: Colors.black54)),
+        const SizedBox(height: 10),
+        GridView.count(
+          crossAxisCount: 4,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          childAspectRatio: 0.8,
+          children: [
+            for (final p in products) _stamp(p),
+          ],
+        ),
+      ]);
+
+  Widget _stamp(Product p) {
+    final open = owner.level >= p.level;
+    final n = owner.sold[p.id] ?? 0;
+    final done = n >= stampAt;
+    return Container(
+      decoration: _card(done ? const Color(0xFFF3E5F5) : (open ? Colors.white : const Color(0xFFEEEEEE))),
+      padding: const EdgeInsets.all(6),
+      child: Column(children: [
+        Expanded(
+          child: Stack(alignment: Alignment.center, children: [
+            if (open) CustomPaint(size: const Size(44, 44), painter: FoodPreview(p.id)) else const Text('?', style: TextStyle(fontSize: 26, color: Colors.black26)),
+            if (done)
+              Transform.rotate(
+                angle: -0.3,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  decoration: BoxDecoration(border: Border.all(color: const Color(0xFF7E57C2), width: 2), borderRadius: BorderRadius.circular(6)),
+                  child: const Text('✔', style: TextStyle(color: Color(0xFF7E57C2), fontSize: 16)),
+                ),
+              ),
+          ]),
+        ),
+        Text(open ? S.t('p_${p.id}') : '???', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11, color: inkColor)),
+        Text(done ? '$stampAt/$stampAt' : '${min(n, stampAt)}/$stampAt', style: const TextStyle(fontSize: 10, color: Colors.black45)),
+      ]),
+    );
+  }
+}

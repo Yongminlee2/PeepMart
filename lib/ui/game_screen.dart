@@ -129,6 +129,9 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
           final want = world.customers.where((c) => c.regular == e.product).firstOrNull?.wants.first;
           toast(S.tn('regular_arrive', {'name': regularName(e.product), 'item': want == null ? '' : S.t('p_$want')}));
         }
+      } else if (e.kind == FxKind.stamp) {
+        toast(S.tn('stamp_got', {'item': S.t('p_${e.product}'), 'n': stampAt, 'r': e.amount}));
+        Sfx.play(FxKind.levelUp, clock);
       } else if (e.kind == FxKind.incident) {
         final k = Incident.values[e.amount];
         toast(S.tn('inc_${k.name}', {'n': e.product}));
@@ -155,6 +158,15 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
       if (e.kind != FxKind.scan) flights.add(Flight(e));
     }
     world.fx.clear();
+    // 손님 도감: 처음 보는 손님
+    for (final c in world.customers) {
+      final (isNew, reward) = game.owner.meet(customerSheet(c));
+      if (!isNew || game.owner.met.length < 2) continue; // 첫 손님은 그냥 넘어간다(시작하자마자 알림이 뜨지 않게)
+      flights.add(Flight(Fx(FxKind.goal, c.x, c.y, product: 'new')));
+      toast(reward > 0
+          ? S.tn('dex_milestone', {'n': game.owner.met.length, 'r': reward})
+          : S.tn('dex_new', {'n': game.owner.met.length, 'm': customerChars.length}));
+    }
     for (final f in flights) {
       f.age += dt;
     }
@@ -530,6 +542,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
         nav.push(MaterialPageRoute(builder: (_) => RegularsScreen(game.owner)));
       case MenuChoice.help:
         nav.push(MaterialPageRoute(builder: (_) => const HelpScreen()));
+      case MenuChoice.dex:
+        nav.push(MaterialPageRoute(builder: (_) => DexScreen(game.owner)));
       case MenuChoice.settings:
         showSettings(context);
       case MenuChoice.title:

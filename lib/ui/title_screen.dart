@@ -108,6 +108,8 @@ class _TitleScreenState extends State<TitleScreen> {
                   }),
                   small('btn_regulars', Icons.favorite_rounded,
                       () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => RegularsScreen(_owner)))),
+                  small('btn_dex', Icons.collections_bookmark_rounded,
+                      () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => DexScreen(_owner)))),
                   small('btn_help', Icons.help_rounded,
                       () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const HelpScreen()))),
                 ]),

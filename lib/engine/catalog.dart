@@ -411,3 +411,12 @@ const lostReward = 0.1; // 아이를 찾아 주면 오늘 목표의 이만큼
 const kidScale = 0.72;
 const orderTime = 75.0; // 배달 주문 제한 시간
 const orderPay = 2; // 배달은 값의 이만큼을 받는다
+
+// ------------------------------------------------------------------ 도감
+
+/// 손님 도감: 처음 보는 손님을 만나면 기록되고, [meetEvery] 명마다 상금.
+const meetEvery = 10;
+int meetReward(int milestone) => 300 * milestone; // milestone = 10명째 1, 20명째 2, ...
+
+/// 상품 도장: 한 상품을 [stampAt] 개 팔면 도장과 상금(값 × [stampAt]).
+const stampAt = 30;

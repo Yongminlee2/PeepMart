@@ -71,12 +71,13 @@ class StaffAgent extends Walker {
   StaffAgent(this.kind, super.at);
 }
 
-enum FxKind { pick, place, scan, cash, pay, angry, sad, levelUp, litter, clean, goal, event, regular, day, incident }
+enum FxKind { pick, place, scan, cash, pay, angry, sad, levelUp, litter, clean, goal, event, regular, day, incident, stamp }
 
 /// FxKind.day 의 amount.
 const dayLastCall = 0, dayClosing = 1, dayClosed = 2;
 
 /// FxKind.incident 의 amount (돈이 걸린 건 product 에 금액 문자열).
+/// 도장을 받았을 때 FxKind.stamp (product = 상품, amount = 상금).
 enum Incident { thiefFlee, thiefCaught, thiefEscaped, kidLost, kidFound, kidGone, orderIn, orderDone, orderLate }
 
 /// 배달 주문: 진열대를 돌며 상품을 챙기고(진열대에서 빠진다) 입구까지 들고 가면 끝.
@@ -721,6 +722,8 @@ class World {
     dayServed++;
     for (final p in c.carry) {
       daySold[p] = (daySold[p] ?? 0) + 1;
+      final stamp = game.owner.addSold(p);
+      if (stamp > 0) fx.add(Fx(FxKind.stamp, c.x, c.y, product: p, amount: stamp));
     }
     final ups = game.addXp(paid);
     q.remove(c);

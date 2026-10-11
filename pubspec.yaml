@@ -23,6 +23,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/characters/
+    - assets/characters/thumbs/
     - assets/props/
     - assets/audio/
   fonts:

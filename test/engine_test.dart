@@ -929,4 +929,50 @@ void main() {
       expect(w.order, isNull);
     });
   });
+
+  group('도감', () {
+    test('처음 만난 손님만 기록되고 10명째마다 상금', () {
+      final o = Game().owner..money = 0;
+      expect(o.meet(5).$1, isTrue);
+      expect(o.meet(5).$1, isFalse);
+      for (var i = 10; i < 18; i++) {
+        o.meet(i);
+      }
+      expect(o.money, 0);
+      final (isNew, reward) = o.meet(30); // 10명째
+      expect(isNew, isTrue);
+      expect(reward, meetReward(1));
+      expect(o.money, meetReward(1));
+    });
+
+    test('한 상품을 30개 팔면 도장 상금이 한 번만', () {
+      final o = Game().owner..money = 0;
+      var got = 0;
+      for (var i = 0; i < 40; i++) {
+        got += o.addSold('soda');
+      }
+      expect(got, productById('soda').price * stampAt);
+      expect(o.sold['soda'], 40);
+    });
+
+    test('계산하면 판 개수가 쌓이고 도감은 저장된다', () {
+      final g = Game()
+        ..money = 1000
+        ..level = 5; // 계산원을 쓸 수 있게
+      g.owner.tutorial = TutorialStep.done;
+      g.hire(Staff.cashier);
+      final w = World(g, seed: 2)..openDay();
+      for (var i = 0; i < 1200; i++) {
+        w.tick(0.05);
+        for (final s in g.shelves) {
+          s.stock = s.capacity;
+        }
+      }
+      expect(g.owner.sold.values.fold(0, (a, b) => a + b), greaterThan(0));
+      g.owner.met.add(7);
+      final back = Game.fromJson(jsonDecode(jsonEncode(g.toJson())) as Map<String, dynamic>);
+      expect(back.owner.sold, g.owner.sold);
+      expect(back.owner.met, contains(7));
+    });
+  });
 }

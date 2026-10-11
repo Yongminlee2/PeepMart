@@ -143,6 +143,30 @@ class Sprites {
     }
   }
 
+  static final Map<(int, Anim), ui.Image> _thumbs = {};
+  static final Set<(int, Anim)> _thumbLoading = {};
+
+  /// 초상화(서기·좋아요 한 프레임)를 발 위치에 그린다. tool/make_thumbs.py 가 자른 작은 그림이라
+  /// 도감처럼 수십 개를 그려도 시트를 올리지 않는다.
+  static void drawPortrait(Canvas canvas, int who, Anim anim) {
+    who %= characterFiles.length;
+    final key = (who, anim == Anim.yes ? Anim.yes : Anim.idle);
+    final img = _thumbs[key];
+    if (img == null) {
+      if (_thumbLoading.add(key)) {
+        _image('assets/characters/thumbs/${characterFiles[who]}-${key.$2.name}.png').then((i) {
+          if (i == null) return;
+          _thumbs[key] = i;
+          loaded.value++;
+        });
+      }
+      return;
+    }
+    final size = orthoWorld * (tw / 1.41421356) * charScale;
+    canvas.drawImageRect(img, Rect.fromLTWH(0, 0, img.width.toDouble(), img.height.toDouble()),
+        Rect.fromLTWH(-size / 2, -size * footY, size, size), Paint()..filterQuality = FilterQuality.medium);
+  }
+
   /// 발 위치에 캐릭터 한 프레임을 그린다. 그림이 없으면 false.
   static bool draw(Canvas canvas, int who, Offset feet, Anim anim, Facing facing, double t, {double fps = 10}) {
     who %= characterFiles.length;

@@ -36,6 +36,8 @@ class Owner {
   TutorialStep tutorial = TutorialStep.pickBox;
   int savedAt = 0; // 마지막 저장 시각(밀리초). 꺼 둔 동안 번 돈 계산용
   final Map<String, Game> branches = {}; // 연 지점들
+  final Set<int> met = {}; // 만난 손님 (캐릭터 시트 번호)
+  final Map<String, int> sold = {}; // 상품마다 지금까지 판 개수
   String current = 'piyak';
 
   Owner() {
@@ -47,6 +49,24 @@ class Owner {
   int heartsOf(String regular) => hearts[regular] ?? 0;
 
   int get rank => rankOf(level);
+
+  /// 손님을 만났다. 처음이면 true, [meetEvery] 명째마다 상금이 들어온다.
+  (bool, int) meet(int sheet) {
+    if (!met.add(sheet)) return (false, 0);
+    final reward = met.length % meetEvery == 0 ? meetReward(met.length ~/ meetEvery) : 0;
+    money += reward;
+    return (true, reward);
+  }
+
+  /// 하나 팔았다. 딱 [stampAt] 개째면 도장 상금을 주고 그 값을 돌려준다.
+  int addSold(String product) {
+    final n = (sold[product] ?? 0) + 1;
+    sold[product] = n;
+    if (n != stampAt) return 0;
+    final reward = productById(product).price * stampAt;
+    money += reward;
+    return reward;
+  }
 
   /// 처음 안내가 [step] 에 있으면 다음으로 넘긴다.
   void advance(TutorialStep step) {
@@ -98,6 +118,8 @@ class Owner {
         'savedAt': savedAt,
         'current': current,
         'branches': {for (final e in branches.entries) e.key: e.value._toJson()},
+        'met': met.toList()..sort(),
+        'sold': sold,
       };
 
   static Owner fromJson(Map<String, dynamic> j) {
@@ -113,6 +135,8 @@ class Owner {
       o.upgrades[Upgrade.values.byName(e.key as String)] = e.value as int;
     }
     o.hearts.addAll((j['hearts'] as Map).cast<String, int>());
+    o.met.addAll(((j['met'] as List?) ?? const []).cast<int>());
+    o.sold.addAll(((j['sold'] as Map?) ?? const {}).cast<String, int>());
     o.branches.clear();
     for (final e in (j['branches'] as Map).entries) {
       Game._(o, e.key as String)._fromJson(e.value as Map<String, dynamic>);
