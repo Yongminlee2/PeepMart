@@ -92,7 +92,7 @@ class Flight {
         FxKind.pick || FxKind.place || FxKind.cash => 0.28,
         FxKind.scan => 0,
         FxKind.levelUp || FxKind.goal || FxKind.regular => 1.6,
-        FxKind.event => 0,
+        FxKind.event || FxKind.day => 0,
         _ => 1.0,
       };
 }
@@ -528,7 +528,7 @@ class StorePainter extends CustomPainter {
         _float(canvas, e, k, '✨', const Color(0xFF42A5F5));
       case FxKind.goal:
         _float(canvas, e, k, '+${e.amount}', const Color(0xFF43A047), size: 24);
-      case FxKind.event:
+      case FxKind.event || FxKind.day:
         break; // 화면 위 알림으로 보여 준다
       case FxKind.regular:
         _float(canvas, e, k, e.amount > 0 ? '♥' * e.amount : '♥', const Color(0xFFEC407A), size: 22);

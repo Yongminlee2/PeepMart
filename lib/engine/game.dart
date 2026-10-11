@@ -132,6 +132,9 @@ class Game {
   final Set<ShelfKind> managers = {};
   final Set<Tile> trash = {};
   final List<int> recent = []; // 최근 손님 만족도 0~5
+  int day = 1; // 다음에 열 날
+  int bestSales = 0; // 하루 최고 매출
+  double avgSales = 0, avgServed = 0; // 최근 하루들의 평균. 목표·할 일을 내 가게 실력에 맞춘다
 
   /// 바뀔 때마다 1씩 오른다. [World] 가 길을 다시 찾을지 보는 데 쓴다.
   int layoutVersion = 0;
@@ -472,6 +475,35 @@ class Game {
     return true;
   }
 
+  // ---------------------------------------------------------------- 하루 장사
+
+  /// 손님이 오는 대로 다 팔았을 때 하루에 오는 손님 수와 버는 돈.
+  (double, double) get fullDay {
+    final sale = onSale;
+    if (sale.isEmpty) return (0, 0);
+    final avg = sale.map((p) => productById(p).price).reduce((a, b) => a + b) / sale.length;
+    // 마감 전 몰림까지 치면 손님이 15% 더 오고, 한 사람이 평균 두 개쯤 산다
+    final visitors = dayLength / spawnInterval(shelves.length, rating, decorCount) * 1.15;
+    return (visitors, visitors * avg * 2);
+  }
+
+  /// 해 본 날이 있는가. 있으면 목표·할 일을 최근 평균으로 정한다.
+  /// (가게 크기로 어림하면 계산대·알바가 모자란 큰 가게에서 목표가 터무니없이 높아진다.)
+  bool get hasHistory => avgServed > 0;
+
+  /// 오늘 목표 매출. 첫날은 가게 크기로 어림해 낮게, 그다음부터는 최근 평균보다 조금 높게. 10 단위.
+  int get dayTarget {
+    final v = hasHistory ? avgSales * dayTargetGrowth : fullDay.$2 * dayTargetShare * min(1.0, 0.5 + 0.1 * day);
+    return max(20, (v / 10).round() * 10);
+  }
+
+  /// 하루가 끝났을 때 평균에 넣는다.
+  void recordDay(int sales, int served) {
+    double mix(double avg, int today) => avg <= 0 ? today.toDouble() : avg * (1 - dayAverageWeight) + today * dayAverageWeight;
+    avgSales = mix(avgSales, sales);
+    avgServed = mix(avgServed, served);
+  }
+
   // ---------------------------------------------------------------- 꺼 둔 동안
 
   /// 꺼 둔 동안 버는 시간 한계: 두 시간 + 매니저마다 한 시간 (최대 여덟 시간).
@@ -545,6 +577,9 @@ class Game {
         'managers': [for (final m in managers) m.name],
         'trash': [for (final t in trash) [t.$1, t.$2]],
         'recent': recent,
+        'day': day,
+        'best': bestSales,
+        'avg': [avgSales, avgServed],
       };
 
   void _fromJson(Map<String, dynamic> j) {
@@ -571,6 +606,11 @@ class Game {
     managers.addAll([for (final m in j['managers'] as List) ShelfKind.values.byName(m as String)]);
     trash.addAll([for (final t in j['trash'] as List) tile(t as List)]);
     recent.addAll((j['recent'] as List).cast<int>());
+    day = j['day'] as int? ?? 1;
+    bestSales = j['best'] as int? ?? 0;
+    final avg = j['avg'] as List?;
+    avgSales = (avg?[0] as num?)?.toDouble() ?? 0;
+    avgServed = (avg?[1] as num?)?.toDouble() ?? 0;
     _reindex();
   }
 }

@@ -619,4 +619,108 @@ void main() {
     expect(jsonEncode(back.toJson()), jsonEncode(g.toJson()));
     expect(back.at((5, 5))?.type, 'rug');
   });
+
+  group('하루 장사', () {
+    Game ready() {
+      final g = Game()
+        ..money = 1000
+        ..level = 5;
+      g.owner.tutorial = TutorialStep.done;
+      g.hire(Staff.cashier);
+      g.hire(Staff.stocker);
+      return g;
+    }
+
+    test('안내가 끝난 가게는 닫힌 채 시작하고, 열기 전엔 손님이 안 온다', () {
+      final w = World(ready(), seed: 1);
+      expect(w.phase, DayPhase.closed);
+      run(w, 30);
+      expect(w.customers, isEmpty);
+    });
+
+    test('열면 하루가 흐르고, 마감 뒤 손님이 다 나가면 닫고 결과를 남긴다', () {
+      final g = ready();
+      final w = World(g, seed: 2)..openDay();
+      expect(w.phase, DayPhase.open);
+      expect(w.tasks, hasLength(2));
+      expect(w.dayTarget, greaterThan(0));
+      run(w, dayLength - 1);
+      expect(w.phase, DayPhase.open);
+      expect(w.daySales, greaterThan(0));
+      run(w, 2);
+      expect(w.phase, isNot(DayPhase.open));
+      final before = g.money;
+      for (var i = 0; i < 4000 && w.phase != DayPhase.closed; i++) {
+        w.tick(0.05);
+      }
+      final r = w.result!;
+      expect(w.phase, DayPhase.closed);
+      expect(r.day, 1);
+      expect(g.day, 2);
+      expect(r.sales, w.daySales);
+      expect(r.stars, inInclusiveRange(0, 3));
+      expect(g.money, greaterThanOrEqualTo(before + r.bonus + r.taskReward - g.wages * 2));
+      expect(g.bestSales, r.sales);
+    });
+
+    test('처음 안내 중에는 열려 있어도 시계가 안 간다', () {
+      final g = Game();
+      final w = World(g, seed: 3);
+      expect(w.phase, DayPhase.open);
+      run(w, dayLength + 10);
+      expect(w.phase, DayPhase.open);
+    });
+
+    test('할 일: 파는 개수·손님 수·실망한 손님 수를 센다', () {
+      final w = World(ready(), seed: 4)..openDay();
+      const sell = DayTask(DayTaskKind.sell, 2, product: 'soda');
+      const calm = DayTask(DayTaskKind.calm, 1);
+      w.daySold['soda'] = 2;
+      expect(w.taskDone(sell), isTrue);
+      w.dayUpset = 1;
+      expect(w.taskDone(calm), isTrue);
+      w.dayUpset = 2;
+      expect(w.taskDone(calm), isFalse);
+    });
+
+    test('별: 목표의 0.7·1·1.25배에서 하나씩, 보너스는 별에 따라', () {
+      final g = ready();
+      final w = World(g, seed: 5)..openDay();
+      w
+        ..dayTarget = 100
+        ..daySales = 140
+        ..tasks = [];
+      final before = g.money;
+      w.dayTime = dayLength;
+      w.customers.clear();
+      w.tick(0.01); // 마감
+      w.customers.clear();
+      w.tick(0.01); // 닫기
+      expect(w.result!.stars, 3);
+      expect(g.money - before, greaterThanOrEqualTo((140 * dayBonus[3]).round() - g.wages));
+    });
+
+    test('날짜·최고 매출·최근 평균은 저장된다', () {
+      final g = ready()
+        ..day = 7
+        ..bestSales = 321
+        ..avgSales = 250.5
+        ..avgServed = 30;
+      final back = Game.fromJson(jsonDecode(jsonEncode(g.toJson())) as Map<String, dynamic>);
+      expect(back.day, 7);
+      expect(back.bestSales, 321);
+      expect(back.avgSales, 250.5);
+      expect(back.avgServed, 30);
+    });
+
+    test('둘째 날부터 목표는 최근 평균이다(가게 크기와 상관없이)', () {
+      final g = ready();
+      expect(g.hasHistory, isFalse);
+      g.recordDay(200, 30);
+      expect(g.dayTarget, 200);
+      g.recordDay(100, 20); // 못한 날은 목표도 내려간다
+      expect(g.avgSales, closeTo(160, 0.01));
+      expect(g.dayTarget, 160);
+    });
+  });
 }

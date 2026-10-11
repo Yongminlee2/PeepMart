@@ -140,10 +140,18 @@ void main() {
     final out = StringBuffer('분  레벨  돈      땅  진열대 상품 계산대 직원(계/진/청) 별점 목표 손님\n');
     var lastLevel = 1;
     final levelAt = <int, double>{};
+    final stars = <int>[];
     for (var t = 0.0; t < 6 * 3600; t += dt) {
       bot.tick(dt);
       w.tick(dt);
       w.fx.clear();
+      // 하루가 끝나면 별을 적고 바로 다음 날을 연다(사람은 닫힌 동안 좀 쉬니 실제로는 더 느리다)
+      final r = w.result;
+      if (r != null) {
+        stars.add(r.stars);
+        w.result = null;
+      }
+      if (w.phase == DayPhase.closed) w.openDay();
       if (g.level != lastLevel) {
         lastLevel = g.level;
         levelAt[g.level] = t / 60;
@@ -157,6 +165,7 @@ void main() {
         out.writeln('${head.padRight(56)}${g.rating.toStringAsFixed(1)}  ${g.goal.toString().padLeft(3)}  ${g.served}');
       }
     }
+    out.writeln('\n하루 ${stars.length}번, 별 0~3개 횟수: ${[for (var i = 0; i <= 3; i++) stars.where((x) => x == i).length]}');
     out.writeln('\n레벨 도달(분): ${levelAt.entries.map((e) => '${e.key}:${e.value.round()}').join('  ')}');
     // ignore: avoid_print
     print(out);

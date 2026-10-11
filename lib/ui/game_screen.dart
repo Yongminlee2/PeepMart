@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
@@ -126,6 +128,14 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
         } else if (e.amount < 0) {
           final want = world.customers.where((c) => c.regular == e.product).firstOrNull?.wants.first;
           toast(S.tn('regular_arrive', {'name': regularName(e.product), 'item': want == null ? '' : S.t('p_$want')}));
+        }
+      } else if (e.kind == FxKind.day) {
+        if (e.amount == dayClosed) {
+          final r = world.result;
+          if (r != null) _dayResult(r);
+        } else {
+          toast(S.t(e.amount == dayLastCall ? 'day_last_call' : 'day_closing'));
+          Sfx.play(FxKind.levelUp, clock);
         }
       } else if (e.kind == FxKind.levelUp) {
         _levelUp(e.amount);
@@ -392,7 +402,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                 }),
               ),
               Positioned(left: 8, right: 8, top: 6, child: _hud()),
-              if (b == null && game.owner.tutorial == TutorialStep.done) Positioned(left: 8, top: 58, child: _goalCard()),
+              if (b == null && game.owner.tutorial == TutorialStep.done)
+                Positioned(left: 8, top: 58, child: world.phase == DayPhase.closed ? _goalCard() : _dayCard()),
               if (game.owner.tutorial != TutorialStep.done && (b == null || game.owner.tutorial == TutorialStep.build))
                 Positioned(left: 0, right: 0, top: 58, child: _tutorialCard(game.owner.tutorial)),
               if (_regularNews != null && _regularLeft > 0)
@@ -413,7 +424,9 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                     ),
                   ),
                 ),
-              if (b == null && !_touched)
+              if (b == null && game.owner.tutorial == TutorialStep.done && world.phase == DayPhase.closed)
+                Align(alignment: const Alignment(0, 0.86), child: _openButton()),
+              if (b == null && !_touched && world.phase != DayPhase.closed)
                 Align(
                   alignment: const Alignment(0, 0.9),
                   child: Text(S.t(_useStick ? 'hint_move' : 'hint_tap'),
@@ -674,6 +687,213 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
   }
 
   /// 지금 목표와 진행, 행사 중이면 남은 시간.
+  /// 여는 동안: 날짜·남은 시간, 오늘 번 돈과 별 눈금, 할 일 두 개.
+  Widget _dayCard() {
+    final style = const TextStyle(fontSize: 13, color: inkColor);
+    final ev = world.event;
+    final closing = world.phase == DayPhase.closing;
+    final full = world.dayTarget * dayStars.last; // 막대 끝 = 별 셋
+    final stars = dayStars.where((r) => world.daySales >= world.dayTarget * r).length;
+    Widget task(DayTask t) {
+      final p = world.taskProgress(t);
+      final done = world.taskDone(t);
+      final calm = t.kind == DayTaskKind.calm;
+      final text = switch (t.kind) {
+        DayTaskKind.sell => S.tn('task_sell', {'item': S.t('p_${t.product}'), 'n': t.n}),
+        DayTaskKind.serve => S.tn('task_serve', {'n': t.n}),
+        DayTaskKind.calm => S.tn('task_calm', {'n': t.n}),
+      };
+      return Padding(
+        padding: const EdgeInsets.only(top: 3),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(
+              calm
+                  ? (done ? Icons.sentiment_satisfied_rounded : Icons.sentiment_dissatisfied_rounded)
+                  : (done ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded),
+              size: 15,
+              color: done ? const Color(0xFF43A047) : (calm ? const Color(0xFFE53935) : Colors.black38)),
+          const SizedBox(width: 4),
+          Flexible(child: Text(text, style: style, overflow: TextOverflow.ellipsis)),
+          const SizedBox(width: 4),
+          Text(calm ? '$p/${t.n}' : '${min(p, t.n)}/${t.n}', style: style.copyWith(color: Colors.black45, fontSize: 12)),
+        ]),
+      );
+    }
+
+    return IgnorePointer(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Container(
+          constraints: const BoxConstraints(maxWidth: 250),
+          padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.92),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: inkColor.withValues(alpha: 0.6), width: 1.5),
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+            Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(closing ? Icons.nightlight_round : Icons.wb_sunny_rounded,
+                  size: 16, color: closing ? const Color(0xFF5C6BC0) : const Color(0xFFFFA000)),
+              const SizedBox(width: 4),
+              Flexible(child: Text(S.tn('day_n', {'n': game.day}), style: style.copyWith(fontSize: 14), maxLines: 1, overflow: TextOverflow.ellipsis)),
+              const SizedBox(width: 8),
+              if (closing)
+                Text(S.t('day_closing_short'), style: style.copyWith(color: const Color(0xFF5C6BC0)))
+              else
+                SizedBox(
+                  width: 80,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: world.dayLeft / dayLength,
+                      minHeight: 6,
+                      backgroundColor: const Color(0xFFEEEEEE),
+                      color: world.dayLeft < lastCall ? const Color(0xFFFF7043) : const Color(0xFFFFCA28),
+                    ),
+                  ),
+                ),
+              if (!closing) ...[
+                const SizedBox(width: 6),
+                Text('${world.dayLeft.ceil()}s', style: style.copyWith(fontSize: 12, color: Colors.black45)),
+              ],
+            ]),
+            const SizedBox(height: 5),
+            Row(mainAxisSize: MainAxisSize.min, children: [
+              Coins(world.daySales, size: 13),
+              Text(' / ${world.dayTarget}', style: style.copyWith(color: Colors.black45, fontSize: 12)),
+              const SizedBox(width: 6),
+              for (var i = 0; i < 3; i++)
+                Icon(i < stars ? Icons.star_rounded : Icons.star_outline_rounded,
+                    size: 16, color: const Color(0xFFFFC107)),
+            ]),
+            const SizedBox(height: 3),
+            SizedBox(
+              width: 200,
+              height: 8,
+              child: Stack(children: [
+                Positioned.fill(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: full <= 0 ? 0 : (world.daySales / full).clamp(0.0, 1.0),
+                      minHeight: 8,
+                      backgroundColor: const Color(0xFFEEEEEE),
+                      color: const Color(0xFF66BB6A),
+                    ),
+                  ),
+                ),
+                for (final r in dayStars.take(2))
+                  Positioned(left: 200 * r / dayStars.last - 1, top: 0, bottom: 0, child: Container(width: 2, color: Colors.white)),
+              ]),
+            ),
+            for (final t in world.tasks) task(t),
+          ]),
+        ),
+        if (ev != null)
+          Container(
+            margin: const EdgeInsets.only(top: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: ev == EventKind.rush ? const Color(0xFFFFE0B2) : const Color(0xFFF3E5F5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text('${S.t(ev == EventKind.rush ? 'event_rush' : 'event_vip')}  ${world.eventLeft.ceil()}s', style: style),
+          ),
+      ]),
+    );
+  }
+
+  /// 닫힌 동안: 다음 날 문 열기.
+  Widget _openButton() => Column(mainAxisSize: MainAxisSize.min, children: [
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 40),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.85), borderRadius: BorderRadius.circular(12)),
+          child: Text(S.t('day_closed_hint'),
+              textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, color: Colors.black54)),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          width: 230,
+          child: BubbleButton(
+            S.tn('day_open', {'n': game.day}),
+            color: const Color(0xFF81C784),
+            trailing: const Icon(Icons.storefront_rounded, color: inkColor),
+            onTap: () {
+              world.openDay();
+              Sfx.play(FxKind.levelUp, clock);
+              setState(() {});
+            },
+          ),
+        ),
+      ]);
+
+  Future<void> _dayResult(DayResult r) async {
+    Sfx.play(FxKind.levelUp, clock);
+    saveGame(game);
+    const style = TextStyle(fontSize: 15, color: inkColor);
+    Widget row(String label, Widget value) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 3),
+          child: Row(children: [Expanded(child: Text(label, style: style)), const SizedBox(width: 8), value]),
+        );
+    String taskText(DayTask t) => switch (t.kind) {
+          DayTaskKind.sell => S.tn('task_sell', {'item': S.t('p_${t.product}'), 'n': t.n}),
+          DayTaskKind.serve => S.tn('task_serve', {'n': t.n}),
+          DayTaskKind.calm => S.tn('task_calm', {'n': t.n}),
+        };
+    final perTask = (r.target * dayTaskReward).round();
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (c) => AlertDialog(
+        backgroundColor: bg,
+        title: Text(S.tn('day_result', {'n': r.day}), textAlign: TextAlign.center, style: const TextStyle(color: inkColor)),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              for (var i = 0; i < 3; i++)
+                TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0, end: 1),
+                  duration: Duration(milliseconds: 350 + 300 * i),
+                  curve: Curves.elasticOut,
+                  builder: (_, k, child) => Transform.scale(scale: i < r.stars ? k : 1, child: child),
+                  child: Icon(i < r.stars ? Icons.star_rounded : Icons.star_outline_rounded,
+                      size: i == 1 ? 58 : 46, color: const Color(0xFFFFC107)),
+                ),
+            ]),
+            if (r.best)
+              Container(
+                margin: const EdgeInsets.only(top: 4, bottom: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                decoration: BoxDecoration(color: const Color(0xFFFF7043), borderRadius: BorderRadius.circular(10)),
+                child: Text(S.t('day_best'), style: const TextStyle(color: Colors.white, fontSize: 13)),
+              ),
+            const SizedBox(height: 6),
+            row(S.t('day_sales'), Coins(r.sales, size: 16)),
+            row(S.t('day_target'), Text('${r.target}', style: style)),
+            row(S.t('day_served'), Text('${r.served}', style: style)),
+            row(S.t('day_upset'), Text('${r.upset}', style: style)),
+            const Divider(),
+            Align(alignment: Alignment.centerLeft, child: Text(S.t('day_tasks'), style: style.copyWith(fontSize: 13, color: Colors.black54))),
+            for (final (t, ok) in r.tasks)
+              row(
+                  taskText(t),
+                  ok
+                      ? Coins(perTask, size: 14)
+                      : const Icon(Icons.close_rounded, size: 18, color: Color(0xFFE53935))),
+            if (r.bonus > 0) row(S.t('day_bonus'), Coins(r.bonus, size: 14)),
+          ]),
+        ),
+        actions: [
+          Center(
+            child: BubbleButton(S.t('btn_nice'), color: const Color(0xFF81C784), onTap: () => Navigator.pop(c)),
+          ),
+        ],
+      ),
+    );
+    world.result = null;
+  }
+
   Widget _goalCard() {
     final g = game.currentGoal;
     final ev = world.event;
@@ -696,7 +916,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                   Row(mainAxisSize: MainAxisSize.min, children: [
                     const Icon(Icons.flag_rounded, size: 16, color: Color(0xFFE53935)),
                     const SizedBox(width: 4),
-                    Flexible(child: Text(label(g), style: style, overflow: TextOverflow.ellipsis)),
+                    Flexible(child: Text(label(g), style: style, maxLines: 1, overflow: TextOverflow.ellipsis)),
                   ]),
                   const SizedBox(height: 4),
                   Row(mainAxisSize: MainAxisSize.min, children: [

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:peep_mart/engine/catalog.dart';
 import 'package:peep_mart/engine/game.dart';
 import 'package:peep_mart/engine/world.dart';
 import 'package:peep_mart/strings.dart';
@@ -140,6 +141,36 @@ void main() {
     await tester.tapAt(screenOf(tester, w, reg.tile) + const Offset(0, -38));
     await runFor(tester, 5);
     expect(w.atAnyTill, isTrue);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('하루 장사: 문 열기 → 마감 → 결과 창 → 다음 날 단추', (tester) async {
+    tester.view.physicalSize = const Size(412, 860);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final g = Game();
+    g.owner.tutorial = TutorialStep.done;
+    final w = World(g, seed: 6);
+    await tester.pumpWidget(MaterialApp(home: GameScreen(g, world: w, followCamera: false)));
+    await tester.pump();
+    expect(w.phase, DayPhase.closed);
+
+    await tester.tap(find.text(S.tn('day_open', {'n': 1})));
+    await tester.pump();
+    expect(w.phase, DayPhase.open);
+    expect(find.text(S.tn('day_n', {'n': 1})), findsOneWidget);
+
+    w.dayTime = dayLength - 0.01;
+    w.customers.clear();
+    await runFor(tester, 1);
+    expect(w.phase, DayPhase.closed);
+    expect(find.text(S.tn('day_result', {'n': 1})), findsOneWidget);
+
+    await tester.tap(find.text(S.t('btn_nice')));
+    await runFor(tester, 1);
+    expect(find.text(S.tn('day_result', {'n': 1})), findsNothing);
+    expect(w.result, isNull);
+    expect(find.text(S.tn('day_open', {'n': 2})), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
   });
 }

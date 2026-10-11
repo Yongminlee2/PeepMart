@@ -323,3 +323,27 @@ int heartReward(int heart) => 80 * heart * heart;
 // ------------------------------------------------------------------ 처음 안내
 
 enum TutorialStep { pickBox, fillShelf, checkout, collect, build, done }
+
+// ------------------------------------------------------------------ 하루 장사
+
+/// 하루: 문을 열고 [dayLength] 초 동안 손님을 받는다. 시간이 다 되면 새 손님은 안 오고,
+/// 남은 손님이 다 나가면 닫고 결과(별·보너스·할 일)를 보여 준다. 닫힌 동안은 느긋하게 짓는다.
+const dayLength = 180.0;
+const lastCall = 30.0; // 마감 전 이만큼은 손님이 더 몰린다
+const lastCallFactor = 1.5;
+const dayTargetShare = 1.0; // 첫날 목표 = 진열대가 늘 차 있을 때 벌 돈의 이만큼(× 처음 며칠 낮춤)
+const dayTargetGrowth = 1.0; // 둘째 날부터 목표 = 최근 하루 평균(평소만큼 = 별 둘, 더 잘하면 셋)
+const dayAverageWeight = 0.4; // 오늘이 평균에 얼마나 들어가나
+const dayStars = [0.7, 1.0, 1.25]; // 목표의 이만큼 벌면 별 1·2·3개
+const dayBonus = [0.0, 0.1, 0.2, 0.3]; // 별 개수별 보너스 (그날 번 돈 대비)
+const dayTaskReward = 0.15; // 할 일 하나 = 목표의 이만큼
+const calmLimit = 2; // "실망한 손님 n명 이하"
+
+enum DayTaskKind { sell, serve, calm }
+
+class DayTask {
+  final DayTaskKind kind;
+  final String product; // sell 일 때만
+  final int n;
+  const DayTask(this.kind, this.n, {this.product = ''});
+}

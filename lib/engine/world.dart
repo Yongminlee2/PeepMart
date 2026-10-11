@@ -24,6 +24,18 @@ class Walker {
 
 enum CState { toShelf, atShelf, toQueue, toSeat, sitting, leaving, gone }
 
+/// 가게 문: 닫힘(짓는 시간) → 엶 → 마감(남은 손님만) → 닫힘.
+enum DayPhase { closed, open, closing }
+
+/// 막 끝난 하루. 화면이 결과 창으로 보여 준다.
+class DayResult {
+  final int day, sales, target, served, upset, stars, bonus, taskReward;
+  final bool best;
+  final List<(DayTask, bool)> tasks;
+  const DayResult(this.day, this.sales, this.target, this.served, this.upset, this.stars, this.bonus,
+      this.taskReward, this.best, this.tasks);
+}
+
 class Customer extends Walker {
   final int look;
   final List<String> wants; // 사려는 상품, 차례대로
@@ -58,7 +70,10 @@ class StaffAgent extends Walker {
   StaffAgent(this.kind, super.at);
 }
 
-enum FxKind { pick, place, scan, cash, pay, angry, sad, levelUp, litter, clean, goal, event, regular }
+enum FxKind { pick, place, scan, cash, pay, angry, sad, levelUp, litter, clean, goal, event, regular, day }
+
+/// FxKind.day 의 amount.
+const dayLastCall = 0, dayClosing = 1, dayClosed = 2;
 
 /// 화면 연출용 사건. 엔진은 쌓기만 하고 화면이 가져가 비운다.
 class Fx {
@@ -93,8 +108,75 @@ class World {
   final Map<ShelfKind, double> _managerStep = {};
   int _seenLayout = -1;
 
+  DayPhase phase = DayPhase.closed;
+  double dayTime = 0;
+  int daySales = 0, dayServed = 0, dayUpset = 0, dayTarget = 0;
+  final Map<String, int> daySold = {};
+  List<DayTask> tasks = [];
+  DayResult? result; // 방금 끝난 하루. 화면이 보여 주고 null 로 지운다
+
   World(this.game, {int? seed}) : _rng = Random(seed) {
     player = Walker(game.entrances.first.tile);
+    // 처음 안내 중에는 바로 열고, 시계는 안내가 끝나야 간다
+    if (game.owner.tutorial != TutorialStep.done) openDay();
+  }
+
+  bool get _clockRuns => game.owner.tutorial == TutorialStep.done;
+  double get dayLeft => max(0, dayLength - dayTime);
+
+  /// 문을 연다. 오늘 목표와 할 일 두 개를 정한다.
+  void openDay() {
+    if (phase != DayPhase.closed) return;
+    phase = DayPhase.open;
+    dayTime = 0;
+    daySales = dayServed = dayUpset = 0;
+    daySold.clear();
+    result = null;
+    dayTarget = game.dayTarget;
+    tasks = _makeTasks();
+    _spawnIn = 1;
+  }
+
+  List<DayTask> _makeTasks() {
+    final sale = game.onSale.toList()..sort();
+    if (sale.isEmpty) return [];
+    // 오늘 올 손님 어림: 해 본 날이 있으면 최근 평균(조금 더), 없으면 가게 크기로 어림한 것의 60%
+    final visitors = game.hasHistory ? game.avgServed * 1.05 : game.fullDay.$1 * 0.6;
+    final p = sale[_rng.nextInt(sale.length)];
+    final sell = DayTask(DayTaskKind.sell, max(3, (visitors * 1.5 / sale.length).round()), product: p);
+    final other = _rng.nextBool()
+        ? DayTask(DayTaskKind.serve, max(5, visitors.round()))
+        : const DayTask(DayTaskKind.calm, calmLimit);
+    return [sell, other];
+  }
+
+  /// 할 일이 어디까지 왔나 (calm 은 실망한 손님 수).
+  int taskProgress(DayTask t) => switch (t.kind) {
+        DayTaskKind.sell => daySold[t.product] ?? 0,
+        DayTaskKind.serve => dayServed,
+        DayTaskKind.calm => dayUpset,
+      };
+
+  bool taskDone(DayTask t) => t.kind == DayTaskKind.calm ? dayUpset <= t.n : taskProgress(t) >= t.n;
+
+  void _closeDay() {
+    final stars = dayStars.where((r) => daySales >= dayTarget * r).length;
+    final bonus = (daySales * dayBonus[stars]).round();
+    final done = [for (final t in tasks) (t, taskDone(t))];
+    final taskReward = done.where((d) => d.$2).length * (dayTarget * dayTaskReward).round();
+    final best = daySales > game.bestSales;
+    if (best) game.bestSales = daySales;
+    game.recordDay(daySales, dayServed);
+    game.money += bonus + taskReward;
+    result = DayResult(game.day, daySales, dayTarget, dayServed, dayUpset, stars, bonus, taskReward, best, done);
+    game.day++;
+    phase = DayPhase.closed;
+    fx.add(Fx(FxKind.day, player.x, player.y, amount: dayClosed));
+  }
+
+  void _rate(int satisfaction) {
+    game.rate(satisfaction);
+    if (satisfaction <= 2 && phase != DayPhase.closed) dayUpset++;
   }
 
   void tick(double dt) {
@@ -108,9 +190,11 @@ class World {
     for (final s in [...staff]) {
       _staffWork(s, dt);
     }
-    _events(dt);
-    _spawnIn -= dt * (event == EventKind.rush ? rushFactor : 1);
-    if (_spawnIn <= 0) {
+    _day(dt);
+    if (phase == DayPhase.open) _events(dt);
+    final last = _clockRuns && dayLeft < lastCall ? lastCallFactor : 1.0;
+    _spawnIn -= dt * (event == EventKind.rush ? rushFactor : 1) * last;
+    if (_spawnIn <= 0 && phase == DayPhase.open) {
       final cap = min(60, 3 + 2 * game.shelves.length);
       if (customers.length < cap) _spawn();
       _spawnIn = spawnInterval(game.shelves.length, game.rating, game.decorCount) * (0.7 + _rng.nextDouble() * 0.6);
@@ -119,13 +203,26 @@ class World {
       _updateCustomer(c, dt);
     }
     customers.removeWhere((c) => c.state == CState.gone);
-    _wageIn -= dt;
+    if (phase != DayPhase.closed) _wageIn -= dt;
     if (_wageIn <= 0) {
       _wageIn = wagePeriod;
       game.money -= game.wages;
     }
     final done = game.checkGoal();
     if (done != null) fx.add(Fx(FxKind.goal, player.x, player.y, amount: done.reward));
+  }
+
+  void _day(double dt) {
+    if (phase == DayPhase.open && _clockRuns) {
+      final before = dayLeft;
+      dayTime += dt;
+      if (before >= lastCall && dayLeft < lastCall) fx.add(Fx(FxKind.day, player.x, player.y, amount: dayLastCall));
+      if (dayTime >= dayLength) {
+        phase = DayPhase.closing;
+        fx.add(Fx(FxKind.day, player.x, player.y, amount: dayClosing));
+      }
+    }
+    if (phase == DayPhase.closing && customers.isEmpty) _closeDay();
   }
 
   void _events(double dt) {
@@ -369,6 +466,11 @@ class World {
       fx.add(Fx(FxKind.regular, c.x, c.y, product: reg0, amount: h ?? 0));
     }
     game.served++;
+    daySales += paid;
+    dayServed++;
+    for (final p in c.carry) {
+      daySold[p] = (daySold[p] ?? 0) + 1;
+    }
     final ups = game.addXp(paid);
     q.remove(c);
     fx.add(Fx(FxKind.pay, reg.c.toDouble(), reg.r.toDouble(), amount: paid));
@@ -563,7 +665,7 @@ class World {
   void _toRegister(Customer c) {
     final regs = game.registers.where((r) => game.queueTiles(r).isNotEmpty).toList();
     if (regs.isEmpty) {
-      game.rate(1);
+      _rate(1);
       _leave(c, rated: true);
       return;
     }
@@ -631,7 +733,7 @@ class World {
         if (c.goal != spot) _walkTo(c, spot);
         if (c.waited > queuePatience * c.patience && c.scanned == 0) {
           queues[c.register]?.remove(c);
-          game.rate(0);
+          _rate(0);
           fx.add(Fx(FxKind.angry, c.x, c.y));
           c
             ..react = 0.8
@@ -662,7 +764,7 @@ class World {
     if (c.wantIndex < c.wants.length) {
       _toShelf(c);
     } else if (c.carry.isEmpty) {
-      game.rate(1);
+      _rate(1);
       _leave(c, rated: true);
     } else {
       _toRegister(c);
@@ -673,7 +775,7 @@ class World {
   void _leave(Customer c, {bool rated = false}) {
     if (!rated && c.carry.isNotEmpty && c.state != CState.leaving) {
       final sat = 5 - 2 * c.missed - (c.waited > queuePatience / 2 ? 1 : 0) - (game.trash.length > 3 ? 1 : 0) + c.bonus;
-      game.rate(sat.clamp(1, 5));
+      _rate(sat.clamp(1, 5));
       _litter(c);
     }
     c.state = CState.leaving;
