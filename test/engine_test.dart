@@ -699,7 +699,8 @@ void main() {
       expect(w.result!.stars, 3);
       expect(g.money - before, greaterThanOrEqualTo((140 * dayBonus[3]).round() - g.wages - g.dailyCost));
       expect(w.result!.cost, g.dailyCost);
-      expect(w.result!.profit, 140 + w.result!.bonus - g.dailyCost);
+      expect(w.result!.profit, 140 + w.result!.bonus + w.result!.chest - g.dailyCost);
+      expect(w.result!.chest, greaterThan(0)); // 별 셋이면 보물 상자
     });
 
     test('날짜·최고 매출·최근 평균은 저장된다', () {
@@ -1308,6 +1309,88 @@ void main() {
       g.reorder(box);
       final back = Game.fromJson(jsonDecode(jsonEncode(g.toJson())) as Map<String, dynamic>);
       expect(back.items.firstWhere((i) => i.type == 'box').units, 5 + boxSize);
+    });
+  });
+
+  group('단체 주문·가격 전쟁·보물 상자·인형뽑기', () {
+    Game shop(int level) {
+      final g = Game()
+        ..money = 5000
+        ..level = level;
+      g.owner.tutorial = TutorialStep.done;
+      return g;
+    }
+
+    void close(World w) {
+      w.dayTime = dayLength;
+      w.customers.clear();
+      w.tick(0.01);
+      w.customers.clear();
+      w.tick(0.01);
+    }
+
+    test('단체 주문은 많고 오래 걸리고 더 받는다', () {
+      final o = Order(['soda', 'soda', 'donut', 'donut'], bulk: true);
+      expect(o.left, bulkTime);
+      expect(o.pay, ((3 + 3 + 3 + 3) * bulkPay).round());
+      expect(Order(['soda']).left, orderTime);
+    });
+
+    test('가격 전쟁 날: 라이벌 이야기 중, 6일마다(삐약동만)', () {
+      final g = shop(5)..day = 9;
+      expect(g.priceWarDay, isFalse); // 이야기 전
+      g.owner.story.add('rival');
+      expect(g.priceWarDay, isTrue);
+      g.day = 10;
+      expect(g.priceWarDay, isFalse);
+      g
+        ..day = 9
+        ..owner.story.add('finale');
+      expect(g.priceWarDay, isFalse); // 결말 뒤
+    });
+
+    test('가격 전쟁: 별 둘이면 보너스, 아니면 진 것', () {
+      for (final win in [true, false]) {
+        final g = shop(5)..day = 3;
+        g.owner.story.add('rival');
+        final w = World(g, seed: 1)..openDay();
+        expect(w.priceWar, isTrue);
+        w
+          ..dayTarget = 100
+          ..daySales = win ? 110 : 50;
+        close(w);
+        expect(w.result!.warPrize, win ? 50 : -1);
+      }
+    });
+
+    test('보물 상자: 별 둘 이상일 때만', () {
+      for (final (sales, has) in [(60, false), (75, false), (105, true), (140, true)]) {
+        final g = shop(5);
+        final w = World(g, seed: 2)..openDay();
+        w
+          ..dayTarget = 100
+          ..daySales = sales
+          ..tasks = [];
+        close(w);
+        expect(w.result!.chest > 0, has, reason: 'sales $sales');
+      }
+    });
+
+    test('인형뽑기 옆을 지나 나가는 손님이 가끔 한 판 한다', () {
+      final g = shop(6);
+      g.hire(Staff.cashier);
+      expect(g.place('claw', (4, 5)), isTrue); // 계산대(6,2) 가까이
+      final w = World(g, seed: 3)..openDay();
+      var plays = 0;
+      for (var i = 0; i < 3600; i++) {
+        for (final s in g.shelves) {
+          s.stock = s.capacity;
+        }
+        w.tick(0.05);
+        plays += w.fx.where((e) => e.kind == FxKind.pay && e.amount == clawPlay && e.x == 4 && e.y == 5).length;
+        w.fx.clear();
+      }
+      expect(plays, greaterThan(0));
     });
   });
 }

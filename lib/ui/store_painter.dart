@@ -36,7 +36,7 @@ Tile tileOf(Offset p) {
 double itemHeight(String type) => switch (type) {
       'fridge' => 70,
       'rack' || 'register' || 'bakerycase' || 'coffeemachine' || 'hotcounter' || 'fruitstand' => 56,
-      'plant' || 'lamp' => 60,
+      'plant' || 'lamp' || 'claw' => 60,
       'freezer' || 'box' || 'bin' || 'chair' || 'table' || 'flowers' => 40,
       _ => 0,
     };
@@ -999,6 +999,22 @@ void drawItem(Canvas canvas, String type, Tile t,
       if (!Props.prop(canvas, type, feet, scale: scale)) {
         _box(canvas, t, 16, const Color(0xFFA5D6A7), const Color(0xFF81C784), const Color(0xFF66BB6A), inset: 0.3);
       }
+    case 'claw':
+      // 인형뽑기: 분홍 받침, 유리 상자 안 인형들, 집게가 흔들린다
+      _box(canvas, t, 22, const Color(0xFFF48FB1), const Color(0xFFEC407A), const Color(0xFFD81B60), inset: 0.18);
+      final top = feet + const Offset(0, -22);
+      final glass = Rect.fromCenter(center: top + const Offset(0, -18), width: 40, height: 34);
+      canvas.drawRect(glass, Paint()..color = const Color(0x88E1F5FE));
+      for (var k = 0; k < 5; k++) {
+        final q = glass.bottomCenter + Offset((k - 2) * 7.0, -6 - (k % 2) * 4.0);
+        canvas.drawCircle(q, 5, Paint()..color = const [Color(0xFFFFF176), Color(0xFF81D4FA), Color(0xFFA5D6A7), Color(0xFFCE93D8), Color(0xFFFFAB91)][k]);
+      }
+      final sway = sin(clock * 1.5) * 10;
+      canvas.drawLine(glass.topCenter + Offset(sway, 0), glass.topCenter + Offset(sway, 14), _stroke(1.5));
+      canvas.drawArc(Rect.fromCenter(center: glass.topCenter + Offset(sway, 16), width: 10, height: 8), 0, pi, false, _stroke(1.5));
+      canvas.drawRect(glass, _stroke(1.5));
+      canvas.drawRect(Rect.fromCenter(center: glass.topCenter + const Offset(0, -5), width: 44, height: 10), Paint()..color = const Color(0xFFEC407A));
+      canvas.drawRect(Rect.fromCenter(center: glass.topCenter + const Offset(0, -5), width: 44, height: 10), _stroke(1.5));
     case 'bin':
       if (!Props.prop(canvas, 'trash', feet, scale: 0.6)) {
         _box(canvas, t, 20, const Color(0xFFB0BEC5), const Color(0xFF90A4AE), const Color(0xFF78909C), inset: 0.32);

@@ -115,6 +115,7 @@ const itemTypes = [
   ItemType('bin', ItemKind.bin, 25, 2),
   ItemType('chair', ItemKind.seat, 35, 7, walkable: true),
   ItemType('table', ItemKind.decor, 45, 7),
+  ItemType('claw', ItemKind.decor, 180, 6), // 인형뽑기: 지나가는 손님이 가끔 하고 간다
   ItemType('floor-pink', ItemKind.floor, 2, 1, walkable: true),
   ItemType('floor-mint', ItemKind.floor, 2, 1, walkable: true),
   ItemType('floor-blue', ItemKind.floor, 2, 2, walkable: true),
@@ -537,3 +538,27 @@ const wholesaleRate = 0.4;
 const restockDelay = 15.0;
 int wholesale(String product) => max(1, (productById(product).price * wholesaleRate).round());
 int reorderCost(String product) => wholesale(product) * boxSize;
+
+// ------------------------------------------------------------------ 단체 주문·가격 전쟁·보물 상자·인형뽑기
+
+/// 단체 대량 주문(슈퍼마켓부터): 두 상품을 합쳐 [bulkCount] 개, [bulkTime] 초, 값의 [bulkPay] 배.
+const bulkCount = (8, 12);
+const bulkTime = 120.0;
+const bulkPay = 2.5;
+
+/// 메가마트 가격 전쟁 날(삐약동, 이야기 '길 건너 메가마트' 뒤 결말 전까지 [priceWarEvery] 일마다):
+/// 손님이 값에 민감해지고(보통 +10%, 비싸게 +25%, 프리미엄 +30% 더 안 산다) 손님이 조금 줄어든다.
+/// 별 둘 이상이면 이긴 것: 목표의 [priceWarPrize] 만큼 보너스.
+const priceWarEvery = 6;
+const priceWarBalk = [0.0, 0.10, 0.25, 0.30];
+const priceWarVisitors = 0.85;
+const priceWarPrize = 0.5;
+
+/// 보물 상자: 별 둘 이상인 날 결과 창에서 연다. 상금은 오늘 목표 대비.
+/// 별 둘: 20~40%, 별 셋: 40~80%, 별 셋이면 [chestJackpot] 확률로 대박(목표의 3배).
+const chestJackpot = 0.05;
+
+/// 인형뽑기: 나가는 손님이 [clawRange] 칸 안에 있으면 [clawChance] 확률로 한 판([clawPlay] 원).
+const clawRange = 5; // 계산을 마친 자리(계산대 앞)에서 잰다
+const clawChance = 0.25;
+const clawPlay = 3;

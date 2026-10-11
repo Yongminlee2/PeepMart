@@ -601,6 +601,10 @@ class Game {
   /// 다음에 여는 날이 위생 점검 날인가.
   bool get inspectionDay => rank >= rankInspection && day % inspectEvery == 0;
 
+  /// 다음에 여는 날이 메가마트 가격 전쟁 날인가 (삐약동, 라이벌 이야기 중에만).
+  bool get priceWarDay =>
+      branch == 'piyak' && owner.story.contains('rival') && !owner.story.contains('finale') && day % priceWarEvery == 3;
+
   /// 다음에 여는 날이 특별한 날이면 그 종류.
   SpecialDay? get todaySpecial {
     if (rank < rankSpecialDay || day % specialEvery != 0) return null;

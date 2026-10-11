@@ -32,11 +32,15 @@ class DayResult {
   final int day, sales, target, served, upset, stars, bonus, taskReward, cost;
   final bool best;
   final List<(DayTask, bool)> tasks;
+  final int warPrize; // 가격 전쟁에서 이긴 보너스 (가격 전쟁 날이 아니면 0, 졌으면 -1)
+  final int chest; // 보물 상자 상금 (상자가 없으면 0). 결과 창에서 열면 보여 준다(돈은 이미 들어왔다)
+  final bool jackpot;
   const DayResult(this.day, this.sales, this.target, this.served, this.upset, this.stars, this.bonus,
-      this.taskReward, this.best, this.tasks, {this.cost = 0});
+      this.taskReward, this.best, this.tasks,
+      {this.cost = 0, this.warPrize = 0, this.chest = 0, this.jackpot = false});
 
   /// 오늘 남은 돈: 매출 + 보너스 + 상금 - 운영비 (일당은 장사 중에 이미 나갔다).
-  int get profit => sales + bonus + taskReward - cost;
+  int get profit => sales + bonus + taskReward + (warPrize > 0 ? warPrize : 0) + chest - cost;
 }
 
 class Customer extends Walker {
@@ -86,18 +90,22 @@ enum Incident {
   thiefFlee, thiefCaught, thiefEscaped, kidLost, kidFound, kidGone, orderIn, orderDone, orderLate,
   brokeDown, repaired, grumpyIn, grumpyCalmed, grumpyLeft,
   fever, inspectIn, inspectGood, inspectOk, inspectBad,
-  boxEmpty, boxArrived
+  boxEmpty, boxArrived, bulkIn, clawPlay
 }
 
 /// 배달 주문: 진열대를 돌며 상품을 챙기고(진열대에서 빠진다) 입구까지 들고 가면 끝.
+/// 단체 주문은 개수가 많고 시간이 길고 더 받는다.
 class Order {
   final List<String> items;
   final List<String> toPick; // 아직 못 챙긴 것
-  double left = orderTime;
+  final bool bulk;
+  double left;
   bool started = false;
-  Order(this.items) : toPick = [...items];
+  Order(this.items, {this.bulk = false})
+      : toPick = [...items],
+        left = bulk ? bulkTime : orderTime;
   bool get carrying => started && toPick.isEmpty;
-  int get pay => items.fold(0, (s, p) => s + productById(p).price) * orderPay;
+  int get pay => (items.fold(0, (s, p) => s + productById(p).price) * (bulk ? bulkPay : orderPay)).round();
 }
 
 /// 화면 연출용 사건. 엔진은 쌓기만 하고 화면이 가져가 비운다.
@@ -140,6 +148,7 @@ class World {
   List<DayTask> tasks = [];
   Weather weather = Weather.sunny; // 오늘(연 날) 날씨
   SpecialDay? special; // 오늘이 특별한 날이면
+  bool priceWar = false; // 오늘이 메가마트 가격 전쟁 날이면
   Order? order; // 들어온 배달 주문
   Customer? chase; // 쫓고 있는 도둑
   double _chaseStep = 0, _repairStill = 0;
@@ -168,6 +177,7 @@ class World {
     result = null;
     weather = game.todayWeather;
     special = game.todaySpecial;
+    priceWar = game.priceWarDay;
     dayTarget = game.dayTarget;
     if (special == SpecialDay.festival) dayTarget = (dayTarget * festivalVisitors / 10).round() * 10;
     tasks = _makeTasks();
@@ -195,7 +205,7 @@ class World {
     }
     if (game.rank >= rankDelivery) {
       for (var i = 0, n = 1 + _rng.nextInt(2); i < n; i++) {
-        _incidents.add((at(), Incident.orderIn));
+        _incidents.add((at(), _rng.nextDouble() < 0.35 ? Incident.bulkIn : Incident.orderIn));
       }
     }
   }
@@ -222,6 +232,15 @@ class World {
             if (can.isNotEmpty) {
               final s = can[_rng.nextInt(can.length)]..broken = true;
               fx.add(Fx(FxKind.incident, s.c.toDouble(), s.r.toDouble(), amount: Incident.brokeDown.index));
+            }
+          case Incident.bulkIn:
+            final sale = game.onSale.toList()..sort();
+            if (order == null && sale.isNotEmpty) {
+              sale.shuffle(_rng);
+              final kinds = sale.take(min(2, sale.length)).toList();
+              final n = bulkCount.$1 + _rng.nextInt(bulkCount.$2 - bulkCount.$1 + 1);
+              order = Order([for (var i = 0; i < n; i++) kinds[i % kinds.length]], bulk: true);
+              _fx(Incident.bulkIn);
             }
           default:
             final sale = game.onSale.toList()..sort();
@@ -515,11 +534,19 @@ class World {
     if (best) game.bestSales = daySales;
     game.recordDay(daySales, dayServed);
     final cost = game.dailyCost;
-    game.money += bonus + taskReward - cost;
+    final warPrize = !priceWar ? 0 : (stars >= 2 ? (dayTarget * priceWarPrize).round() : -1);
+    var chest = 0, jackpot = false;
+    if (stars >= 2) {
+      jackpot = stars == 3 && _rng.nextDouble() < chestJackpot;
+      final share = jackpot ? 3.0 : (stars == 3 ? 0.4 + _rng.nextDouble() * 0.4 : 0.2 + _rng.nextDouble() * 0.2);
+      chest = max(10, (dayTarget * share).round());
+    }
+    game.money += bonus + taskReward - cost + (warPrize > 0 ? warPrize : 0) + chest;
     for (final s in game.shelves) {
       s.broken = false; // 밤사이 수리 기사가 고친다
     }
-    result = DayResult(game.day, daySales, dayTarget, dayServed, dayUpset, stars, bonus, taskReward, best, done, cost: cost);
+    result = DayResult(game.day, daySales, dayTarget, dayServed, dayUpset, stars, bonus, taskReward, best, done,
+        cost: cost, warPrize: warPrize, chest: chest, jackpot: jackpot);
     game.day++;
     game.weather = _pickWeather();
     order = null;
@@ -542,7 +569,8 @@ class World {
   double get _visitorFactor =>
       (weather == Weather.rain ? rainVisitors : 1.0) *
       (special == SpecialDay.festival ? festivalVisitors : 1.0) *
-      (feverLeft > 0 ? feverVisitors : 1.0);
+      (feverLeft > 0 ? feverVisitors : 1.0) *
+      (priceWar ? priceWarVisitors : 1.0);
 
   void _rate(int satisfaction) {
     game.rate(satisfaction);
@@ -1170,7 +1198,8 @@ class World {
         final s = c.shelf!;
         if (c.timer >= pickTime && s.stock > 0 && !s.broken && !c.balked && c.kind != CustomerKind.thief) {
           c.balked = true;
-          if (_rng.nextDouble() < priceBalk[s.price.clamp(0, priceBalk.length - 1)]) {
+          final lvl = s.price.clamp(0, priceBalk.length - 1);
+          if (_rng.nextDouble() < priceBalk[lvl] + (priceWar ? priceWarBalk[lvl] : 0)) {
             // 너무 비싸다: 안 사고 다음 물건으로
             c
               ..missed += 1
@@ -1266,6 +1295,14 @@ class World {
     if (!rated && c.carry.isNotEmpty && c.state != CState.leaving) {
       final sat = 5 - 2 * c.missed - (c.waited > queuePatience / 2 ? 1 : 0) - (game.trash.length > 3 ? 1 : 0) + c.bonus;
       _rate(sat.clamp(1, 5));
+      final claw = game.items
+          .where((i) => i.type == 'claw' && (i.c - c.tile.$1).abs() + (i.r - c.tile.$2).abs() <= clawRange)
+          .firstOrNull;
+      if (claw != null && phase != DayPhase.closed && _rng.nextDouble() < clawChance) {
+        game.money += clawPlay;
+        daySales += clawPlay;
+        fx.add(Fx(FxKind.pay, claw.c.toDouble(), claw.r.toDouble(), amount: clawPlay));
+      }
       if (sat >= 5 && phase != DayPhase.closed && _rng.nextDouble() < tipChance && game.walkable(c.tile)) {
         final tip = max(2, (c.prices.fold(0, (s, p) => s + p) * tipShare).round());
         tips[c.tile] = (tips[c.tile] ?? 0) + tip;

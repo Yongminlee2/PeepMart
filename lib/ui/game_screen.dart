@@ -860,6 +860,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                 Icon(weatherIcon(world.weather), size: 15, color: weatherColor(world.weather)),
               ],
               if (world.special != null) const Icon(Icons.celebration_rounded, size: 15, color: Color(0xFFE65100)),
+              if (world.priceWar) const Icon(Icons.local_offer_rounded, size: 15, color: Color(0xFFC62828)),
               const SizedBox(width: 8),
               if (closing)
                 Text(S.t('day_closing_short'), style: style.copyWith(color: const Color(0xFF5C6BC0)))
@@ -1028,7 +1029,12 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         const Icon(Icons.delivery_dining_rounded, color: Color(0xFF1E88E5), size: 22),
         const SizedBox(width: 4),
-        for (final p in o.items) SizedBox(width: 24, height: 24, child: CustomPaint(painter: FoodPreview(p))),
+        if (o.bulk) Text(S.t('bulk_tag'), style: style.copyWith(color: const Color(0xFFE65100))),
+        for (final p in o.items.toSet()) ...[
+          SizedBox(width: 24, height: 24, child: CustomPaint(painter: FoodPreview(p))),
+          if (o.items.where((x) => x == p).length > 1)
+            Text('×${o.items.where((x) => x == p).length}', style: style.copyWith(fontSize: 12)),
+        ],
         const SizedBox(width: 4),
         Text('${o.left.ceil()}s', style: style.copyWith(color: o.left < 20 ? const Color(0xFFE53935) : Colors.black54)),
         const SizedBox(width: 6),
@@ -1109,6 +1115,10 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
           const SizedBox(width: 6),
           Flexible(child: Text(S.tn('forecast', {'n': game.day, 'w': S.t('weather_${w.name}')}), style: style)),
         ]),
+        if (game.priceWarDay) ...[
+          const SizedBox(height: 4),
+          Text(S.t('war_forecast'), textAlign: TextAlign.center, style: style.copyWith(color: const Color(0xFFC62828), fontSize: 13)),
+        ],
         if (game.inspectionDay) ...[
           const SizedBox(height: 4),
           Text(S.t('inspect_forecast'), textAlign: TextAlign.center, style: style.copyWith(color: const Color(0xFF1565C0), fontSize: 13)),
@@ -1181,6 +1191,9 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                       ? Coins(perTask, size: 14)
                       : const Icon(Icons.close_rounded, size: 18, color: Color(0xFFE53935))),
             if (r.bonus > 0) row(S.t('day_bonus'), Coins(r.bonus, size: 14)),
+            if (r.warPrize > 0) row(S.t('war_won'), Coins(r.warPrize, size: 14)),
+            if (r.warPrize < 0) row(S.t('war_lost'), const Icon(Icons.close_rounded, size: 18, color: Color(0xFFE53935))),
+            if (r.chest > 0) _Chest(r.chest, r.jackpot),
             row(S.t('day_cost'), Coins(-r.cost, size: 14)),
             const Divider(),
             row(S.t('day_profit'), Coins(r.profit, size: 18)),
@@ -1346,4 +1359,62 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
           ),
         ),
       ];
+}
+
+/// 결과 창의 보물 상자: 누르면 열리며 상금을 보여 준다(돈은 하루가 끝날 때 이미 들어왔다).
+class _Chest extends StatefulWidget {
+  final int amount;
+  final bool jackpot;
+  const _Chest(this.amount, this.jackpot);
+
+  @override
+  State<_Chest> createState() => _ChestState();
+}
+
+class _ChestState extends State<_Chest> {
+  bool open = false;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: GestureDetector(
+          onTap: () {
+            if (open) return;
+            setState(() => open = true);
+            Sfx.play(FxKind.levelUp, 0);
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: open ? (widget.jackpot ? const Color(0xFFFFE082) : const Color(0xFFFFF8E1)) : const Color(0xFFFFECB3),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFFFA000), width: 2),
+            ),
+            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              TweenAnimationBuilder<double>(
+                key: ValueKey(open),
+                tween: Tween(begin: open ? 0.6 : 1, end: 1),
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.elasticOut,
+                builder: (_, k, child) => Transform.scale(scale: k, child: child),
+                child: Text(open ? (widget.jackpot ? '💎' : '🎁') : '🎁', style: const TextStyle(fontSize: 30)),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: open
+                    ? Row(mainAxisSize: MainAxisSize.min, children: [
+                        Flexible(
+                          child: Text(S.t(widget.jackpot ? 'chest_jackpot' : 'chest_open'),
+                              style: const TextStyle(fontSize: 14, color: inkColor)),
+                        ),
+                        const SizedBox(width: 6),
+                        Coins(widget.amount, size: 16),
+                      ])
+                    : Text(S.t('chest_tap'), style: const TextStyle(fontSize: 15, color: Color(0xFFE65100))),
+              ),
+            ]),
+          ),
+        ),
+      );
 }
