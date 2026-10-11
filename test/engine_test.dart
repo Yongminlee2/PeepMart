@@ -723,4 +723,17 @@ void main() {
       expect(g.dayTarget, 160);
     });
   });
+
+  group('가게 등급', () {
+    test('레벨 5·10·15·20·25 에서 오른다', () {
+      expect([for (final l in [1, 4, 5, 9, 10, 15, 19, 20, 25, 30]) rankOf(l)], [0, 0, 1, 1, 2, 3, 3, 4, 5, 5]);
+    });
+
+    test('등급이 오르면 손님이 더 자주 온다', () {
+      final g = Game();
+      final low = g.spawnGap;
+      g.level = 10;
+      expect(g.spawnGap, closeTo(low / (1 + 2 * rankVisitorBonus), 1e-9));
+    });
+  });
 }

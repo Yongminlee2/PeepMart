@@ -275,5 +275,20 @@
   "task_calm": "Pas plus de {n} clients déçus",
   "btn_nice": "Super !",
   "help_day_t": "Une journée à la boutique",
-  "help_day_b": "Quand tu ouvres, les clients viennent pendant 3 minutes. 30 secondes avant la fermeture, c'est le rush, et quand le temps est écoulé, tu sers les derniers clients et tu fermes. Dépasse l'objectif du jour pour gagner des étoiles (jusqu'à 3) : plus il y a d'étoiles, plus le bonus est gros. Réussis les deux tâches pour une récompense en plus. Quand la boutique est fermée, il n'y a pas de clients, alors construis et décore tranquillement."
+  "help_day_b": "Quand tu ouvres, les clients viennent pendant 3 minutes. 30 secondes avant la fermeture, c'est le rush, et quand le temps est écoulé, tu sers les derniers clients et tu fermes. Dépasse l'objectif du jour pour gagner des étoiles (jusqu'à 3) : plus il y a d'étoiles, plus le bonus est gros. Réussis les deux tâches pour une récompense en plus. Quand la boutique est fermée, il n'y a pas de clients, alors construis et décore tranquillement.",
+  "rank_0": "Corner Shop",
+  "rank_1": "Convenience Store",
+  "rank_2": "Big Convenience Store",
+  "rank_3": "Supermarket",
+  "rank_4": "Hypermarket",
+  "rank_5": "Department Store",
+  "rank_up": "Your store moved up a rank!",
+  "rank_1_new": "Weather forecasts begin! Products that suit the weather sell better.",
+  "rank_2_new": "A special day comes every 5 days. Surprises like shoplifters and lost kids start to happen.",
+  "rank_3_new": "Delivery orders come in! Gather the items and bring them to the door.",
+  "rank_4_new": "Neighborhood festivals join the special days! Big crowds and double rewards.",
+  "rank_5_new": "VIPs visit twice as often. You run the best store in town!",
+  "rank_visitors": "Your rank brings {n}% more customers",
+  "help_rank_t": "Store rank",
+  "help_rank_b": "Your store ranks up at levels 5, 10, 15, 20 and 25 (Corner Shop → Convenience Store → Big Convenience Store → Supermarket → Hypermarket → Department Store). Each rank brings 8% more customers and unlocks something new: weather, special days, surprises, deliveries, festivals and VIPs. The sign on the wall shows your current rank."
 }

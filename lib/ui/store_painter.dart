@@ -143,6 +143,7 @@ class StorePainter extends CustomPainter {
       ..scale(camera.zoom)
       ..translate(-camera.center.dx, -camera.center.dy);
     canvas.drawPicture(_basePicture(game));
+    _rankSign(canvas);
     final view = camera.visible(size).inflate(120);
     bool seen(double x, double y) => view.contains(iso(x, y));
 
@@ -541,6 +542,17 @@ class StorePainter extends CustomPainter {
     _text(canvas, p, text, col.withValues(alpha: a), size, outline: a);
   }
 
+  /// 첫 땅 뒤쪽 벽의 간판: 가게 등급 이름.
+  void _rankSign(Canvas canvas) {
+    if (game.owns((4, -1))) return;
+    final p = iso(4.5, 0.0) + Offset(-tw / 4, -th / 4) + const Offset(0, -wallH * 0.62); // 창문(2·6번 칸) 사이
+    canvas.save();
+    canvas.translate(p.dx, p.dy);
+    canvas.skew(0, 0.5); // 벽 기울기(2:1)에 맞춘다
+    paintSign(canvas, game.rank, 84, 22);
+    canvas.restore();
+  }
+
   void _arrow(Canvas canvas, Offset p) {
     final a = Path()
       ..moveTo(p.dx - 9, p.dy - 10)
@@ -854,4 +866,53 @@ void drawCritter(Canvas canvas, Offset feet, int look, double clock) {
   for (final dx in [-5.0, 5.0]) {
     canvas.drawCircle(center + Offset(dx, -2), 2.4, Paint()..color = ink);
   }
+}
+
+/// 간판 색: 등급마다 (판, 글자).
+const _signColors = [
+  (Color(0xFFBCAAA4), Color(0xFF4E342E)),
+  (Color(0xFF80CBC4), Color(0xFF004D40)),
+  (Color(0xFF90CAF9), Color(0xFF0D47A1)),
+  (Color(0xFFA5D6A7), Color(0xFF1B5E20)),
+  (Color(0xFFEF9A9A), Color(0xFFB71C1C)),
+  (Color(0xFFFFD54F), Color(0xFF6D4C41)),
+];
+
+/// (0,0) 을 가운데로 [w]×[h] 간판을 그린다.
+void paintSign(Canvas canvas, int rank, double w, double h) {
+  final (board, ink) = _signColors[rank.clamp(0, _signColors.length - 1)];
+  final r = RRect.fromRectAndRadius(Rect.fromCenter(center: Offset.zero, width: w, height: h), Radius.circular(h * 0.25));
+  canvas.drawRRect(r.shift(Offset(0, h * 0.12)), Paint()..color = const Color(0x33000000));
+  canvas.drawRRect(r, Paint()..color = board);
+  canvas.drawRRect(r, _stroke(2));
+  if (rank >= rankVip) {
+    for (final x in [-w / 2 + h * 0.4, w / 2 - h * 0.4]) {
+      _text(canvas, Offset(x, 0), '★', Colors.white, h * 0.5);
+    }
+  }
+  final tp = TextPainter(
+    text: TextSpan(text: S.t('rank_$rank'), style: TextStyle(fontFamily: 'Jua', fontSize: h * 0.55, color: ink)),
+    textDirection: TextDirection.ltr,
+    maxLines: 1,
+  )..layout();
+  final k = min(1.0, (w - h) / tp.width);
+  canvas.save();
+  canvas.scale(k);
+  tp.paint(canvas, Offset(-tp.width / 2, -tp.height / 2));
+  canvas.restore();
+}
+
+/// 승급 창의 간판.
+class RankSign extends CustomPainter {
+  final int rank;
+  RankSign(this.rank);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.translate(size.width / 2, size.height / 2);
+    paintSign(canvas, rank, size.width - 8, size.height - 10);
+  }
+
+  @override
+  bool shouldRepaint(RankSign old) => old.rank != rank;
 }

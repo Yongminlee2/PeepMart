@@ -197,7 +197,7 @@ class World {
     if (_spawnIn <= 0 && phase == DayPhase.open) {
       final cap = min(60, 3 + 2 * game.shelves.length);
       if (customers.length < cap) _spawn();
-      _spawnIn = spawnInterval(game.shelves.length, game.rating, game.decorCount) * (0.7 + _rng.nextDouble() * 0.6);
+      _spawnIn = game.spawnGap * (0.7 + _rng.nextDouble() * 0.6);
     }
     for (final c in [...customers]) {
       _updateCustomer(c, dt);
@@ -634,7 +634,8 @@ class World {
         return;
       }
     }
-    final vip = _vipQueue > 0 || (game.rating >= vipMinRating && _rng.nextDouble() < vipChance);
+    final vip = _vipQueue > 0 ||
+        (game.rating >= vipMinRating && _rng.nextDouble() < vipChance * (game.rank >= rankVip ? 2 : 1));
     final n = vip ? min(sale.length, 2 + _rng.nextInt(2)) : 1 + _rng.nextInt(min(3, sale.length));
     final c = Customer(_rng.nextInt(1024), door, sale.take(n).toList());
     if (vip) {

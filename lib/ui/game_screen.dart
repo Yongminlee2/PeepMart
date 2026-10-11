@@ -160,6 +160,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
   }
 
   void _levelUp(int level) {
+    if (level > 1 && rankLevels.contains(level)) _rankUp(rankOf(level));
     final news = [
       for (final t in itemTypes)
         if (t.level == level) S.t('i_${t.id}'),
@@ -169,6 +170,33 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     final head = S.tn('level_up', {'n': level});
     toast(news.isEmpty ? head : '$head\n${S.tn('unlocked', {'list': news.join(', ')})}');
     Sfx.play(FxKind.levelUp, clock);
+  }
+
+  /// 가게 등급이 올랐다: 간판과 새로 열린 것을 크게 보여 준다.
+  Future<void> _rankUp(int rank) async {
+    Sfx.play(FxKind.levelUp, clock);
+    await showDialog<void>(
+      context: context,
+      builder: (c) => AlertDialog(
+        backgroundColor: bg,
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          SizedBox(width: 90, height: 90, child: CustomPaint(painter: Portrait(playerChar, anim: Anim.yes))),
+          const SizedBox(height: 6),
+          Text(S.t('rank_up'), style: const TextStyle(fontSize: 15, color: Colors.black54)),
+          const SizedBox(height: 6),
+          SizedBox(width: 240, height: 54, child: CustomPaint(painter: RankSign(rank))),
+          const SizedBox(height: 12),
+          Text(S.t('rank_${rank}_new'),
+              textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, color: inkColor, height: 1.45)),
+          const SizedBox(height: 6),
+          Text(S.tn('rank_visitors', {'n': (rankVisitorBonus * rank * 100).round()}),
+              textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, color: Colors.black54)),
+        ]),
+        actions: [
+          Center(child: BubbleButton(S.t('btn_nice'), color: const Color(0xFF81C784), onTap: () => Navigator.pop(c))),
+        ],
+      ),
+    );
   }
 
   void toast(String text) {

@@ -347,3 +347,17 @@ class DayTask {
   final int n;
   const DayTask(this.kind, this.n, {this.product = ''});
 }
+
+// ------------------------------------------------------------------ 가게 등급
+
+/// 레벨이 오르면 가게 등급이 오른다: 구멍가게 → 동네 편의점 → 큰 편의점 → 슈퍼마켓 → 대형마트 → 백화점.
+/// 등급마다 손님이 조금 더 오고, 새 놀이가 하나씩 열린다(아래 rank* 상수).
+const rankLevels = [1, 5, 10, 15, 20, 25];
+int rankOf(int level) => rankLevels.lastIndexWhere((l) => level >= l);
+const rankVisitorBonus = 0.08; // 등급마다 손님 8% 더
+const rankWeather = 1; // 날씨 예보
+const rankSpecialDay = 2; // 5일마다 특별한 날
+const rankIncidents = 2; // 도둑·길 잃은 아이
+const rankDelivery = 3; // 배달 주문
+const rankFestival = 4; // 특별한 날에 동네 축제가 끼어든다
+const rankVip = 5; // VIP 가 두 배로 자주

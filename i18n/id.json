@@ -275,5 +275,20 @@
   "task_calm": "Maksimal {n} pelanggan kecewa",
   "btn_nice": "Mantap!",
   "help_day_t": "Sehari di toko",
-  "help_day_b": "Saat toko dibuka, pelanggan datang selama 3 menit. 30 detik sebelum tutup, pelanggan berdatangan ramai-ramai, dan saat waktu habis kamu tinggal melayani pelanggan terakhir lalu tutup. Lewati target hari ini untuk dapat bintang (maksimal 3); makin banyak bintang, makin besar bonusnya. Selesaikan dua tugas untuk hadiah tambahan. Selama toko tutup tidak ada pelanggan, jadi bangun dan hias dengan santai."
+  "help_day_b": "Saat toko dibuka, pelanggan datang selama 3 menit. 30 detik sebelum tutup, pelanggan berdatangan ramai-ramai, dan saat waktu habis kamu tinggal melayani pelanggan terakhir lalu tutup. Lewati target hari ini untuk dapat bintang (maksimal 3); makin banyak bintang, makin besar bonusnya. Selesaikan dua tugas untuk hadiah tambahan. Selama toko tutup tidak ada pelanggan, jadi bangun dan hias dengan santai.",
+  "rank_0": "Corner Shop",
+  "rank_1": "Convenience Store",
+  "rank_2": "Big Convenience Store",
+  "rank_3": "Supermarket",
+  "rank_4": "Hypermarket",
+  "rank_5": "Department Store",
+  "rank_up": "Your store moved up a rank!",
+  "rank_1_new": "Weather forecasts begin! Products that suit the weather sell better.",
+  "rank_2_new": "A special day comes every 5 days. Surprises like shoplifters and lost kids start to happen.",
+  "rank_3_new": "Delivery orders come in! Gather the items and bring them to the door.",
+  "rank_4_new": "Neighborhood festivals join the special days! Big crowds and double rewards.",
+  "rank_5_new": "VIPs visit twice as often. You run the best store in town!",
+  "rank_visitors": "Your rank brings {n}% more customers",
+  "help_rank_t": "Store rank",
+  "help_rank_b": "Your store ranks up at levels 5, 10, 15, 20 and 25 (Corner Shop → Convenience Store → Big Convenience Store → Supermarket → Hypermarket → Department Store). Each rank brings 8% more customers and unlocks something new: weather, special days, surprises, deliveries, festivals and VIPs. The sign on the wall shows your current rank."
 }

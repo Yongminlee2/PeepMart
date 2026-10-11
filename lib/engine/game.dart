@@ -46,6 +46,8 @@ class Owner {
 
   int heartsOf(String regular) => hearts[regular] ?? 0;
 
+  int get rank => rankOf(level);
+
   /// 처음 안내가 [step] 에 있으면 다음으로 넘긴다.
   void advance(TutorialStep step) {
     if (tutorial == step) tutorial = TutorialStep.values[step.index + 1];
@@ -178,6 +180,10 @@ class Game {
   int addXp(int n) => owner.addXp(n);
 
   Branch get info => branchById(branch);
+  int get rank => owner.rank;
+
+  /// 손님이 오는 평균 간격(초): 진열대·별점·꾸미기, 그리고 가게 등급.
+  double get spawnGap => spawnInterval(shelves.length, rating, decorCount) / (1 + rankVisitorBonus * rank);
 
   // ---------------------------------------------------------------- 조회
 
@@ -483,7 +489,7 @@ class Game {
     if (sale.isEmpty) return (0, 0);
     final avg = sale.map((p) => productById(p).price).reduce((a, b) => a + b) / sale.length;
     // 마감 전 몰림까지 치면 손님이 15% 더 오고, 한 사람이 평균 두 개쯤 산다
-    final visitors = dayLength / spawnInterval(shelves.length, rating, decorCount) * 1.15;
+    final visitors = dayLength / spawnGap * 1.15;
     return (visitors, visitors * avg * 2);
   }
 
@@ -516,7 +522,7 @@ class Game {
     final sale = onSale;
     if ((tills == 0 && managers.isEmpty) || sale.isEmpty || seconds <= 0) return 0;
     final avg = sale.map((p) => productById(p).price).reduce((a, b) => a + b) / sale.length;
-    final perSecond = avg * 1.5 / spawnInterval(shelves.length, rating, decorCount) * (1 + 0.15 * managers.length);
+    final perSecond = avg * 1.5 / spawnGap * (1 + 0.15 * managers.length);
     return (min(seconds, offlineHours * 3600) * perSecond / 3).floor();
   }
 
