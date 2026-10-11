@@ -235,7 +235,8 @@ class World {
     _playerStep += dt;
     if (_playerStep >= moveStep) {
       _playerStep = 0;
-      _carryWork(player, game.arms, pick: true);
+      // 상자에서 집는 건 멈춰 섰을 때만: 지나가다 옆 상자 물건까지 집지 않게 (놓기는 지나가며 해도 좋다)
+      _carryWork(player, game.arms, pick: !player.moving);
     }
     _cashStep += dt;
     for (final r in game.registers) {

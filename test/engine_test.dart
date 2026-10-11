@@ -200,6 +200,19 @@ void main() {
       expect(w.walkPlayerTo((30, 30)), isNull); // 남의 땅
     });
 
+    test('지나가며 옆 상자 물건을 집지 않고, 멈춰 선 상자에서만 집는다', () {
+      final g = Game();
+      final w = World(g, seed: 22);
+      stand(w, (0, 1));
+      w.walkPlayerTo((3, 1)); // (1,1)·(2,1) 을 지나며 콜라·도넛 상자 옆을 지난다
+      run(w, 3);
+      expect(w.player.carry, isEmpty); // (3,1) 은 어느 상자와도 붙어 있지 않다
+      w.walkPlayerTo(g.items.firstWhere((i) => i.type == 'box' && i.product == 'soda').tile);
+      run(w, 3);
+      expect(w.player.carry, isNotEmpty);
+      expect(w.player.carry.toSet(), {'soda'});
+    });
+
     test('조이스틱을 쓰면 가던 길을 멈춘다', () {
       final g = Game();
       final w = World(g, seed: 21);

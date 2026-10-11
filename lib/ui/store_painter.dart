@@ -26,6 +26,29 @@ Tile tileOf(Offset p) {
   return (((a + b) / 2).round(), ((b - a) / 2).round());
 }
 
+/// 물건이 화면에서 위로 솟은 높이(그림 좌표). 누른 곳 찾기에 쓴다.
+double itemHeight(String type) => switch (type) {
+      'fridge' => 70,
+      'rack' || 'register' || 'bakerycase' || 'coffeemachine' || 'hotcounter' || 'fruitstand' => 56,
+      'plant' || 'lamp' => 60,
+      'freezer' || 'box' || 'bin' || 'chair' || 'table' || 'flowers' => 40,
+      _ => 0,
+    };
+
+/// 그림 좌표 [p] 를 누른 것: 보이는 물건(솟은 몸통 포함)이 있으면 그 칸, 없으면 바닥 칸.
+/// 앞에 그려진 것(x+y 큰 것)이 먼저다.
+Tile tileAtPoint(Game g, Offset p) {
+  Item? best;
+  for (final i in g.items) {
+    final h = itemHeight(i.type);
+    if (h == 0) continue;
+    final feet = iso(i.c + 0.0, i.r + 0.0);
+    final box = Rect.fromLTRB(feet.dx - tw * 0.42, feet.dy - h, feet.dx + tw * 0.42, feet.dy + th * 0.45);
+    if (box.contains(p) && (best == null || i.c + i.r > best.c + best.r)) best = i;
+  }
+  return best?.tile ?? tileOf(p);
+}
+
 /// 화면 방향(조이스틱) → 세계 방향.
 (double, double) screenToWorld(double u, double v) {
   final a = u / (tw / 2), b = v / (th / 2);
@@ -377,7 +400,7 @@ class StorePainter extends CustomPainter {
     if (c.state == CState.atShelf && c.timer >= pickTime) {
       final worry = (c.timer / shelfPatience).clamp(0.0, 1.0);
       _wantBubble(canvas, head, c.want, Color.lerp(Colors.white, const Color(0xFFFFCDD2), worry)!);
-    } else if (c.state == CState.toQueue && c.waited > queuePatience * 0.5 && c.scanned == 0) {
+    } else if (c.state == CState.toQueue && c.waited > queuePatience * c.patience * 0.5 && c.scanned == 0) {
       _bubble(canvas, head, '!', const Color(0xFFFB8C00));
     } else if (c.state == CState.sitting) {
       _text(canvas, head + Offset(0, sin(clock * 3) * 2), '♥', const Color(0xFFEC407A), 16);

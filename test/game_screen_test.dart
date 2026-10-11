@@ -9,10 +9,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 final mapFinder = find.byWidgetPredicate((w) => w is CustomPaint && w.painter is StorePainter);
 
-/// 화면 가운데 = 처음 카메라 = 플레이어 자리. 그 칸에서 [t] 칸까지의 화면 위치.
+/// 카메라는 시험에서 처음 자리(= 시작할 때 플레이어 = 입구)에 멈춰 있다. [t] 칸의 화면 위치.
 Offset screenOf(WidgetTester tester, World w, (int, int) t) {
   final center = tester.getCenter(mapFinder);
-  return center + iso(t.$1 + 0.0, t.$2 + 0.0) - iso(w.player.x, w.player.y);
+  final start = w.game.entrances.first.tile;
+  return center + iso(t.$1 + 0.0, t.$2 + 0.0) - iso(start.$1 + 0.0, start.$2 + 0.0);
 }
 
 Future<void> runFor(WidgetTester tester, double seconds) async {
@@ -31,7 +32,7 @@ void main() {
     final g = Game();
     final fridge = g.items.firstWhere((i) => i.type == 'fridge')..stock = 0;
     final w = World(g, seed: 1);
-    await tester.pumpWidget(MaterialApp(home: GameScreen(g, world: w)));
+    await tester.pumpWidget(MaterialApp(home: GameScreen(g, world: w, followCamera: false)));
     await tester.pump();
 
     final box = g.items.firstWhere((i) => i.type == 'box' && i.product == 'soda');
@@ -51,7 +52,7 @@ void main() {
     addTearDown(tester.view.reset);
     final g = Game();
     final w = World(g, seed: 2);
-    await tester.pumpWidget(MaterialApp(home: GameScreen(g, world: w)));
+    await tester.pumpWidget(MaterialApp(home: GameScreen(g, world: w, followCamera: false)));
     await tester.pump();
     final before = (w.player.x, w.player.y);
     await tester.dragFrom(const Offset(206, 500), const Offset(-120, -80));
@@ -67,7 +68,7 @@ void main() {
       addTearDown(tester.view.reset);
       final g = Game()..money = 1000;
       final w = World(g, seed: 3);
-      await tester.pumpWidget(MaterialApp(home: GameScreen(g, world: w)));
+      await tester.pumpWidget(MaterialApp(home: GameScreen(g, world: w, followCamera: false)));
       await tester.pump();
       await tester.tap(find.byIcon(Icons.handyman_rounded));
       await tester.pump();
@@ -96,7 +97,7 @@ void main() {
     addTearDown(tester.view.reset);
     final g = Game();
     final w = World(g, seed: 4);
-    await tester.pumpWidget(MaterialApp(home: GameScreen(g, world: w)));
+    await tester.pumpWidget(MaterialApp(home: GameScreen(g, world: w, followCamera: false)));
     await tester.pump();
     await tester.tap(find.byIcon(Icons.handyman_rounded));
     await runFor(tester, 0.5);
@@ -114,6 +115,22 @@ void main() {
     expect(g.at((3, 3)), isNull);
     expect(g.at((4, 5))?.type, 'rack');
     expect(g.money, money);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('계산대 몸통(바닥 칸보다 위)을 눌러도 계산 자리로 간다 — 실기기에서 잡힌 문제', (tester) async {
+    tester.view.physicalSize = const Size(412, 860);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final g = Game();
+    final w = World(g, seed: 5);
+    await tester.pumpWidget(MaterialApp(home: GameScreen(g, world: w, followCamera: false)));
+    await tester.pump();
+    final reg = g.registers.first;
+    // 계산대 그림의 위쪽(기계 부분)을 누른다
+    await tester.tapAt(screenOf(tester, w, reg.tile) + const Offset(0, -38));
+    await runFor(tester, 5);
+    expect(w.atAnyTill, isTrue);
     await tester.pumpWidget(const SizedBox());
   });
 }

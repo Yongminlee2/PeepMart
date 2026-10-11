@@ -16,7 +16,8 @@ import 'widgets.dart';
 class GameScreen extends StatefulWidget {
   final Game game;
   final World? world; // 시험에서 넣어 준다
-  const GameScreen(this.game, {super.key, this.world});
+  final bool followCamera; // 시험에서는 끈다(누를 자리가 흔들리지 않게)
+  const GameScreen(this.game, {super.key, this.world, this.followCamera = true});
 
   @override
   State<GameScreen> createState() => _GameScreenState();
@@ -100,8 +101,9 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     _last = now;
     clock += dt;
     world.tick(dt);
-    if (building == null && _follow) {
-      final target = iso(world.player.x, world.player.y);
+    if (building == null && _follow && widget.followCamera) {
+      // 플레이어 쪽 60%, 가게 가운데 쪽 40%: 가게가 화면에 더 많이 들어온다
+      final target = Offset.lerp(_storeCenter(), iso(world.player.x, world.player.y), 0.6)!;
       camera.center = Offset.lerp(camera.center, target, (dt * 5).clamp(0.0, 1.0))!;
     }
     for (final e in world.fx) {
@@ -152,6 +154,14 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
   // ---------------------------------------------------------------- 손가락
 
   bool get _useStick => Settings.i.joystick;
+
+  Offset _storeCenter() {
+    var sum = Offset.zero;
+    for (final (px, py) in game.plots) {
+      sum += iso((px + 0.5) * plotSize - 0.5, (py + 0.5) * plotSize - 0.5);
+    }
+    return sum / game.plots.length.toDouble();
+  }
 
   void _onScaleStart(ScaleStartDetails d) {
     _lastFocal = d.localFocalPoint;
@@ -234,7 +244,11 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
   }
 
   void _onTap(Offset local) {
-    final t = tileOf(camera.toWorld(local, _size));
+    final b0 = building;
+    // 물건 놓을 자리를 고를 때는 바닥 칸, 그 밖에는 눈에 보이는 물건을 누른 것으로 친다
+    final placing = b0 != null && (b0.ghostType != null || _paintTool(b0) || b0.land);
+    final w = camera.toWorld(local, _size);
+    final t = placing ? tileOf(w) : tileAtPoint(game, w);
     final b = building;
     if (b == null) {
       // 누른 곳으로 걸어가서 그 일을 한다
