@@ -148,11 +148,15 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
         } else {
           toast(S.tn('inc_${k.name}', {'n': e.product}));
         }
-        Sfx.play(
+        Sfx.cue(
             switch (k) {
-              Incident.thiefCaught || Incident.kidFound || Incident.orderDone => FxKind.levelUp,
-              Incident.thiefEscaped || Incident.kidGone || Incident.orderLate => FxKind.angry,
-              _ => FxKind.pay,
+              Incident.thiefFlee || Incident.brokeDown || Incident.grumpyIn || Incident.boxEmpty || Incident.kidLost => 'alarm',
+              Incident.thiefCaught || Incident.kidFound || Incident.orderDone || Incident.repaired || Incident.grumpyCalmed ||
+                Incident.inspectGood => 'good',
+              Incident.thiefEscaped || Incident.kidGone || Incident.orderLate || Incident.grumpyLeft || Incident.inspectBad => 'bad',
+              Incident.fever => 'fever',
+              Incident.clawPlay => 'chest',
+              _ => 'bell', // 주문·단체 주문·도착·점검관·보통
             },
             clock);
       } else if (e.kind == FxKind.day) {
@@ -187,6 +191,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     _toastLeft -= dt;
     _regularLeft -= dt;
     _maybeStory();
+    Music.fast(world.feverLeft > 0);
     _sinceSave += dt;
     if (_sinceSave > 5) {
       _sinceSave = 0;
@@ -1381,7 +1386,7 @@ class _ChestState extends State<_Chest> {
           onTap: () {
             if (open) return;
             setState(() => open = true);
-            Sfx.play(FxKind.levelUp, 0);
+            Sfx.cue(widget.jackpot ? 'fever' : 'chest', 0);
           },
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 300),

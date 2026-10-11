@@ -660,7 +660,8 @@ class Game {
     final sale = onSale;
     if ((tills == 0 && managers.isEmpty) || sale.isEmpty || seconds <= 0) return 0;
     final avg = sale.map((p) => productById(p).price).reduce((a, b) => a + b) / sale.length;
-    final perSecond = avg * 1.5 / spawnGap * (1 + 0.15 * managers.length);
+    // 물건 원가(도매가)를 빼고 남는 만큼만
+    final perSecond = avg * (1 - wholesaleRate) * 1.5 / spawnGap * (1 + 0.15 * managers.length);
     return (min(seconds, offlineHours * 3600) * perSecond / 3).floor();
   }
 
