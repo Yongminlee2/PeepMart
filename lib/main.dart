@@ -1,5 +1,4 @@
-import 'dart:io';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'engine/catalog.dart';
@@ -92,7 +91,7 @@ class _TitleScreenState extends State<TitleScreen> {
             ]),
           ),
           // 목록이 플레이 스토어 앱이라 안드로이드에서만 보인다.
-          if (Platform.isAndroid)
+          if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android)
             Align(
               alignment: const Alignment(0, 0.92),
               child: TextButton.icon(
