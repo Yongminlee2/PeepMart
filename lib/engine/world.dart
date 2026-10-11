@@ -43,6 +43,7 @@ enum StockerState { idle, toCrate, loading, toShelf, unloading }
 class Stocker extends Walker {
   StockerState state = StockerState.idle;
   String? product;
+  double step = 0;
   Stocker(super.at);
 }
 
@@ -64,7 +65,7 @@ class World {
   final Game game;
   final Random _rng;
   late Walker player;
-  Stocker? stocker;
+  final List<Stocker> stockers = [];
   final List<Customer> customers = [];
   final List<Customer> queue = [];
   final List<Fx> fx = [];
@@ -91,7 +92,12 @@ class World {
         _scan();
       }
     }
-    if (game.hasStocker) _stockerWork(dt);
+    while (stockers.length < game.stockers) {
+      stockers.add(Stocker(layout.door));
+    }
+    for (final s in stockers) {
+      _stockerWork(s, dt);
+    }
     _spawnIn -= dt;
     if (_spawnIn <= 0) {
       if (customers.length < 3 + game.openProducts.length) _spawn();
@@ -110,7 +116,7 @@ class World {
     final len = sqrt(input * input + inputY * inputY);
     player.moving = len > 0.05;
     if (!player.moving) return;
-    final s = playerSpeed * dt * min(1.0, len);
+    final s = game.speed * dt * min(1.0, len);
     final ux = input / len, uy = inputY / len;
     player
       ..dx = ux
@@ -220,7 +226,7 @@ class World {
     // 계산대·줄 위치가 바뀌니 손님은 새로 받는다.
     customers.clear();
     queue.clear();
-    stocker = null;
+    stockers.clear();
   }
 
   // ---------------------------------------------------------------- 계산
@@ -248,14 +254,16 @@ class World {
 
   // ---------------------------------------------------------------- 진열 알바
 
-  void _stockerWork(double dt) {
-    final s = stocker ??= Stocker(layout.door);
+  void _stockerWork(Stocker s, double dt) {
     _walk(s, dt, stockerSpeed);
     switch (s.state) {
       case StockerState.idle:
+        // 다른 알바가 이미 맡은 상품은 빼고, 제일 비어 가는 것부터.
+        final taken = {for (final o in stockers) if (o != s && o.state != StockerState.idle) o.product};
         String? low;
         for (final p in game.openProducts) {
           final ratio = game.stock[p]! / game.capacity(p);
+          if (taken.contains(p)) continue;
           if (ratio < 0.5 && (low == null || ratio < game.stock[low]! / game.capacity(low))) low = p;
         }
         if (low == null) return;
@@ -266,7 +274,7 @@ class World {
       case StockerState.toCrate:
         if (s.arrived) s.state = StockerState.loading;
       case StockerState.loading:
-        if (_tickStocker(dt)) {
+        if (_tickStocker(s, dt)) {
           if (s.carry.length >= startArms) {
             s.state = StockerState.toShelf;
             _walkTo(s, _access(game.shelfTile(s.product!)));
@@ -279,18 +287,17 @@ class World {
       case StockerState.toShelf:
         if (s.arrived) s.state = StockerState.unloading;
       case StockerState.unloading:
-        if (_tickStocker(dt) && !_carryWork(s, 0)) {
+        if (_tickStocker(s, dt) && !_carryWork(s, 0)) {
           s.carry.clear();
           s.state = StockerState.idle;
         }
     }
   }
 
-  double _stockerStep = 0;
-  bool _tickStocker(double dt) {
-    _stockerStep += dt;
-    if (_stockerStep < moveStep) return false;
-    _stockerStep = 0;
+  bool _tickStocker(Stocker s, double dt) {
+    s.step += dt;
+    if (s.step < moveStep) return false;
+    s.step = 0;
     return true;
   }
 

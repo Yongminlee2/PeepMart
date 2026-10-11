@@ -4,7 +4,9 @@ import 'package:flutter/scheduler.dart';
 import '../engine/game.dart';
 import '../engine/world.dart';
 import '../save.dart';
+import '../settings.dart';
 import '../strings.dart';
+import 'settings_sheet.dart';
 import 'sfx.dart';
 import 'store_painter.dart';
 import 'widgets.dart';
@@ -37,6 +39,32 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _ticker.start();
+    _welcomeBack();
+  }
+
+  /// 꺼 둔 동안 알바가 번 돈을 계산대 옆 돈 더미에 얹고 알려 준다.
+  void _welcomeBack() {
+    if (game.savedAt == 0) return;
+    final away = (DateTime.now().millisecondsSinceEpoch - game.savedAt) / 1000;
+    final earned = game.offlineEarnings(away);
+    if (earned <= 0) return;
+    game.cash += earned;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      showDialog<void>(
+        context: context,
+        builder: (c) => AlertDialog(
+          backgroundColor: bg,
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text(S.tn('welcome_back', {'n': earned}),
+                textAlign: TextAlign.center, style: const TextStyle(fontSize: 19, color: inkColor)),
+            const SizedBox(height: 12),
+            Coins(earned, size: 28),
+          ]),
+          actions: [TextButton(onPressed: () => Navigator.pop(c), child: Text(S.t('btn_ok')))],
+        ),
+      );
+    });
   }
 
   @override
@@ -49,7 +77,9 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state != AppLifecycleState.resumed) saveGame(game);
+    final away = state != AppLifecycleState.resumed;
+    Music.background(away);
+    if (away) saveGame(game);
   }
 
   void _onTick(Duration now) {
@@ -123,6 +153,22 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
               Text(game.rating.toStringAsFixed(1), style: const TextStyle(fontSize: 20, color: inkColor)),
               const Spacer(),
               Coins(game.money, size: 24),
+              const SizedBox(width: 4),
+              ListenableBuilder(
+                listenable: Settings.i,
+                builder: (context, _) => IconButton(
+                  icon: Icon(Settings.i.music || Settings.i.sound ? Icons.volume_up_rounded : Icons.volume_off_rounded,
+                      color: inkColor),
+                  onPressed: () {
+                    final on = !(Settings.i.music || Settings.i.sound);
+                    Settings.i.set(music: on, sound: on);
+                  },
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.settings_rounded, color: inkColor),
+                onPressed: () => showSettings(context),
+              ),
             ]),
           ),
           if (!_touched)

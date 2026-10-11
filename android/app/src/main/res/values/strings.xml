@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 앱 이름만. 원본은 i18n/*.json 의 app_name -->
+<resources>
+    <string name="app_name">Peep Mart</string>
+</resources>

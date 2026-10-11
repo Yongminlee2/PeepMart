@@ -164,6 +164,43 @@ void main() {
     expect(g.pads.map((p) => unlocks[p.$1]).whereType<NewProduct>().map((u) => u.product), contains('bento'));
   });
 
+  test('돈만 있으면 구매 칸을 끝까지 전부 살 수 있다 (자리·순서가 막히지 않는다)', () {
+    final g = Game()..money = 1 << 30;
+    final w = World(g, seed: 12);
+    for (var guard = 0; guard < 100 && g.pads.isNotEmpty; guard++) {
+      final (i, tile) = g.pads.first;
+      stand(w, tile);
+      run(w, unlocks[i].price / payPerSecond + 0.5);
+      expect(g.bought, contains(i), reason: '$i 번을 사지 못했다');
+    }
+    expect(g.bought.length, unlocks.length);
+    expect(g.level, layouts.length - 1);
+    expect(g.openProducts.toSet(), products.map((p) => p.id).toSet());
+    expect(g.stockers, 2);
+    expect(g.speed, greaterThan(playerSpeed));
+  });
+
+  test('꺼 둔 동안 번 돈: 계산 알바가 있어야 하고, 두 시간까지만', () {
+    final g = Game();
+    expect(g.offlineEarnings(3600), 0);
+    g.bought.add(unlocks.indexWhere((u) => u is HireCashier));
+    final hour = g.offlineEarnings(3600);
+    expect(hour, greaterThan(0));
+    expect(g.offlineEarnings(7200), greaterThan(hour));
+    expect(g.offlineEarnings(100000), g.offlineEarnings(7200));
+  });
+
+  test('진열 알바 둘은 같은 상품을 나눠 맡지 않는다', () {
+    final g = Game();
+    g.bought.addAll([for (final (i, u) in unlocks.indexed) if (u is HireStocker) i]);
+    g.stock['soda'] = 0;
+    g.stock['donut'] = 0;
+    final w = World(g, seed: 13);
+    stand(w, g.layout.door);
+    run(w, 0.2);
+    expect(w.stockers.map((s) => s.product).toSet(), {'soda', 'donut'});
+  });
+
   test('별점이 높으면 손님이 더 많이 온다', () {
     int visitors(int score) {
       final g = Game()..recent.addAll(List.filled(20, score));

@@ -36,6 +36,8 @@ Color productColor(String id) => switch (id) {
       'icecream' => const Color(0xFFF8BBD0),
       'fruit' => const Color(0xFFFFA726),
       'bento' => const Color(0xFF8D6E63),
+      'milk' => const Color(0xFFE1F5FE),
+      'riceball' => const Color(0xFFEEEEEE),
       _ => const Color(0xFFCE93D8),
     };
 
@@ -118,8 +120,9 @@ class StorePainter extends CustomPainter {
       add(l.till.$1 + 0.01, l.till.$2 + 0.0,
           () => _char(canvas, cashierChar, l.till.$1 + 0.0, l.till.$2 + 0.0, busy ? Anim.interact : Anim.idle, Facing.downLeft));
     }
-    final st = world.stocker;
-    if (st != null) add(st.x, st.y + 0.02, () => _walker(canvas, st, stockerChar));
+    for (final (i, st) in world.stockers.indexed) {
+      add(st.x, st.y + 0.02, () => _walker(canvas, st, i == 0 ? stockerChar : customerChars[4]));
+    }
     for (final c in world.customers) {
       add(c.x, c.y + 0.02, () => _customer(canvas, c));
     }
@@ -392,6 +395,8 @@ class StorePainter extends CustomPainter {
         }
       case Expand():
         _icon(canvas, Icons.home_rounded, center + const Offset(0, -8), const Color(0xFFF48FB1), 26);
+      case FasterShoes():
+        _icon(canvas, Icons.directions_run_rounded, center + const Offset(0, -8), const Color(0xFF42A5F5), 26);
     }
     _label(canvas, center + const Offset(0, 14), '${u.price - (game.paid[i] ?? 0)}', const Color(0xFFFFA000));
   }

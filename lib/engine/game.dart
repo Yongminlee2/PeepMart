@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'catalog.dart';
 
 /// 꺼도 남는 상태. 몇 초마다, 그리고 앱이 뒤로 갈 때 저장한다.
@@ -12,11 +14,23 @@ class Game {
 
   Layout get layout => layouts[level];
 
-  bool get hasCashier => _has<HireCashier>();
-  bool get hasStocker => _has<HireStocker>();
-  int get arms => startArms + 2 * [for (final i in bought) unlocks[i]].whereType<BiggerArms>().length;
+  int savedAt = 0; // 마지막으로 저장한 때(밀리초). 자리 비운 동안 번 돈 계산용
 
-  bool _has<T>() => bought.any((i) => unlocks[i] is T);
+  bool get hasCashier => _count<HireCashier>() > 0;
+  int get stockers => _count<HireStocker>();
+  int get arms => startArms + 2 * _count<BiggerArms>();
+  double get speed => playerSpeed * (1 + 0.25 * _count<FasterShoes>());
+
+  int _count<T>() => bought.where((i) => unlocks[i] is T).length;
+
+  /// 앱을 꺼 둔 동안 번 돈. 계산 알바가 있어야 벌고, 두 시간까지만 친다.
+  /// 켜 둔 것보다 덜 벌어야(대략 1/3) 들어와서 하는 맛이 남는다.
+  int offlineEarnings(double seconds) {
+    if (!hasCashier || seconds <= 0) return 0;
+    final avgPrice = openProducts.map((p) => productById(p).price).reduce((a, b) => a + b) / openProducts.length;
+    final perSecond = avgPrice * 1.5 / 9 * (0.6 + 0.1 * openProducts.length) * (1 + rating * 0.25);
+    return (min(seconds, 7200) * perSecond / 3).floor();
+  }
 
   /// 상품 → 자리 번호. 자리 번호로 상자·진열대 위치가 정해진다.
   /// 연 순서와 상관없이 unlocks 표 순서로 고정이라 저장이 단순하다.
@@ -87,6 +101,7 @@ class Game {
         'paid': {for (final e in paid.entries) '${e.key}': e.value},
         'stock': stock,
         'recent': recent,
+        'savedAt': savedAt,
       };
 
   static Game fromJson(Map<String, dynamic> j) {
@@ -100,6 +115,7 @@ class Game {
       ..clear()
       ..addAll((j['stock'] as Map).cast<String, int>());
     g.recent.addAll((j['recent'] as List).cast<int>());
+    g.savedAt = j['savedAt'] as int? ?? 0;
     return g;
   }
 }

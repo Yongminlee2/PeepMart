@@ -23,6 +23,8 @@ const products = [
   Product('fruit', ShelfKind.rack, 5),
   Product('bento', ShelfKind.fridge, 9),
   Product('cake', ShelfKind.fridge, 12),
+  Product('milk', ShelfKind.fridge, 7),
+  Product('riceball', ShelfKind.rack, 10),
 ];
 
 Product productById(String id) => products.firstWhere((p) => p.id == id);
@@ -54,6 +56,10 @@ class Expand extends Unlock {
   const Expand(super.price);
 }
 
+class FasterShoes extends Unlock {
+  const FasterShoes(super.price); // 걷는 속도 +25%
+}
+
 const startProducts = ['soda', 'donut'];
 
 const unlocks = <Unlock>[
@@ -66,7 +72,15 @@ const unlocks = <Unlock>[
   NewProduct('fruit', 160),
   Expand(400),
   NewProduct('bento', 300),
-  NewProduct('cake', 450),
+  FasterShoes(250),
+  NewProduct('milk', 350),
+  BiggerArms(400),
+  HireStocker(600),
+  NewProduct('cake', 500),
+  Expand(1500),
+  NewProduct('riceball', 900),
+  FasterShoes(1000),
+  BiggerArms(1200),
 ];
 
 /// 가게 한 단계. 다음 단계의 상자·진열대 자리는 이전 단계를 전부 포함한다
@@ -119,9 +133,21 @@ final layouts = [
     pads: [(9, 5), (9, 6), (7, 8)],
     decor: {(0, 0): 'plant', (10, 0): 'trash'},
   ),
+  Layout(
+    w: 13, h: 11,
+    register: (11, 3), till: (12, 3), cash: (11, 2), door: (12, 10),
+    queue: _col(10, 3, 8),
+    crates: [..._row(0, 1, 9), ..._col(0, 1, 8)],
+    shelves: [
+      (2, 2), (3, 2), (2, 4), (3, 4), (2, 6), (3, 6), (5, 2), (6, 2), (5, 4), (6, 4), (5, 6), (6, 6),
+      (8, 2), (8, 4), (8, 6), (2, 8), (3, 8), (5, 8), (6, 8),
+    ],
+    pads: [(11, 6), (11, 7), (9, 10)],
+    decor: {(0, 0): 'plant', (12, 0): 'trash'},
+  ),
 ];
 
-const playerSpeed = 3.2; // 칸/초
+const playerSpeed = 3.0; // 칸/초, 신발마다 25% 빨라진다
 const customerSpeed = 2.2;
 const stockerSpeed = 2.4;
 const startArms = 4; // 처음에 한 번에 드는 개수

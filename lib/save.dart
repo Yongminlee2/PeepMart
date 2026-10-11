@@ -16,5 +16,7 @@ Future<Game?> loadGame() async {
   }
 }
 
-Future<void> saveGame(Game g) async =>
-    (await SharedPreferences.getInstance()).setString(_key, jsonEncode(g.toJson()));
+Future<void> saveGame(Game g) async {
+  g.savedAt = DateTime.now().millisecondsSinceEpoch;
+  await (await SharedPreferences.getInstance()).setString(_key, jsonEncode(g.toJson()));
+}

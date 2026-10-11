@@ -1,6 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 「개발자의 다른 게임」 목록·아이콘을 홈페이지(GitHub Pages)에서 받는다. 보내는 정보는 없다. -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <application
-        android:label="peep_mart"
+        android:label="@string/app_name"
+        android:allowBackup="false"
+        android:fullBackupContent="false"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

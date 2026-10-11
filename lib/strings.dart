@@ -45,6 +45,9 @@ class S {
   ///
   /// 'system' 은 **찾을 때마다** 기기 로케일로 푼다. 그래야 기기 언어를 바꿔도
   /// 앱을 다시 켜지 않고 반영된다.
+  /// 지금 화면에 쓰는 언어 코드('system' 을 기기 언어로 푼 것).
+  static String get resolvedLanguage => _resolve(AppLang().value);
+
   static String _resolve(String lang) {
     if (strings.containsKey(lang)) return lang;
     for (final locale in PlatformDispatcher.instance.locales) {

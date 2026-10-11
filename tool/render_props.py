@@ -19,6 +19,7 @@ FOOT_Y = 0.80
 FOOD = {
     "soda": "soda-can", "donut": "donut-sprinkles", "noodles": "chinese", "sandwich": "sandwich",
     "icecream": "popsicle", "fruit": "apple", "bento": "styrofoam-dinner", "cake": "cake",
+    "milk": "carton", "riceball": "rice-ball",
 }
 FR_FOOD, ORTHO_FOOD, FOOD_FIT = 96, 1.25, 0.8
 FOOD_FIT_EXTRA = {"sandwich": 1.9}  # 납작해서 작아 보이는 것
