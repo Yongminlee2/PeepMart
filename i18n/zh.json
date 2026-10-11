@@ -109,5 +109,12 @@
   "p_sushi": "Sushi",
   "p_grapes": "Grapes",
   "p_popsicle": "Ice pop",
-  "p_pie": "Pie"
+  "p_pie": "Pie",
+  "hint_tap": "Tap where to go or what to use",
+  "set_joystick": "Move with a joystick",
+  "move": "Move",
+  "moving": "Moving {item}",
+  "paint_hint": "Tap or swipe to paint",
+  "drag_hint": "Drag or tap the preview into place, then press ✓",
+  "build_hint": "Pick something below, or tap a placed item"
 }

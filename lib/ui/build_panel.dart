@@ -58,8 +58,11 @@ class _BuildPanelState extends State<BuildPanel> {
     v
       ..place = type
       ..product = product
+      ..moving = null
+      ..hover = null
+      ..rot = 0
       ..selected = null;
-    widget.toast(S.t('tap_to_place'));
+    widget.toast(S.t(type == 'eraser' || type.startsWith('floor-') ? 'paint_hint' : 'drag_hint'));
     _changed();
   }
 
@@ -72,7 +75,22 @@ class _BuildPanelState extends State<BuildPanel> {
         border: Border(top: BorderSide(color: inkColor, width: 2)),
       ),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-        if (sel != null) _selectedBar(sel) else if (v.place != null) _placingBar(),
+        // 높이를 고정해 둔다: 이 줄이 생겼다 없어지면 지도가 위아래로 들썩인다
+        SizedBox(
+          height: 48,
+          child: sel != null
+              ? _selectedBar(sel)
+              : (v.place != null || v.moving != null)
+                  ? _placingBar()
+                  : Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(S.t(v.land ? 'tab_land' : 'build_hint'),
+                            style: const TextStyle(fontSize: 14, color: Colors.black45), overflow: TextOverflow.ellipsis),
+                      ),
+                    ),
+        ),
         SizedBox(height: 132, child: _content()),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
@@ -100,30 +118,23 @@ class _BuildPanelState extends State<BuildPanel> {
   // ---------------------------------------------------------------- 위쪽 줄
 
   Widget _placingBar() {
-    final type = v.place!;
+    final mv = v.moving;
+    final type = mv?.type ?? v.place!;
+    final label = mv != null
+        ? S.tn('moving', {'item': _name(mv.type, mv.product)})
+        : type == 'eraser'
+            ? S.t('eraser')
+            : S.tn('placing', {'item': _name(type, v.product)});
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 6, 6, 0),
       child: Row(children: [
-        Expanded(
-          child: Text(
-            type == 'eraser' ? S.t('eraser') : S.tn('placing', {'item': _name(type, v.product)}),
-            style: const TextStyle(fontSize: 15, color: inkColor),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        if (type != 'eraser' && itemType(type).rotates)
-          IconButton(
-            icon: const Icon(Icons.rotate_right_rounded, color: inkColor),
-            onPressed: () {
-              v.rot = (v.rot + 1) % 4;
-              _changed();
-            },
-          ),
+        Expanded(child: Text(label, style: const TextStyle(fontSize: 15, color: inkColor), overflow: TextOverflow.ellipsis)),
         IconButton(
           icon: const Icon(Icons.close_rounded, color: inkColor),
           onPressed: () {
             v
               ..place = null
+              ..moving = null
               ..hover = null;
             _changed();
           },
@@ -139,6 +150,20 @@ class _BuildPanelState extends State<BuildPanel> {
       child: Row(children: [
         Expanded(
           child: Text(_name(i.type, i.product), style: const TextStyle(fontSize: 16, color: inkColor), overflow: TextOverflow.ellipsis),
+        ),
+        IconButton(
+          tooltip: S.t('move'),
+          icon: const Icon(Icons.open_with_rounded, color: inkColor),
+          onPressed: () {
+            v
+              ..moving = i
+              ..place = null
+              ..rot = i.rot
+              ..hover = i.tile
+              ..selected = null;
+            widget.toast(S.t('drag_hint'));
+            _changed();
+          },
         ),
         if (i.t.needsProduct)
           TextButton.icon(
@@ -288,12 +313,15 @@ class _BuildPanelState extends State<BuildPanel> {
               ),
             ),
             Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, color: inkColor)),
-            locked
-                ? Row(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(Icons.lock_rounded, size: 14, color: Colors.black45),
-                    Text(S.tn('level_n', {'n': lockedAt}), style: const TextStyle(fontSize: 12, color: Colors.black45)),
-                  ])
-                : Coins(price, size: 13),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: locked
+                  ? Row(mainAxisSize: MainAxisSize.min, children: [
+                      const Icon(Icons.lock_rounded, size: 14, color: Colors.black45),
+                      Text(S.tn('level_n', {'n': lockedAt}), style: const TextStyle(fontSize: 12, color: Colors.black45)),
+                    ])
+                  : Coins(price, size: 13),
+            ),
           ]),
         ),
       ),

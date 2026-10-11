@@ -137,6 +137,7 @@ class World {
       s.carry.clear();
     }
     if (!_free(player.x, player.y)) _unstick(player);
+    if (player.path.isNotEmpty) _walkTo(player, player.goal);
   }
 
   void _unstick(Walker w) {
@@ -148,10 +149,38 @@ class World {
 
   // ---------------------------------------------------------------- 플레이어
 
+  /// 누른 칸으로 걸어간다. 물건을 눌렀으면 그 일을 할 수 있는 자리로 간다:
+  /// 상자·진열대·꾸미기는 앞 칸, 계산대는 계산 자리. 갈 곳(서는 칸)을 돌려주고, 못 가면 null.
+  Tile? walkPlayerTo(Tile t) {
+    Tile? stand;
+    final item = game.at(t);
+    final reg = game.registers.where((r) => r.tile == t || r.till == t).firstOrNull;
+    if (reg != null) {
+      stand = reg.till;
+    } else if (item != null && !item.t.walkable) {
+      stand = _access(t);
+    } else if (game.walkable(t)) {
+      stand = t;
+    }
+    if (stand == null || !game.walkable(stand)) return null;
+    final path = _bfs(player.tile, stand);
+    if (path == null) return null;
+    player
+      ..goal = stand
+      ..path = path;
+    return stand;
+  }
+
   void _movePlayer(double dt) {
     final len = sqrt(input * input + inputY * inputY);
-    player.moving = len > 0.05;
-    if (!player.moving) return;
+    if (len <= 0.05) {
+      // 조이스틱을 안 쓰면 누른 곳으로 걸어가는 중일 수 있다
+      _walk(player, dt, game.speed);
+      return;
+    }
+    player
+      ..moving = true
+      ..path = [];
     final s = game.speed * dt * min(1.0, len);
     final ux = input / len, uy = inputY / len;
     player

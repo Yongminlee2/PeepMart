@@ -124,10 +124,11 @@ class Game {
 
   // ---------------------------------------------------------------- 짓기
 
-  PlaceResult canPlace(String typeId, Tile t, {int rot = 0}) {
+  /// [free] 면 레벨·돈은 안 본다(이미 산 것을 옮길 때).
+  PlaceResult canPlace(String typeId, Tile t, {int rot = 0, bool free = false}) {
     final type = itemType(typeId);
-    if (!unlockedItem(type)) return PlaceResult.locked;
-    if (money < type.price) return PlaceResult.money;
+    if (!free && !unlockedItem(type)) return PlaceResult.locked;
+    if (!free && money < type.price) return PlaceResult.money;
     if (!owns(t)) return PlaceResult.notOwned;
     if (type.kind == ItemKind.floor) return floors[t] == typeId ? PlaceResult.occupied : PlaceResult.ok;
     if (_at.containsKey(t) || _reserved(t) || trash.contains(t)) return PlaceResult.occupied;
@@ -154,6 +155,33 @@ class Game {
     }
     _changed();
     return true;
+  }
+
+  /// 옮길 수 있는가 (바꾸지 않고 보기만).
+  PlaceResult canMove(Item i, Tile t, {int? rot}) {
+    items.remove(i);
+    _reindex();
+    final res = canPlace(i.type, t, rot: rot ?? i.rot, free: true);
+    items.add(i);
+    _reindex();
+    return res;
+  }
+
+  /// 이미 놓은 것을 다른 칸으로 옮긴다(공짜). 못 옮기면 그대로 두고 그 까닭을 돌려준다.
+  PlaceResult move(Item i, Tile t, {int? rot}) {
+    items.remove(i);
+    _reindex();
+    final r = rot ?? i.rot;
+    final res = canPlace(i.type, t, rot: r, free: true);
+    if (res == PlaceResult.ok) {
+      items.add(Item(i.type, t.$1, t.$2, rot: r, product: i.product)
+        ..stock = i.stock
+        ..cash = i.cash);
+    } else {
+      items.add(i);
+    }
+    _changed();
+    return res;
   }
 
   /// 판다(값의 절반을 돌려받는다). 마지막 입구·마지막 계산대는 못 판다.

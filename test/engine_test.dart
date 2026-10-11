@@ -57,6 +57,23 @@ void main() {
       expect(g.sell(first(g, 'entrance')), isFalse);
     });
 
+    test('옮기기는 공짜고, 재고·돈 더미가 따라가며, 안 되는 자리면 그대로다', () {
+      final g = Game();
+      final rack = first(g, 'rack')..stock = 3;
+      final m = g.money;
+      expect(g.move(rack, (5, 5)), PlaceResult.ok);
+      final moved = g.at((5, 5))!;
+      expect(moved.stock, 3);
+      expect(moved.product, 'donut');
+      expect(g.at((3, 3)), isNull);
+      expect(g.money, m);
+      expect(g.move(moved, (2, 3)), PlaceResult.occupied); // 냉장고 자리
+      expect(g.at((5, 5)), same(moved));
+      final reg = first(g, 'register')..cash = 7;
+      expect(g.move(reg, (5, 1), rot: 1), PlaceResult.ok);
+      expect(g.at((5, 1))!.cash, 7);
+    });
+
     test('계산대를 돌리면 계산 자리가 바뀌고 줄이 남는다', () {
       final g = Game();
       final reg = first(g, 'register');
@@ -163,6 +180,34 @@ void main() {
       stand(w, (2, 4)); // 냉장고 (2,3) 앞
       run(w, 2);
       expect(fridge.stock, greaterThanOrEqualTo(g.arms - 1)); // 그새 손님이 하나 집을 수 있다
+    });
+
+    test('누르면 걸어가서 그 일을 한다: 상자 → 들기, 진열대 → 채우기, 계산대 → 계산 자리', () {
+      final g = Game();
+      final fridge = first(g, 'fridge')..stock = 0;
+      final w = World(g, seed: 20);
+      final box = g.items.firstWhere((i) => i.type == 'box' && i.product == 'soda');
+      expect(w.walkPlayerTo(box.tile), isNotNull);
+      run(w, 6);
+      expect(w.player.carry, contains('soda'));
+      expect(w.walkPlayerTo(fridge.tile), isNotNull);
+      run(w, 6);
+      expect(fridge.stock, greaterThan(0));
+      final reg = first(g, 'register');
+      expect(w.walkPlayerTo(reg.tile), reg.till);
+      run(w, 6);
+      expect(w.atAnyTill, isTrue);
+      expect(w.walkPlayerTo((30, 30)), isNull); // 남의 땅
+    });
+
+    test('조이스틱을 쓰면 가던 길을 멈춘다', () {
+      final g = Game();
+      final w = World(g, seed: 21);
+      w.walkPlayerTo((1, 6));
+      run(w, 0.2);
+      w.input = 1;
+      run(w, 0.1);
+      expect(w.player.path, isEmpty);
     });
 
     test('내가 계산하면 돈이 계산대 옆에 쌓였다 들어오고, 경험치가 오른다', () {

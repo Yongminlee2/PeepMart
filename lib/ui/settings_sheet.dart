@@ -40,6 +40,7 @@ class _SettingsSheet extends StatelessWidget {
               toggle('set_sound', s.sound, (v) => s.set(sound: v)),
               toggle('set_music', s.music, (v) => s.set(music: v)),
               toggle('set_vibration', s.vibration, (v) => s.set(vibration: v)),
+              toggle('set_joystick', s.joystick, (v) => s.set(joystick: v)),
               ListTile(
                 title: Text(S.t('set_language'), style: label),
                 trailing: DropdownButton<String>(

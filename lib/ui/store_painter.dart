@@ -58,6 +58,10 @@ class BuildView {
   Tile? hover; // 놓을 자리(마지막으로 누른 칸)
   bool land = false; // 땅 사기 화면
   Item? selected; // 고른 물건
+  Item? moving; // 옮기는 중인 물건
+
+  /// 미리보기로 그릴 물건 종류 (놓기·옮기기 중일 때).
+  String? get ghostType => moving?.type ?? (place == 'eraser' || (place?.startsWith('floor-') ?? false) ? null : place);
 }
 
 /// 카메라: 가운데에 올 그림 좌표와 확대 배율.
@@ -77,8 +81,9 @@ class StorePainter extends CustomPainter {
   final double clock;
   final Camera camera;
   final BuildView? build;
+  final Tile? dest; // 누른 곳(걸어가는 목적지)
 
-  StorePainter(this.world, this.flights, this.clock, this.camera, this.build);
+  StorePainter(this.world, this.flights, this.clock, this.camera, this.build, {this.dest});
 
   Game get game => world.game;
 
@@ -113,6 +118,16 @@ class StorePainter extends CustomPainter {
     }
     for (final t in game.trash) {
       _trash(canvas, t);
+    }
+    if (dest != null && world.player.path.isNotEmpty) {
+      final p = iso(dest!.$1 + 0.0, dest!.$2 + 0.0);
+      final k = 0.8 + 0.2 * sin(clock * 8);
+      canvas.drawOval(
+          Rect.fromCenter(center: p, width: 36 * k, height: 18 * k),
+          Paint()
+            ..color = const Color(0xFF43A047)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 3);
     }
 
     // 뒤에서 앞으로(x+y 가 작은 것부터) 그린다.
@@ -153,7 +168,7 @@ class StorePainter extends CustomPainter {
     }
 
     // 놓을 자리 미리보기
-    if (b != null && b.place != null && b.hover != null) _ghost(canvas, b);
+    if (b != null && b.ghostType != null && b.hover != null) _ghost(canvas, b);
 
     // 계산 기다리는 손님이 있는데 아무도 없는 계산대는 계산 자리를 가리킨다
     if (b == null) {
@@ -359,13 +374,26 @@ class StorePainter extends CustomPainter {
 
   void _ghost(Canvas canvas, BuildView b) {
     final t = b.hover!;
-    final ok = game.canPlace(b.place!, t, rot: b.rot) == PlaceResult.ok;
+    final type = b.ghostType!;
+    final mv = b.moving;
+    final ok = (mv != null ? game.canMove(mv, t, rot: b.rot) : game.canPlace(type, t, rot: b.rot)) == PlaceResult.ok;
     canvas.drawPath(
         _diamond(t.$1 + 0.0, t.$2 + 0.0, 1, 1), Paint()..color = ok ? const Color(0x6643A047) : const Color(0x66E53935));
     canvas.saveLayer(null, Paint()..color = const Color(0xAAFFFFFF));
-    drawItem(canvas, b.place!, t, product: b.product, stock: 99, rot: b.rot, clock: clock);
+    drawItem(canvas, type, t, product: mv?.product ?? b.product, stock: 99, rot: b.rot, clock: clock);
     canvas.restore();
-    if (itemType(b.place!).rotates) {
+    // 끌어서 옮길 수 있다는 손잡이
+    final h = iso(t.$1 + 0.0, t.$2 + 0.0) + const Offset(0, 26);
+    canvas.drawCircle(h, 13, Paint()..color = ok ? const Color(0xFF43A047) : const Color(0xFFE53935));
+    canvas.drawCircle(
+        h,
+        13,
+        Paint()
+          ..color = Colors.white
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.5);
+    _text(canvas, h, '✥', Colors.white, 16);
+    if (itemType(type).rotates) {
       final d = rotations[b.rot];
       final till = (t.$1 + d.$1, t.$2 + d.$2), front = (t.$1 - d.$1, t.$2 - d.$2);
       canvas.drawPath(_diamond(till.$1 + 0.0, till.$2 + 0.0, 1, 1, 0.15), Paint()..color = const Color(0x8842A5F5));
