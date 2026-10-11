@@ -149,12 +149,12 @@ void main() {
         levelAt[g.level] = t / 60;
       }
       if ((t / 60) % 15 < dt / 60) {
-        out.writeln('${(t / 60).round().toString().padLeft(3)}  ${g.level.toString().padLeft(4)}  '
+        final head = '${(t / 60).round().toString().padLeft(3)}  ${g.level.toString().padLeft(4)}  '
             '${g.money.toString().padLeft(6)}  ${g.plots.length.toString().padLeft(2)}  '
             '${g.shelves.length.toString().padLeft(5)}  ${g.onSale.length.toString().padLeft(4)}  '
             '${g.registers.length.toString().padLeft(5)}  '
-            '${g.count(Staff.cashier)}/${g.count(Staff.stocker)}/${g.count(Staff.janitor)}'.padRight(56) +
-            '${g.rating.toStringAsFixed(1)}  ${g.goal.toString().padLeft(3)}  ${g.served}');
+            '${g.count(Staff.cashier)}/${g.count(Staff.stocker)}/${g.count(Staff.janitor)}';
+        out.writeln('${head.padRight(56)}${g.rating.toStringAsFixed(1)}  ${g.goal.toString().padLeft(3)}  ${g.served}');
       }
     }
     out.writeln('\n레벨 도달(분): ${levelAt.entries.map((e) => '${e.key}:${e.value.round()}').join('  ')}');
