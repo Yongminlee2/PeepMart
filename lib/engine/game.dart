@@ -14,6 +14,8 @@ class Item {
   int level = 1; // 가구 레벨 (진열대·계산대)
   bool broken = false; // 고장 (그날만, 저장 안 함)
   int price = defaultPrice; // 가격표 (priceLevels 의 번호)
+  int units = boxSize; // 상자에 남은 물건
+  double incoming = 0; // 주문한 상자가 도착하기까지 남은 초 (0 이면 주문 없음)
   Item(this.type, this.c, this.r, {this.rot = 0, this.product});
 
   ItemType get t => itemType(type);
@@ -276,6 +278,17 @@ class Game {
     v *= priceLevels[shelf.price.clamp(0, priceLevels.length - 1)];
     if (inCombo(shelf)) v *= comboPrice;
     return max(1, v.round());
+  }
+
+  /// 상자를 다시 주문한다: 돈을 내고 [restockDelay] 초 뒤 도착. 이미 오는 중이거나 가득 찼거나 돈이 없으면 false.
+  bool reorder(Item box) {
+    final p = box.product;
+    if (box.t.kind != ItemKind.box || p == null || box.incoming > 0 || box.units >= boxMax - boxSize + 1) return false;
+    final cost = reorderCost(p);
+    if (money < cost) return false;
+    money -= cost;
+    box.incoming = restockDelay;
+    return true;
   }
 
   /// 가격표를 다음 단계로 (싸게 → 보통 → 비싸게 → 프리미엄 → 싸게).
@@ -687,7 +700,9 @@ class Game {
   Map<String, Object> _toJson() => {
         'plots': [for (final p in plots) [p.$1, p.$2]],
         'items': [
-          for (final i in items) [i.type, i.c, i.r, i.rot, i.product ?? '', i.stock, i.cash, i.level, i.price]
+          for (final i in items)
+            // 오는 중인 주문은 저장할 때 도착한 것으로 친다
+            [i.type, i.c, i.r, i.rot, i.product ?? '', i.stock, i.cash, i.level, i.price, min(boxMax, i.units + (i.incoming > 0 ? boxSize : 0))]
         ],
         'floors': [for (final e in floors.entries) [e.key.$1, e.key.$2, e.value]],
         'staff': {for (final e in staff.entries) e.key.name: e.value},
@@ -715,6 +730,7 @@ class Game {
             ..cash = l[6] as int
             ..level = l.length > 7 ? l[7] as int : 1
             ..price = l.length > 8 ? l[8] as int : defaultPrice
+            ..units = l.length > 9 ? l[9] as int : boxSize
       ]);
     for (final l in (j['floors'] as List).cast<List>()) {
       floors[tile(l)] = l[2] as String;

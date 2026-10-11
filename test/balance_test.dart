@@ -23,6 +23,10 @@ class Bot {
     _thinkIn -= dt;
     if (_thinkIn <= 0) {
       _thinkIn = 5;
+      // 상자가 바닥나기 전에 다시 주문(사람도 대개 이쯤 한다)
+      for (final b in g.ofKind(ItemKind.box)) {
+        if (b.units < 6) g.reorder(b);
+      }
       _build();
     }
   }

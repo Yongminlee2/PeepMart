@@ -1249,4 +1249,65 @@ void main() {
       }
     });
   });
+
+  group('재고·재주문', () {
+    test('상자에서 꺼내면 줄고, 비면 더 못 꺼낸다', () {
+      final g = Game();
+      final w = World(g, seed: 1);
+      final box = g.items.firstWhere((i) => i.type == 'box' && i.product == 'soda')..units = 3;
+      stand(w, (box.c, box.r + 1));
+      for (var i = 0; i < 100; i++) {
+        w.tick(0.05);
+        w.player.carry.clear(); // 계속 꺼내 보기
+      }
+      expect(box.units, 0);
+    });
+
+    test('주문: 도매가를 내고 15초 뒤 24개 도착, 오는 중엔 또 못 한다', () {
+      final g = Game()..money = 1000;
+      final w = World(g, seed: 2);
+      final box = g.items.firstWhere((i) => i.type == 'box' && i.product == 'soda')..units = 0;
+      expect(g.reorder(box), isTrue);
+      expect(g.money, 1000 - reorderCost('soda'));
+      expect(g.reorder(box), isFalse);
+      run(w, restockDelay + 0.5);
+      expect(box.units, boxSize);
+      expect(box.incoming, 0);
+    });
+
+    test('돈이 모자라거나 상자가 가득하면 주문 못 한다', () {
+      final g = Game()..money = 0;
+      final box = g.items.firstWhere((i) => i.type == 'box')..units = 0;
+      expect(g.reorder(box), isFalse);
+      g.money = 9999;
+      box.units = boxMax;
+      expect(g.reorder(box), isFalse);
+    });
+
+    test('진열원은 빈 상자로는 못 채운다', () {
+      final g = Game()
+        ..money = 5000
+        ..level = 5;
+      g.owner.tutorial = TutorialStep.done;
+      g.hire(Staff.stocker);
+      for (final b in g.ofKind(ItemKind.box)) {
+        b.units = 0;
+      }
+      for (final s in g.shelves) {
+        s.stock = 0;
+      }
+      final w = World(g, seed: 3);
+      stand(w, (0, 6));
+      run(w, 20);
+      expect(g.shelves.every((s) => s.stock == 0), isTrue);
+    });
+
+    test('남은 양과 오는 중인 주문은 저장된다(오는 중은 도착한 것으로)', () {
+      final g = Game()..money = 1000;
+      final box = g.items.firstWhere((i) => i.type == 'box')..units = 5;
+      g.reorder(box);
+      final back = Game.fromJson(jsonDecode(jsonEncode(g.toJson())) as Map<String, dynamic>);
+      expect(back.items.firstWhere((i) => i.type == 'box').units, 5 + boxSize);
+    });
+  });
 }

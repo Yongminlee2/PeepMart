@@ -213,6 +213,7 @@ class StorePainter extends CustomPainter {
           level: i.level,
           managed: i.t.shelf != null && game.managers.contains(i.t.shelf)));
       if (i.broken) add(i.c + 0.01, i.r + 0.01, () => _brokenMark(canvas, i));
+      if (i.t.kind == ItemKind.box && i.product != null && b == null) add(i.c + 0.01, i.r + 0.01, () => _boxStock(canvas, i));
       if (i.t.kind == ItemKind.shelf && (i.price != defaultPrice || game.inCombo(i))) {
         add(i.c + 0.01, i.r + 0.01, () => _shelfTags(canvas, i));
       }
@@ -723,6 +724,28 @@ class StorePainter extends CustomPainter {
       final p = base + const Offset(-36, -4);
       _text(canvas, p, '★', Color.fromRGBO(255, 193, 7, 0.75 + 0.25 * sin(clock * 4)), 15, outline: 1);
     }
+  }
+
+  /// 상자 남은 양: 막대와 숫자, 비면 빨간 !, 주문 중이면 트럭과 남은 초.
+  void _boxStock(Canvas canvas, Item i) {
+    final p = iso(i.c + 0.0, i.r + 0.0) + const Offset(0, 14);
+    if (i.incoming > 0) {
+      _text(canvas, p + const Offset(0, -2), '🚚 ${i.incoming.ceil()}s', const Color(0xFF1565C0), 11, outline: 1);
+      return;
+    }
+    if (i.units == 0) {
+      final q = iso(i.c + 0.0, i.r + 0.0) + Offset(0, -48 + sin(clock * 6) * 3);
+      canvas.drawCircle(q, 11, Paint()..color = const Color(0xFFE53935));
+      canvas.drawCircle(q, 11, _stroke(1.5));
+      _text(canvas, q, '!', Colors.white, 15);
+      return;
+    }
+    final k = (i.units / boxSize).clamp(0.0, 1.0);
+    final r = Rect.fromCenter(center: p, width: 30, height: 5);
+    canvas.drawRRect(RRect.fromRectAndRadius(r, const Radius.circular(2)), Paint()..color = const Color(0x55000000));
+    canvas.drawRRect(
+        RRect.fromRectAndRadius(Rect.fromLTWH(r.left, r.top, r.width * k, r.height), const Radius.circular(2)),
+        Paint()..color = k < 0.25 ? const Color(0xFFFF7043) : const Color(0xFF66BB6A));
   }
 
   /// 고장 난 진열대: 연기와 빨간 공구 표시.

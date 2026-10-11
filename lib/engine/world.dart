@@ -85,7 +85,8 @@ const dayLastCall = 0, dayClosing = 1, dayClosed = 2;
 enum Incident {
   thiefFlee, thiefCaught, thiefEscaped, kidLost, kidFound, kidGone, orderIn, orderDone, orderLate,
   brokeDown, repaired, grumpyIn, grumpyCalmed, grumpyLeft,
-  fever, inspectIn, inspectGood, inspectOk, inspectBad
+  fever, inspectIn, inspectGood, inspectOk, inspectBad,
+  boxEmpty, boxArrived
 }
 
 /// 배달 주문: 진열대를 돌며 상품을 챙기고(진열대에서 빠진다) 입구까지 들고 가면 끝.
@@ -564,6 +565,16 @@ class World {
     }
     _day(dt);
     _incidentsTick(dt);
+    for (final b in game.ofKind(ItemKind.box)) {
+      if (b.incoming <= 0) continue;
+      b.incoming -= dt;
+      if (b.incoming <= 0) {
+        b
+          ..incoming = 0
+          ..units = min(boxMax, b.units + boxSize);
+        fx.add(Fx(FxKind.incident, b.c.toDouble(), b.r.toDouble(), amount: Incident.boxArrived.index, product: b.product ?? ''));
+      }
+    }
     sinceServe += dt;
     if (sinceServe > comboWindow(game.spawnGap)) combo = 0;
     if (feverLeft > 0) feverLeft = max(0, feverLeft - dt);
@@ -744,7 +755,8 @@ class World {
       for (final s in game.shelves) {
         if (s.t.shelf == k && s.stock < s.capacity && (low == null || s.stock < low.stock)) low = s;
       }
-      if (low != null) {
+      if (low != null && game.money >= wholesale(low.product!)) {
+        game.money -= wholesale(low.product!);
         low.stock++;
         fx.add(Fx(FxKind.place, low.c + 0.0, low.r - 1.0, tx: low.c + 0.0, ty: low.r + 0.0, product: low.product!));
       }
@@ -823,8 +835,9 @@ class World {
     }
     if (!pick) return false;
     for (final b in game.ofKind(ItemKind.box)) {
-      if (b.product != null && w.carry.length < arms && w.distTo(b.tile) <= reach + 0.25) {
+      if (b.product != null && b.units > 0 && w.carry.length < arms && w.distTo(b.tile) <= reach + 0.25) {
         w.carry.add(b.product!);
+        if (--b.units == 0) fx.add(Fx(FxKind.incident, b.c.toDouble(), b.r.toDouble(), amount: Incident.boxEmpty.index, product: b.product!));
         fx.add(Fx(FxKind.pick, b.c.toDouble(), b.r.toDouble(), tx: w.x, ty: w.y, product: b.product!));
         return true;
       }
@@ -951,7 +964,7 @@ class World {
       case StaffState.idle:
         // 상자가 있고, 다른 진열원이 안 맡았고, 반 넘게 빈 진열대 중 제일 빈 것부터.
         final taken = {for (final o in staff) if (o != s && o.kind == Staff.stocker) o.item};
-        final boxes = {for (final b in game.ofKind(ItemKind.box)) if (b.product != null) b.product!: b};
+        final boxes = {for (final b in game.ofKind(ItemKind.box)) if (b.product != null && b.units > 0) b.product!: b};
         Item? low;
         for (final sh in game.shelves) {
           if (taken.contains(sh) || !boxes.containsKey(sh.product)) continue;
@@ -961,16 +974,27 @@ class World {
         if (low == null) return;
         s
           ..item = low
+          ..target = boxes[low.product]!.tile
           ..state = StaffState.toWork;
         _walkTo(s, _access(boxes[low.product]!.tile));
       case StaffState.toWork:
         if (s.arrived) s.state = StaffState.working;
       case StaffState.working: // 상자에서 싣기
         if (!_tick(s, dt)) return;
-        if (s.carry.length >= staffArms) {
+        final box = s.target == null ? null : game.at(s.target!);
+        final empty = box == null || box.units <= 0 || box.product != s.item!.product;
+        if (s.carry.length >= staffArms || (empty && s.carry.isNotEmpty)) {
           s.state = StaffState.toShelf;
           _walkTo(s, _access(s.item!.tile));
+        } else if (empty) {
+          s
+            ..item = null
+            ..target = null
+            ..state = StaffState.idle;
         } else {
+          if (--box.units == 0) {
+            fx.add(Fx(FxKind.incident, box.c.toDouble(), box.r.toDouble(), amount: Incident.boxEmpty.index, product: box.product!));
+          }
           s.carry.add(s.item!.product!);
           fx.add(Fx(FxKind.pick, s.x, s.y, tx: s.x, ty: s.y, product: s.item!.product!));
         }
@@ -981,6 +1005,7 @@ class World {
           s.carry.clear();
           s
             ..item = null
+            ..target = null
             ..state = StaffState.idle;
         }
     }

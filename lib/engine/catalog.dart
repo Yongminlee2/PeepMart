@@ -526,3 +526,14 @@ const inspectStops = 3; // 둘러보는 곳 수
 const inspectTrash = 15, inspectEmpty = 10, inspectBroken = 20;
 const inspectGood = 80, inspectBad = 50;
 const inspectReward = 0.3, inspectFine = 0.2; // 오늘 목표 대비
+
+// ------------------------------------------------------------------ 재고·재주문
+
+/// 상자 하나에 [boxSize] 개. 꺼낼 때마다 줄고, 비면 다시 주문해야 한다(알바는 빈 상자로 못 채운다).
+/// 주문은 도매가(판매가 × [wholesaleRate]) × [boxSize], [restockDelay] 초 뒤 도착. 매니저 코너도 한 개마다 도매가를 낸다.
+const boxSize = 24;
+const boxMax = boxSize * 2; // 주문이 쌓여도 상자에 이만큼까지
+const wholesaleRate = 0.4;
+const restockDelay = 15.0;
+int wholesale(String product) => max(1, (productById(product).price * wholesaleRate).round());
+int reorderCost(String product) => wholesale(product) * boxSize;

@@ -140,7 +140,9 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
         Sfx.play(FxKind.levelUp, clock);
       } else if (e.kind == FxKind.incident) {
         final k = Incident.values[e.amount];
-        if (k == Incident.inspectGood || k == Incident.inspectOk || k == Incident.inspectBad) {
+        if (k == Incident.boxEmpty || k == Incident.boxArrived) {
+          toast(S.tn('inc_${k.name}', {'item': S.t('p_${e.product}')}));
+        } else if (k == Incident.inspectGood || k == Incident.inspectOk || k == Incident.inspectBad) {
           final parts = e.product.split('|');
           toast(S.tn('inc_${k.name}', {'s': parts[0], 'n': parts.length > 1 ? parts[1] : ''}));
         } else {
@@ -356,6 +358,12 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     final t = placing ? tileOf(w) : tileAtPoint(game, w);
     final b = building;
     if (b == null) {
+      // 빈 상자를 누르면 주문 창
+      final box = game.at(t);
+      if (box != null && box.t.kind == ItemKind.box && box.product != null && box.units == 0 && box.incoming <= 0) {
+        _reorder(box);
+        return;
+      }
       // 누른 곳으로 걸어가서 그 일을 한다
       _touched = true;
       _dest = world.tapAt(t);
@@ -725,6 +733,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
               done();
             }, toast);
           }),
+        if (i.t.kind == ItemKind.box && i.product != null)
+          act(Icons.local_shipping_rounded, S.t('act_reorder'), () => _reorder(i)),
         if (i.t.kind == ItemKind.shelf)
           act(Icons.price_change_rounded, S.t('price_${i.price}'), () {
             game.cyclePrice(i);
@@ -915,6 +925,40 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
           ),
       ]),
     );
+  }
+
+  /// 상자 재주문: 값과 도착 시간을 보여 주고 주문한다.
+  Future<void> _reorder(Item box) async {
+    final p = box.product!;
+    final cost = reorderCost(p);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        backgroundColor: bg,
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          SizedBox(width: 56, height: 56, child: CustomPaint(painter: FoodPreview(p))),
+          const SizedBox(height: 6),
+          Text(S.tn('reorder_q', {'item': S.t('p_$p'), 'n': boxSize, 's': restockDelay.round()}),
+              textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, color: inkColor)),
+          const SizedBox(height: 4),
+          Text(S.tn('reorder_left', {'n': box.units}), style: const TextStyle(fontSize: 13, color: Colors.black54)),
+          const SizedBox(height: 8),
+          Coins(cost, size: 20),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: Text(S.t('btn_cancel'))),
+          TextButton(onPressed: () => Navigator.pop(c, true), child: Text(S.t('act_reorder'))),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    if (game.reorder(box)) {
+      Sfx.play(FxKind.pay, clock);
+      toast(S.tn('reorder_done', {'s': restockDelay.round()}));
+    } else {
+      toast(S.t(game.money < cost ? 'no_money' : 'reorder_busy'));
+    }
+    setState(() {});
   }
 
   /// 피버 타임: 화면 가장자리가 불꽃색으로 빛난다.

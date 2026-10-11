@@ -232,8 +232,8 @@
   "reg_bom_h5": "\"Este cumpleaños mi abuela vendrá en persona. ¡Celébralo con nosotras!\"",
   "help_move_t": "Moverse",
   "help_move_b": "Toca adónde ir o qué usar, y caminarás hasta allí para hacerlo. Arrastra con un dedo para mover el mapa y pellizca con dos para hacer zoom. ¿Prefieres un joystick? Actívalo en Ajustes.",
-  "help_stock_t": "Llenar estantes",
-  "help_stock_b": "Toca un estante vacío (! rojo) e irás a por su caja de producto y volverás a llenarlo. Para llenar un estante, la tienda necesita una caja de ese producto.",
+  "help_stock_t": "Stocking and inventory",
+  "help_stock_b": "Tap an empty shelf (red !) to grab that product from its box and fill the shelf. Each box holds 24 and runs down as you take from it. When a box is empty, tap it to reorder at wholesale price; it arrives in 15 seconds. Your staff can't stock from an empty box, so order ahead. You can also select a box in build mode to order before it runs out.",
   "help_checkout_t": "Caja y dinero",
   "help_checkout_b": "Toca la caja registradora para ponerte en la casilla azul de detrás y cobrar. El dinero que cobras se amontona junto a la caja, así que acércate a recogerlo. Si contratas un cajero, el dinero entra directamente.",
   "help_build_t": "Construir",
@@ -437,5 +437,12 @@
   "inc_inspectBad": "Inspection score {s}: poor... Fine {n}",
   "inspect_forecast": "📋 Health inspection day! Clean up trash and keep your shelves full",
   "help_fever_t": "Fever time and inspections",
-  "help_fever_b": "Check out customers within 6 seconds of each other to build a combo. At 10 combo it's fever time: for 15 seconds prices go up 1.5x and customers rush in. An upset customer breaks your combo. From Convenience Store, a health inspector visits every 7 days and tours your store. Trash, empty shelves and broken shelves lower the score. 80 or more earns a reward; under 50 means a fine."
+  "help_fever_b": "Check out customers within 6 seconds of each other to build a combo. At 10 combo it's fever time: for 15 seconds prices go up 1.5x and customers rush in. An upset customer breaks your combo. From Convenience Store, a health inspector visits every 7 days and tours your store. Trash, empty shelves and broken shelves lower the score. 80 or more earns a reward; under 50 means a fine.",
+  "act_reorder": "Order",
+  "reorder_q": "Order {n} {item}?\nArrives in {s} seconds",
+  "reorder_left": "{n} left in the box now",
+  "reorder_done": "Ordered! Arrives in {s} seconds",
+  "reorder_busy": "Already on the way, or the box is full",
+  "inc_boxEmpty": "The {item} box is empty! Tap it to reorder",
+  "inc_boxArrived": "The {item} box has arrived"
 }
