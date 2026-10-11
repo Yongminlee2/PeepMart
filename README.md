@@ -1,6 +1,6 @@
 # 삐약마트 (Peep Mart)
 
-편의점을 운영하는 귀여운 아케이드 타이쿤. Flutter 로 안드로이드·아이폰을 함께 낸다.
+편의점을 운영하는 귀여운 타이쿤. 방 하나에서 시작해 넓은 땅에 마음대로 지어 키운다. Flutter 로 안드로이드·아이폰을 함께 낸다.
 
 설계: `docs/설계/2026-10-11-peepmart-design.md`
 
@@ -11,6 +11,10 @@ export TEMP=/c/workAndroid/tmp-ascii TMP=/c/workAndroid/tmp-ascii PUB_CACHE=/c/f
 flutter test
 flutter build apk --release
 ```
+
+밸런스 자동 플레이(6시간, 몇 분 걸림): `BALANCE=1 flutter test test/balance_test.dart`
+
+같은 와이파이의 폰에서 웹으로 해 보기: `flutter build web --release` 후 `python tool/serve_web.py` → `http://<PC 주소>:8762`
 
 ## 그림 다시 만들기
 
