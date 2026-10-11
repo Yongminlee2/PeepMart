@@ -159,7 +159,13 @@ void _lotGround(Canvas c, Game g) {
             case _Lot.parking:
               put(edge ? lk.walk : (lk.night ? const Color(0xFF37474F) : const Color(0xFF8E9AA0)), x, y);
             case _Lot.empty:
-              put(lk.tone((x + y).isEven ? const Color(0xFFC8A97E) : const Color(0xFFBF9F72)), x, y);
+              // 바닷가는 흙 대신 젖은 모래빛
+              put(
+                  lk.beach
+                      ? ((x + y).isEven ? const Color(0xFFEFD08C) : const Color(0xFFE8C77F))
+                      : lk.tone((x + y).isEven ? const Color(0xFFC8A97E) : const Color(0xFFBF9F72)),
+                  x,
+                  y);
             case _Lot.park:
               final mid = plotSize ~/ 2;
               final path = x - px * plotSize == mid || y - py * plotSize == mid;
@@ -557,8 +563,21 @@ void _palm(Canvas c, Offset p, double r) {
 void _hut(Canvas c, double x, double y, Color wall, double r) {
   _tbox(c, x - 0.3, y - 0.3, 1.6, 1.6, 26, const Color(0xFFFFF3E0), const Color(0xFFFFE0B2), const Color(0xFFFFF3E0));
   final p = iso(x + 0.5, y + 0.5) + const Offset(0, -26);
-  final roof = Path()..addOval(Rect.fromCenter(center: p + const Offset(0, -6), width: 92, height: 34));
-  c.drawPath(roof, Paint()..color = _roofs[(r * 31).floor() % _roofs.length]);
+  // 고깔 지붕: 아래는 둥근 처마, 위는 꼭지
+  final col = _roofs[(r * 31).floor() % _roofs.length];
+  final top = p + const Offset(0, -38);
+  final roof = Path()
+    ..moveTo(p.dx - 50, p.dy - 4)
+    ..quadraticBezierTo(p.dx, p.dy + 20, p.dx + 50, p.dy - 4)
+    ..lineTo(top.dx, top.dy)
+    ..close();
+  c.drawPath(roof, Paint()..color = col);
+  final line = Paint()
+    ..color = Color.lerp(col, Colors.black, 0.18)!
+    ..strokeWidth = 1.5;
+  for (var k = -2; k <= 2; k++) {
+    c.drawLine(top, p + Offset(k * 19.0, 7.0 - k.abs() * 3.5), line);
+  }
   c.drawPath(roof, _stroke(1.5));
 }
 
