@@ -163,6 +163,8 @@ Future<void> showIntro(BuildContext context) async {
 }
 
 class _TitleArt extends CustomPainter {
+  _TitleArt() : super(repaint: Sprites.loaded);
+
   @override
   void paint(Canvas canvas, Size size) {
     final y = size.height - 4;

@@ -191,7 +191,7 @@ class Portrait extends CustomPainter {
   final int look;
   final bool hidden;
   final Anim anim;
-  Portrait(this.look, {this.hidden = false, this.anim = Anim.idle});
+  Portrait(this.look, {this.hidden = false, this.anim = Anim.idle}) : super(repaint: Sprites.loaded);
 
   @override
   void paint(Canvas canvas, Size size) {

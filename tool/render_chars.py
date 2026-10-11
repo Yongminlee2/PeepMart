@@ -1,6 +1,6 @@
-"""Kenney Mini Characters 를 게임 각도(2:1 아이소)로 찍어 캐릭터별 스프라이트 시트를 만든다.
+"""Quaternius Ultimate Animated Character Pack(CC0) 을 게임 각도(2:1 아이소)로 찍어 캐릭터별 스프라이트 시트를 만든다.
 
-    blender -b -P tool/render_chars.py -- <GLB 폴더> <출력 폴더> [캐릭터 이름 ...]
+    blender -b -P tool/render_chars.py -- <FBX 폴더> <출력 폴더> [캐릭터 이름 ...]
 
 시트: 가로 COLS 칸 x 세로 len(ROWS) 줄, 한 칸 FR 픽셀. 발은 칸의 (가운데, FOOT_Y) 에 온다.
 "front" 는 화면 왼쪽 아래를 보는 모습, "back" 은 오른쪽 위를 보는 모습이다.
@@ -11,22 +11,77 @@ import os
 import sys
 
 import bpy
+import mathutils
 import numpy as np
 
 FR = 128          # 한 칸 픽셀
 COLS = 8          # 동작 하나를 몇 장으로 나눌지
 ORTHO = 1.15      # 한 칸에 담기는 세계 크기(가로)
 FOOT_Y = 0.85     # 발 위치(위에서부터 비율)
-ROWS = [          # (동작, 방향)
-    ("idle", "front"), ("idle", "back"),
-    ("walk", "front"), ("walk", "back"),
-    ("pick-up", "front"), ("pick-up", "back"),
-    ("emote-yes", "front"), ("emote-no", "front"),
-    ("interact-right", "front"),
-    ("holding-both", "front"), ("holding-both", "back"),
-    ("sit", "front"), ("sit", "back"),
+HEIGHT = 0.92     # 캐릭터 키(세계 크기). 만세를 해도 칸 안에 들어오게
+ROWS = [          # (동작, 방향). SitDown 은 마지막 자세로 멈춘다
+    ("Idle", "front"), ("Idle", "back"),
+    ("Walk", "front"), ("Walk", "back"),
+    ("PickUp", "front"), ("PickUp", "back"),
+    ("Victory", "front"), ("Defeat", "front"),
+    ("PickUp", "front"),  # 일하는 중(계산·청소): 몸을 숙인다
+    ("Walk_Carry", "front"), ("Walk_Carry", "back"),
+    ("SitDown", "front"), ("SitDown", "back"),
 ]
-ALL = [f"character-{g}-{c}" for g in ("female", "male") for c in "abcdef"]
+TONES = [(0.80, 0.55, 0.42), (0.62, 0.40, 0.28), (0.90, 0.68, 0.55), (0.42, 0.26, 0.17)]
+UNIFORM = (0.30, 0.65, 0.35)  # 가게 알바 옷(초록)
+# 출력 이름: (FBX, 피부색 번호, 셔츠 색 덮어쓰기). 순서가 게임의 캐릭터 번호다(lib/ui/sprites.dart).
+CHARS = {
+    "casual-female": ("Casual_Female", 0, None),
+    "casual3-female": ("Casual3_Female", 2, None),
+    "chef-female": ("Chef_Female", 2, None),
+    "suit-female": ("Suit_Female", 1, None),
+    "cashier": ("Casual2_Female", 0, UNIFORM),
+    "janitor": ("Worker_Male", 1, None),
+    "owner": ("Casual_Male", 0, None),
+    "casual2-male": ("Casual2_Male", 3, None),
+    "old-male": ("OldClassy_Male", 0, None),
+    "stocker": ("Casual3_Male", 2, UNIFORM),
+    "suit-male": ("Suit_Male", 3, None),
+    "doctor-female": ("Doctor_Female_Young", 1, None),
+    # 여기부터는 손님만
+    "bald-male": ("Casual_Bald", 1, None),
+    "chef-male": ("Chef_Male", 0, None),
+    "cowboy-female": ("Cowboy_Female", 2, None),
+    "cowboy-male": ("Cowboy_Male", 3, None),
+    "doctor-male-old": ("Doctor_Male_Old", 2, None),
+    "doctor-female-old": ("Doctor_Female_Old", 0, None),
+    "doctor-male": ("Doctor_Male_Young", 1, None),
+    "kimono-female": ("Kimono_Female", 2, None),
+    "kimono-male": ("Kimono_Male", 0, None),
+    "old-female": ("OldClassy_Female", 2, None),
+    "worker-female": ("Worker_Female", 3, None),
+    "pirate-female": ("Pirate_Female", 1, None),
+    "pirate-male": ("Pirate_Male", 0, None),
+    "viking-female": ("Viking_Female", 2, None),
+    "wizard": ("Wizard", 0, None),
+    "witch": ("Witch", 2, None),
+    "elf": ("Elf", 2, None),
+    # 같은 모델에 피부색·셔츠 색만 바꾼 손님
+    "casual-female-b": ("Casual_Female", 3, (0.95, 0.55, 0.70)),
+    "casual-male-b": ("Casual_Male", 1, (0.98, 0.80, 0.30)),
+    "casual2-male-b": ("Casual2_Male", 2, (0.85, 0.30, 0.30)),
+    "casual3-female-b": ("Casual3_Female", 1, (0.60, 0.45, 0.85)),
+    "casual2-female-b": ("Casual2_Female", 3, (0.40, 0.70, 0.95)),
+    "casual3-male-b": ("Casual3_Male", 3, None),
+    "casual2-female-c": ("Casual2_Female", 2, None),
+    "casual-male-c": ("Casual_Male", 2, (0.45, 0.75, 0.55)),
+    "casual-female-c": ("Casual_Female", 1, (1.00, 0.60, 0.30)),
+    "bald-male-b": ("Casual_Bald", 3, (0.90, 0.90, 0.90)),
+    "worker-male-b": ("Worker_Male", 2, None),
+    "suit-female-b": ("Suit_Female", 3, None),
+    "suit-male-b": ("Suit_Male", 0, None),
+    # 동물·고블린 손님
+    "pug": ("Pug", None, None),
+    "cow": ("Cow", None, None),
+    "goblin-female": ("Goblin_Female", None, None),
+    "goblin-male": ("Goblin_Male", None, None),
+}
 
 
 def setup_scene():
@@ -69,10 +124,35 @@ def setup_scene():
     return sc
 
 
-def load(glb):
+def fix_materials(tone, shirt):
+    # FBX 재질은 투명·금속으로 들어오고 피부는 거의 검다: 불투명·무광으로, 피부색은 직접 준다.
+    # 원래는 검은 피부에 흰 눈(Face)이라, 피부를 밝히면 눈을 어둡게 바꿔야 보인다.
+    for m in bpy.data.materials:
+        for nd in (m.node_tree.nodes if m.use_nodes else []):
+            if nd.type != "BSDF_PRINCIPLED":
+                continue
+            nd.inputs["Alpha"].default_value = 1.0
+            nd.inputs["Metallic"].default_value = 0.0
+            nd.inputs["Roughness"].default_value = 0.8
+            if tone is None:  # 동물·고블린은 원래 색 그대로
+                pass
+            elif m.name.startswith("Skin"):
+                nd.inputs["Base Color"].default_value = (*TONES[tone], 1.0)
+            elif m.name.startswith("Face"):
+                nd.inputs["Base Color"].default_value = (0.04, 0.025, 0.02, 1.0)
+            if shirt and m.name.startswith("Shirt"):
+                nd.inputs["Base Color"].default_value = (*shirt, 1.0)
+        try:
+            m.blend_method = "OPAQUE"
+        except Exception:
+            pass
+
+
+def load(fbx, tone, shirt):
     before = set(bpy.data.objects)
-    bpy.ops.import_scene.gltf(filepath=glb)
+    bpy.ops.import_scene.fbx(filepath=fbx)
     new = [o for o in bpy.data.objects if o not in before]
+    fix_materials(tone, shirt)
     pivot = bpy.data.objects.new("pivot", None)
     bpy.context.scene.collection.objects.link(pivot)
     for o in new:
@@ -82,26 +162,32 @@ def load(glb):
     ad = arm.animation_data or arm.animation_data_create()
     for t in list(ad.nla_tracks):
         ad.nla_tracks.remove(t)
+    # 서 있는 키를 HEIGHT 에 맞춘다.
+    set_action(ad, "Idle")
+    bpy.context.scene.frame_set(1)
+    bpy.context.view_layer.update()
+    zs = [(o.matrix_world @ mathutils.Vector(c)).z for o in new if o.type == "MESH" for c in o.bound_box]
+    pivot.scale = [HEIGHT / (max(zs) - min(zs))] * 3
     return pivot, ad
 
 
 def set_action(ad, name):
-    act = bpy.data.actions[name]
+    act = next(a for a in bpy.data.actions if a.name.endswith("|" + name))
     ad.action = act
     if hasattr(ad, "action_slot") and getattr(act, "slots", None):
         ad.action_slot = act.slots[0]
     return act.frame_range
 
 
-def render_sheet(sc, glb, out_png, tmp):
-    pivot, ad = load(glb)
+def render_sheet(sc, src, out_png, tmp):
+    pivot, ad = load(*src)
     sheet = np.zeros((len(ROWS) * FR, COLS * FR, 4), dtype=np.float32)
     for row, (anim, facing) in enumerate(ROWS):
         # 모델은 -Y 를 본다. back 은 반 바퀴 돌린다.
         pivot.rotation_euler = (0, 0, math.pi if facing == "back" else 0)
         start, end = set_action(ad, anim)
         for i in range(COLS):
-            f = start + (end - start) * i / COLS
+            f = end if anim == "SitDown" else start + (end - start) * i / COLS
             sc.frame_set(int(f), subframe=f - int(f))
             sc.render.filepath = tmp
             bpy.ops.render.render(write_still=True)
@@ -121,15 +207,15 @@ def render_sheet(sc, glb, out_png, tmp):
 def main():
     args = sys.argv[sys.argv.index("--") + 1:]
     src, dst = args[0], args[1]
-    names = args[2:] or ALL
+    names = args[2:] or list(CHARS)
     os.makedirs(dst, exist_ok=True)
-    tmp = os.path.join(dst, "_frame.png")
     for n in names:
+        fbx, tone, shirt = CHARS[n]
+        tmp = os.path.join(dst, f"_frame_{n}.png")
         sc = setup_scene()
-        render_sheet(sc, os.path.join(src, n + ".glb"), os.path.join(dst, n + ".png"), tmp)
-        print("done", n)
-    if os.path.exists(tmp):
+        render_sheet(sc, (os.path.join(src, fbx + ".fbx"), tone, shirt), os.path.join(dst, f"character-{n}.png"), tmp)
         os.remove(tmp)
+        print("done", n)
 
 
 main()

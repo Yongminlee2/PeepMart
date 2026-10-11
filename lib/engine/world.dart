@@ -534,7 +534,7 @@ class World {
     }
     final vip = _vipQueue > 0 || (game.rating >= vipMinRating && _rng.nextDouble() < vipChance);
     final n = vip ? min(sale.length, 2 + _rng.nextInt(2)) : 1 + _rng.nextInt(min(3, sale.length));
-    final c = Customer(_rng.nextInt(10), door, sale.take(n).toList());
+    final c = Customer(_rng.nextInt(1024), door, sale.take(n).toList());
     if (vip) {
       c.kind = CustomerKind.vip;
       if (_vipQueue > 0) _vipQueue--;

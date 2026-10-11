@@ -399,7 +399,8 @@ class StorePainter extends CustomPainter {
 
   void _customer(Canvas canvas, Customer c) {
     final f = facingOf(c.dx, c.dy);
-    final who = customerChars[c.look % customerChars.length];
+    // 단골은 정해진 얼굴(시트 번호), 그냥 손님은 손님 시트 중 하나
+    final who = c.regular != null ? c.look : customerChars[c.look % customerChars.length];
     final Anim anim;
     if (c.react > 0) {
       anim = c.happy ? Anim.yes : Anim.no;

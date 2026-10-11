@@ -28,7 +28,16 @@ int _row(Anim a, bool back) => switch (a) {
       Anim.sit => back ? 12 : 11,
     };
 
+// 앞 46개는 tool/render_chars.py 의 CHARS 순서(Quaternius), 뒤 12개는 Kenney Mini Characters.
 const characterFiles = [
+  'casual-female', 'casual3-female', 'chef-female', 'suit-female', 'cashier', 'janitor',
+  'owner', 'casual2-male', 'old-male', 'stocker', 'suit-male', 'doctor-female',
+  'bald-male', 'chef-male', 'cowboy-female', 'cowboy-male', 'doctor-male-old', 'doctor-female-old',
+  'doctor-male', 'kimono-female', 'kimono-male', 'old-female', 'worker-female', 'pirate-female',
+  'pirate-male', 'viking-female', 'wizard', 'witch', 'elf',
+  'casual-female-b', 'casual-male-b', 'casual2-male-b', 'casual3-female-b', 'casual2-female-b',
+  'casual3-male-b', 'casual2-female-c', 'casual-male-c', 'casual-female-c', 'bald-male-b', 'worker-male-b',
+  'suit-female-b', 'suit-male-b', 'pug', 'cow', 'goblin-female', 'goblin-male',
   'female-a', 'female-b', 'female-c', 'female-d', 'female-e', 'female-f',
   'male-a', 'male-b', 'male-c', 'male-d', 'male-e', 'male-f',
 ];
@@ -40,9 +49,13 @@ Facing facingOf(double dx, double dy) {
   return sx < 0 ? Facing.upLeft : Facing.upRight;
 }
 
-/// 시트 번호: 플레이어·알바는 고정, 손님은 나머지에서 고른다.
+/// 시트 번호: 플레이어·알바는 고정, 손님은 나머지 전부에서 고른다.
 const playerChar = 6, cashierChar = 4, stockerChar = 9, janitorChar = 5;
-const customerChars = [0, 1, 2, 3, 7, 8, 10, 11];
+const _staffChars = {playerChar, cashierChar, stockerChar, janitorChar};
+final customerChars = [
+  for (var i = 0; i < characterFiles.length; i++)
+    if (!_staffChars.contains(i)) i
+];
 
 Future<ui.Image?> _image(String asset) async {
   try {
@@ -89,18 +102,57 @@ class Props {
 }
 
 class Sprites {
-  static final List<ui.Image?> sheets = List.filled(characterFiles.length, null);
+  // ponytail: 시트 하나가 풀리면 6.8MB 라 58개를 다 올리면 400MB 가 가깝다.
+  // 처음 그릴 때 올리고, 넘치면 한동안 안 그린 손님부터 내린다.
+  static const _keep = 18;
+  static final Map<int, ui.Image> _sheets = {};
+  static final Map<int, int> _used = {}; // 마지막으로 그린 때(ms)
+  static final Set<int> _loading = {}, _missing = {};
+  static final _clock = Stopwatch()..start();
 
+  /// 시트가 새로 올라올 때마다 바뀐다. 한 번만 그리는 그림(초상화 등)이 다시 그리게.
+  static final loaded = ValueNotifier(0);
+
+  static Future<void> _load(int i) async {
+    _loading.add(i);
+    final img = await _image('assets/characters/character-${characterFiles[i]}.png');
+    _loading.remove(i);
+    if (img == null) {
+      _missing.add(i);
+      return;
+    }
+    _sheets[i] = img;
+    _evict();
+    loaded.value++;
+  }
+
+  static void _evict() {
+    if (_sheets.length <= _keep) return;
+    final now = _clock.elapsedMilliseconds;
+    final idle = _sheets.keys.where((k) => !_staffChars.contains(k) && now - (_used[k] ?? 0) > 3000).toList()
+      ..sort((a, b) => (_used[a] ?? 0).compareTo(_used[b] ?? 0));
+    for (final k in idle.take(_sheets.length - _keep)) {
+      _sheets.remove(k)?.dispose();
+    }
+  }
+
+  /// 첫 화면에 나오는 사람만 미리 올린다.
   static Future<void> load() async {
-    for (var i = 0; i < characterFiles.length; i++) {
-      sheets[i] = await _image('assets/characters/character-${characterFiles[i]}.png');
+    for (final i in {..._staffChars, customerChars[0], customerChars[3]}) {
+      await _load(i);
     }
   }
 
   /// 발 위치에 캐릭터 한 프레임을 그린다. 그림이 없으면 false.
   static bool draw(Canvas canvas, int who, Offset feet, Anim anim, Facing facing, double t, {double fps = 10}) {
-    final img = sheets[who % sheets.length];
-    if (img == null) return false;
+    who %= characterFiles.length;
+    _used[who] = _clock.elapsedMilliseconds;
+    final img = _sheets[who];
+    if (img == null) {
+      if (_missing.contains(who)) return false;
+      if (!_loading.contains(who)) _load(who);
+      return true; // 올라오는 동안(한두 프레임)은 비워 둔다
+    }
     final back = facing == Facing.upLeft || facing == Facing.upRight;
     final flip = facing == Facing.downRight || facing == Facing.upLeft;
     final frame = (t * fps).floor() % frameCols;

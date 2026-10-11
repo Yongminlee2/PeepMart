@@ -66,7 +66,7 @@
 ## 그림·소리
 
 - 비스듬히 내려다보기(2:1 아이소). 바닥·벽은 한 장의 Picture 로 캐시하고 짓기가 바뀔 때만 다시 그린다.
-- 캐릭터: Kenney Mini Characters 1(CC0)을 `tool/render_chars.py` 로 블렌더에서 찍은 시트(서기·걷기·집기·좋아요·싫어요·계산·들기·앉기).
+- 캐릭터: Quaternius Ultimate Animated Character Pack(CC0) 46명(색만 바꾼 13명·동물 포함) + Kenney Mini Characters 1(CC0) 12명. 손님은 알바·주인 4명을 뺀 54명에서 고르고, 시트는 처음 그릴 때 올리고 18장이 넘으면 오래 안 그린 것부터 내린다(한 장 풀면 6.8MB). Quaternius 는 `tool/render_chars.py` 로 블렌더에서 찍은 시트(서기·걷기·집기·좋아요·싫어요·계산·들기·앉기). Kenney 시트를 다시 찍으려면 커밋 1a997eb 의 render_chars.py 를 쓴다.
 - 상품: Kenney Food Kit 30종을 `tool/render_props.py` 로 같은 각도 아이콘으로. 가구 일부(종이 상자·선반·화분·의자·탁자·전등·휴지통)는
   Kenney Furniture Kit, 나머지 진열대·계산대는 페인터 그림.
 - 효과음 Kenney Interface Sounds(wav), 배경음악 "Happy Clappy Loop"(OwlishMedia, CC0). 저지연 재생, 가벼운 진동.

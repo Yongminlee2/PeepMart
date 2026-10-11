@@ -37,7 +37,7 @@ python tool/pack_assets.py build/props assets/props
 
 ## 그림 출처
 
-- 캐릭터: Kenney "Mini Characters 1" (CC0) — www.kenney.nl
+- 캐릭터: Quaternius "Ultimate Animated Character Pack" (CC0) — quaternius.com, Kenney "Mini Characters 1" (CC0) — www.kenney.nl
 - 음식·가구: Kenney "Food Kit", "Furniture Kit" (CC0)
 - 효과음: Kenney "Interface Sounds" (CC0)
 - 글꼴: Jua (SIL OFL)
