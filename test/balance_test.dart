@@ -90,6 +90,8 @@ class Bot {
   }
 
   void _build() {
+    // 처음 안내의 마지막(짓기)은 사람처럼 바로 끝낸다: 화분 하나
+    if (g.owner.tutorial == TutorialStep.build) _place('plant');
     final cashiers = g.count(Staff.cashier);
     if (cashiers < g.registers.length && g.money > staffSpecs[Staff.cashier]!.hire + 40) g.hire(Staff.cashier);
     final queued = w.queues.values.fold(0, (s, q) => s + q.length);
@@ -145,6 +147,7 @@ void main() {
     var lastLevel = 1;
     final levelAt = <int, double>{};
     final stars = <int>[];
+    final days = StringBuffer();
     for (var t = 0.0; t < 6 * 3600; t += dt) {
       bot.tick(dt);
       w.tick(dt);
@@ -153,6 +156,12 @@ void main() {
       final r = w.result;
       if (r != null) {
         stars.add(r.stars);
+        if (r.day <= 15) {
+          days.writeln('${r.day.toString().padLeft(3)}일 ${(t / 60).toStringAsFixed(1).padLeft(5)}분  레벨 ${g.level.toString().padLeft(2)}  '
+              '매출 ${r.sales.toString().padLeft(5)} / 목표 ${r.target.toString().padLeft(5)}  별 ${r.stars}  손님 ${r.served.toString().padLeft(3)}  '
+              '실망 ${r.upset.toString().padLeft(2)}  운영비 ${r.cost.toString().padLeft(4)}  순이익 ${r.profit.toString().padLeft(5)}  '
+              '돈 ${g.money.toString().padLeft(6)}  진열대 ${g.shelves.length}  알바 ${g.count(Staff.cashier)}/${g.count(Staff.stocker)}');
+        }
         w.result = null;
       }
       if (w.phase == DayPhase.closed) w.openDay();
@@ -169,6 +178,7 @@ void main() {
         out.writeln('${head.padRight(56)}${g.rating.toStringAsFixed(1)}  ${g.goal.toString().padLeft(3)}  ${g.served}');
       }
     }
+    out.writeln('\n처음 15일:\n$days');
     out.writeln('\n하루 ${stars.length}번, 별 0~3개 횟수: ${[for (var i = 0; i <= 3; i++) stars.where((x) => x == i).length]}');
     out.writeln('\n레벨 도달(분): ${levelAt.entries.map((e) => '${e.key}:${e.value.round()}').join('  ')}');
     // ignore: avoid_print

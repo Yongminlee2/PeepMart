@@ -463,5 +463,7 @@
   "b_snow_rule": "Rule: customers walk slowly on the snow, and machines break down often",
   "land_bonus": "Customers +{n}%",
   "land_hint2": "Tap a glowing plot to buy it (next: {n}) · Your land brings +{b}% customers",
-  "town_forsale": "For sale"
+  "town_forsale": "For sale",
+  "day_goods": "Stock (wholesale)",
+  "day_wages": "Staff wages"
 }

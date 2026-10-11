@@ -188,6 +188,8 @@ class Game {
   int day = 1; // 다음에 열 날
   int bestSales = 0; // 하루 최고 매출
   double avgSales = 0, avgServed = 0; // 최근 하루들의 평균. 목표·할 일을 내 가게 실력에 맞춘다
+  double avgShelves = 0; // 그 평균을 낼 때의 진열대 수(가게를 키우면 목표도 따라 오르게)
+  int spentGoods = 0, spentWages = 0; // 지난 결산 뒤 쓴 물건값·일당 (결과 창의 순이익용, 저장 안 함)
   Weather weather = Weather.sunny; // 다음에 여는 날의 날씨 (닫을 때 정해 둔다)
 
   /// 바뀔 때마다 1씩 오른다. [World] 가 길을 다시 찾을지 보는 데 쓴다.
@@ -291,6 +293,7 @@ class Game {
     final cost = reorderCost(p);
     if (money < cost) return false;
     money -= cost;
+    spentGoods += cost;
     box.incoming = restockDelay;
     return true;
   }
@@ -645,7 +648,9 @@ class Game {
 
   /// 오늘 목표 매출. 첫날은 가게 크기로 어림해 낮게, 그다음부터는 최근 평균보다 조금 높게. 10 단위.
   int get dayTarget {
-    final v = hasHistory ? avgSales * dayTargetGrowth : fullDay.$2 * dayTargetShare * min(1.0, 0.5 + 0.1 * day);
+    // 진열대를 늘렸으면 그만큼 더 팔 수 있으니 목표도 오른다(제곱근: 손님이 진열대만큼 곧장 늘진 않는다)
+    final grow = avgShelves > 0 ? sqrt(max(1, shelves.length) / avgShelves) : 1.0;
+    final v = hasHistory ? avgSales * dayTargetGrowth * grow : fullDay.$2 * dayTargetShare * min(1.0, 0.5 + 0.1 * day);
     return max(20, (v / 10).round() * 10);
   }
 
@@ -654,6 +659,7 @@ class Game {
     double mix(double avg, int today) => avg <= 0 ? today.toDouble() : avg * (1 - dayAverageWeight) + today * dayAverageWeight;
     avgSales = mix(avgSales, sales);
     avgServed = mix(avgServed, served);
+    avgShelves = mix(avgShelves, shelves.length);
   }
 
   // ---------------------------------------------------------------- 꺼 둔 동안
@@ -734,7 +740,7 @@ class Game {
         'recent': recent,
         'day': day,
         'best': bestSales,
-        'avg': [avgSales, avgServed],
+        'avg': [avgSales, avgServed, avgShelves],
         'weather': weather.name,
       };
 
@@ -769,6 +775,7 @@ class Game {
     final avg = j['avg'] as List?;
     avgSales = (avg?[0] as num?)?.toDouble() ?? 0;
     avgServed = (avg?[1] as num?)?.toDouble() ?? 0;
+    avgShelves = avg != null && avg.length > 2 ? (avg[2] as num).toDouble() : shelves.length.toDouble();
     weather = Weather.values.asNameMap()[j['weather']] ?? Weather.sunny;
     _reindex();
   }

@@ -463,5 +463,7 @@
   "b_snow_rule": "규칙: 눈길에 손님이 느리고, 기계가 자주 고장 나요",
   "land_bonus": "손님 +{n}%",
   "land_hint2": "빛나는 땅을 눌러서 사요 (다음 땅 {n}) · 땅 덕분에 지금 손님 +{b}%",
-  "town_forsale": "매물"
+  "town_forsale": "매물",
+  "day_goods": "물건값(도매)",
+  "day_wages": "알바 일당"
 }

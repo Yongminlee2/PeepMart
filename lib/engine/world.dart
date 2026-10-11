@@ -30,6 +30,7 @@ enum DayPhase { closed, open, closing }
 /// 막 끝난 하루. 화면이 결과 창으로 보여 준다.
 class DayResult {
   final int day, sales, target, served, upset, stars, bonus, taskReward, cost;
+  final int goods, wages; // 그동안 쓴 물건값(재주문·매니저)과 알바 일당
   final bool best;
   final List<(DayTask, bool)> tasks;
   final int warPrize; // 가격 전쟁에서 이긴 보너스 (가격 전쟁 날이 아니면 0, 졌으면 -1)
@@ -37,10 +38,10 @@ class DayResult {
   final bool jackpot;
   const DayResult(this.day, this.sales, this.target, this.served, this.upset, this.stars, this.bonus,
       this.taskReward, this.best, this.tasks,
-      {this.cost = 0, this.warPrize = 0, this.chest = 0, this.jackpot = false});
+      {this.cost = 0, this.warPrize = 0, this.chest = 0, this.jackpot = false, this.goods = 0, this.wages = 0});
 
-  /// 오늘 남은 돈: 매출 + 보너스 + 상금 - 운영비 (일당은 장사 중에 이미 나갔다).
-  int get profit => sales + bonus + taskReward + (warPrize > 0 ? warPrize : 0) + chest - cost;
+  /// 오늘 남은 돈: 매출 + 보너스·상금 - 운영비 - 물건값 - 일당. (예전엔 물건값·일당을 빼지 않아 실제보다 크게 보였다)
+  int get profit => sales + bonus + taskReward + (warPrize > 0 ? warPrize : 0) + chest - cost - goods - wages;
 }
 
 class Customer extends Walker {
@@ -572,7 +573,9 @@ class World {
       s.broken = false; // 밤사이 수리 기사가 고친다
     }
     result = DayResult(game.day, daySales, dayTarget, dayServed, dayUpset, stars, bonus, taskReward, best, done,
-        cost: cost, warPrize: warPrize, chest: chest, jackpot: jackpot);
+        cost: cost, warPrize: warPrize, chest: chest, jackpot: jackpot, goods: game.spentGoods, wages: game.spentWages);
+    game.spentGoods = 0;
+    game.spentWages = 0;
     game.day++;
     game.weather = _pickWeather();
     order = null;
@@ -627,6 +630,7 @@ class World {
         final cost = (reorderCost(p) * autoOrderFee).round();
         if (game.money < cost) continue;
         game.money -= cost;
+        game.spentGoods += cost;
         b.incoming = restockDelay;
       }
     }
@@ -666,6 +670,7 @@ class World {
     if (_wageIn <= 0) {
       _wageIn = wagePeriod;
       game.money -= game.wages;
+      game.spentWages += game.wages;
     }
     final done = game.checkGoal();
     if (done != null) fx.add(Fx(FxKind.goal, player.x, player.y, amount: done.reward));
@@ -823,6 +828,7 @@ class World {
       }
       if (low != null && game.money >= wholesale(low.product!)) {
         game.money -= wholesale(low.product!);
+        game.spentGoods += wholesale(low.product!);
         low.stock++;
         fx.add(Fx(FxKind.place, low.c + 0.0, low.r - 1.0, tx: low.c + 0.0, ty: low.r + 0.0, product: low.product!));
       }

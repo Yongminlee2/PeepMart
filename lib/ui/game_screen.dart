@@ -1212,6 +1212,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
             if (r.warPrize > 0) row(S.t('war_won'), Coins(r.warPrize, size: 14)),
             if (r.warPrize < 0) row(S.t('war_lost'), const Icon(Icons.close_rounded, size: 18, color: Color(0xFFE53935))),
             if (r.chest > 0) _Chest(r.chest, r.jackpot),
+            if (r.goods > 0) row(S.t('day_goods'), Coins(-r.goods, size: 14)),
+            if (r.wages > 0) row(S.t('day_wages'), Coins(-r.wages, size: 14)),
             row(S.t('day_cost'), Coins(-r.cost, size: 14)),
             const Divider(),
             row(S.t('day_profit'), Coins(r.profit, size: 18)),
