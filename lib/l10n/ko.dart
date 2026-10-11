@@ -377,6 +377,8 @@ const Map<String, String> kKo = {
   'task_calm': '실망한 손님 {n}명 이하',
   'task_sell': '{item} {n}개 팔기',
   'task_serve': '손님 {n}명 받기',
+  'town_annex': '삐약마트 별관',
+  'town_construction': '공사 중',
   'tut_build': '오른쪽 아래 망치를 눌러 진열대를 하나 놓아 봐요. 고르고, 자리를 정하고, ✓!',
   'tut_checkout': '손님이 줄을 섰어요. 계산대를 누르면 뒤에 서서 계산해요.',
   'tut_collect': '계산한 돈이 계산대 옆에 쌓였어요. 계산대 가까이 가면 주워요.',

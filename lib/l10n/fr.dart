@@ -377,6 +377,8 @@ const Map<String, String> kFr = {
   'task_calm': 'Pas plus de {n} clients déçus',
   'task_sell': 'Vendre {item} ×{n}',
   'task_serve': 'Servir {n} clients',
+  'town_annex': 'Peep Mart 2',
+  'town_construction': 'En travaux',
   'tut_build': 'Touche le marteau en bas à droite et pose un rayon. Choisis, place, puis ✓ !',
   'tut_checkout': 'Des clients font la queue. Touche la caisse pour te placer derrière et encaisser.',
   'tut_collect': 'L\'argent s\'empile à côté de la caisse. Approche-toi pour le ramasser.',

@@ -377,6 +377,8 @@ const Map<String, String> kEs = {
   'task_calm': 'Como mucho {n} clientes decepcionados',
   'task_sell': 'Vender {item} ×{n}',
   'task_serve': 'Atender a {n} clientes',
+  'town_annex': 'Peep Mart 2',
+  'town_construction': 'En obras',
   'tut_build': 'Toca el martillo abajo a la derecha y coloca un estante. Elige, ubica y ¡✓!',
   'tut_checkout': 'Los clientes hacen cola. Toca la caja registradora para ponerte detrás y cobrar.',
   'tut_collect': 'El dinero se amontona junto a la caja. Acércate para recogerlo.',

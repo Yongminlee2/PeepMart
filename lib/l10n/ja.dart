@@ -377,6 +377,8 @@ const Map<String, String> kJa = {
   'task_calm': 'がっかりしたお客さん{n}人以下',
   'task_sell': '{item}を{n}個売る',
   'task_serve': 'お客さん{n}人を接客',
+  'town_annex': 'ピヨマート別館',
+  'town_construction': '工事中',
   'tut_build': '右下のハンマーをタップして棚をひとつ置いてみよう。選んで、場所を決めて、✓！',
   'tut_checkout': 'お客さんが並んでいます。レジをタップすると後ろに立って会計します。',
   'tut_collect': '会計したお金がレジの横にたまったよ。レジに近づくと拾えます。',

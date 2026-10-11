@@ -9,6 +9,8 @@ import '../engine/world.dart';
 import '../strings.dart';
 import 'sprites.dart';
 
+part 'town.dart';
+
 /// 단골 이름 (화면 글자 표에서).
 String regularName(String id) => S.t('reg_${id}_name');
 
@@ -60,7 +62,7 @@ Tile tileAtPoint(Game g, Offset p) {
 }
 
 /// 지도 전체를 담는 사각형(그림 좌표).
-Rect get mapBounds => Rect.fromLTRB(-mapH * tw / 2, -wallH, mapW * tw / 2, (mapW + mapH) * th / 2);
+Rect get mapBounds => Rect.fromLTRB(-mapH * tw / 2 - 160, -wallH - 160, mapW * tw / 2 + 160, (mapW + mapH) * th / 2 + 120);
 
 Color productColor(String id) => Color(0xFF000000 | ((id.hashCode * 2654435761) & 0x7F7F7F) + 0x606060);
 
@@ -143,9 +145,11 @@ class StorePainter extends CustomPainter {
       ..scale(camera.zoom)
       ..translate(-camera.center.dx, -camera.center.dy);
     canvas.drawPicture(_basePicture(game));
-    _rankSign(canvas);
     final view = camera.visible(size).inflate(120);
     bool seen(double x, double y) => view.contains(iso(x, y));
+    _traffic(canvas, seen, behind: true);
+    canvas.drawPicture(_wallPicture(game));
+    _rankSign(canvas);
 
     final b = build;
     if (b != null && b.land) _plotsForSale(canvas);
@@ -225,10 +229,17 @@ class StorePainter extends CustomPainter {
         canvas.drawLine(box.topCenter, box.bottomCenter, Paint()..color = const Color(0xFF8D6E63)..strokeWidth = 2);
       }
     });
+    for (final (x, y, alongX, _, col) in _cars(clock)) {
+      if (!_behind(x, y)) add(x, y, () => _car(canvas, x, y, alongX, col));
+    }
+    for (final (x, y, dx, dy, look) in _walkers(clock)) {
+      if (!_behind(x, y)) add(x, y, () => _char(canvas, look, x, y, Anim.walk, facingOf(dx, dy), fps: 8));
+    }
     draws.sort((a, b) => a.$1.compareTo(b.$1));
     for (final d in draws) {
       d.$2();
     }
+    canvas.drawPicture(_frontPicture(game));
 
     // 놓을 자리 미리보기
     if (b != null && b.ghostType != null && b.hover != null) _ghost(canvas, b);
@@ -289,16 +300,61 @@ class StorePainter extends CustomPainter {
     }
   }
 
+  /// 벽 뒤쪽(먼저 그릴 쪽)의 차·사람. 앞쪽 것은 가게 물건과 함께 깊이 순서로 그린다.
+  void _traffic(Canvas canvas, bool Function(double, double) seen, {required bool behind}) {
+    final list = <(double, void Function())>[];
+    for (final (x, y, alongX, _, col) in _cars(clock)) {
+      if (_behind(x, y) == behind && seen(x, y)) list.add((x + y, () => _car(canvas, x, y, alongX, col)));
+    }
+    for (final (x, y, dx, dy, look) in _walkers(clock)) {
+      if (_behind(x, y) == behind && seen(x, y)) {
+        list.add((x + y, () => _char(canvas, look, x, y, Anim.walk, facingOf(dx, dy), fps: 8)));
+      }
+    }
+    list.sort((a, b) => a.$1.compareTo(b.$1));
+    for (final d in list) {
+      d.$2();
+    }
+  }
+
   // ---------------------------------------------------------------- 바닥·벽 (캐시)
 
+  static List<_Scenery>? _scenery;
+  static (Game, int, int)? _sceneryKey;
+
+  /// 동네 물건(정해진 자리, 깊이 순서). 땅을 사거나 이야기가 진행되면 다시 만든다.
+  static List<_Scenery> _sceneryOf(Game g) {
+    final key = (g, g.layoutVersion, megaStage(g.owner));
+    if (_scenery != null && _sceneryKey == key) return _scenery!;
+    _sceneryKey = key;
+    return _scenery = _townScenery(g)..sort((a, b) => (a.x + a.y).compareTo(b.x + b.y));
+  }
+
+  static ui.Picture? _front;
+  static (Game, int, int)? _frontKey;
+
+  /// 앞쪽(지도 오른쪽 아래·왼쪽 아래) 바깥 동네: 가게 안 모든 것보다 앞이라 맨 나중에 그린다.
+  static ui.Picture _frontPicture(Game g) {
+    final key = (g, g.layoutVersion, megaStage(g.owner));
+    if (_front != null && _frontKey == key) return _front!;
+    final rec = ui.PictureRecorder();
+    final c = Canvas(rec);
+    for (final s in _sceneryOf(g)) {
+      if (!_behind(s.x, s.y) && (s.x >= mapW || s.y >= mapH)) s.draw(c);
+    }
+    _frontKey = key;
+    return _front = rec.endRecording();
+  }
+
   static ui.Picture? _cache;
-  static (Game, int)? _cacheKey;
+  static (Game, int, int)? _cacheKey;
 
   static ui.Picture _basePicture(Game g) {
-    final key = (g, g.layoutVersion);
+    final key = (g, g.layoutVersion, megaStage(g.owner));
     if (_cache != null && _cacheKey == key) return _cache!;
     final rec = ui.PictureRecorder();
     final c = Canvas(rec);
+    _townGround(c, g);
     final grassA = Path(), grassB = Path(), floorA = Path(), floorB = Path();
     final painted = <String, Path>{};
     for (var r = 0; r < mapH; r++) {
@@ -338,6 +394,24 @@ class StorePainter extends CustomPainter {
             border);
       }
     }
+    // 뒤쪽 동네와 안 산 땅의 덤불·나무 (벽보다 먼저)
+    for (final s in _sceneryOf(g)) {
+      if (_behind(s.x, s.y) || (s.x < mapW && s.y < mapH)) s.draw(c);
+    }
+    _cache = rec.endRecording();
+    _cacheKey = key;
+    return _cache!;
+  }
+
+  static ui.Picture? _wallCache;
+  static (Game, int)? _wallKey;
+
+  static ui.Picture _wallPicture(Game g) {
+    final key = (g, g.layoutVersion);
+    if (_wallCache != null && _wallKey == key) return _wallCache!;
+    final rec = ui.PictureRecorder();
+    final c = Canvas(rec);
+    final th0 = themeOf(g.branch);
     // 뒤쪽 벽: 내 땅의 위(r-1)·왼쪽(c-1)이 남의 땅이면 벽을 세운다
     final wallL = Paint()..color = th0.wallL, wallR = Paint()..color = th0.wallR;
     final band = Paint()..color = th0.band;
@@ -375,9 +449,9 @@ class StorePainter extends CustomPainter {
         }
       }
     }
-    _cache = rec.endRecording();
-    _cacheKey = key;
-    return _cache!;
+    _wallCache = rec.endRecording();
+    _wallKey = key;
+    return _wallCache!;
   }
 
   void _plotsForSale(Canvas canvas) {

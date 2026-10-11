@@ -377,6 +377,8 @@ const Map<String, String> kPt = {
   'task_calm': 'No máximo {n} clientes decepcionados',
   'task_sell': 'Vender {item} ×{n}',
   'task_serve': 'Atender {n} clientes',
+  'town_annex': 'Peep Mart 2',
+  'town_construction': 'Em obras',
   'tut_build': 'Toque no martelo no canto inferior direito e coloque uma prateleira. Escolha, posicione e ✓!',
   'tut_checkout': 'Os clientes estão na fila. Toque no caixa para ficar atrás dele e atender.',
   'tut_collect': 'O dinheiro se acumula ao lado do caixa. Chegue perto para pegá-lo.',
