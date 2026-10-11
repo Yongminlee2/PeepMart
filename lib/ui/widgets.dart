@@ -39,13 +39,17 @@ class BubbleButton extends StatelessWidget {
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
+          // 넓은 자리에서는 가운데, 좁은 자리에서는 글자 크기만큼
+          child: Center(
+            widthFactor: 1,
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
             Flexible(
               child: Text(label,
                   style: TextStyle(fontSize: 18, color: on ? inkColor : Colors.black38)),
             ),
             if (trailing != null) ...[const SizedBox(width: 10), trailing!],
           ]),
+          ),
         ),
       ),
     );

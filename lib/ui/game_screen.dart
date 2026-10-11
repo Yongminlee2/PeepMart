@@ -374,7 +374,11 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
               Positioned.fill(
                 child: LayoutBuilder(builder: (context, c) {
                   _size = Size(c.maxWidth, c.maxHeight);
-                  return GestureDetector(
+                  // 손가락을 떼면 무조건 조이스틱을 놓는다(제스처가 끊겨 끝 소식이 안 와도 계속 걷지 않게)
+                  return Listener(
+                    onPointerUp: (_) => _release(),
+                    onPointerCancel: (_) => _release(),
+                    child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onScaleStart: _onScaleStart,
                     onScaleUpdate: _onScaleUpdate,
@@ -384,7 +388,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                         size: _size,
                         painter: StorePainter(world, flights, clock, camera, b,
                             dest: _dest, guide: b == null ? _guideTile() : null)),
-                  );
+                  ));
                 }),
               ),
               Positioned(left: 8, right: 8, top: 6, child: _hud()),
