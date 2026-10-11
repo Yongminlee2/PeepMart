@@ -511,11 +511,13 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
               if (_regularNews != null && _regularLeft > 0)
                 Positioned(left: 0, right: 0, top: 150, child: _regularCard(_regularNews!)),
               if (world.feverLeft > 0) Positioned.fill(child: IgnorePointer(child: _feverGlow())),
-              if (b == null && world.phase != DayPhase.closed && (world.combo >= 2 || world.feverLeft > 0))
+              if (b == null && game.owner.tutorial == TutorialStep.done && world.phase != DayPhase.closed && (world.combo >= 2 || world.feverLeft > 0))
                 Positioned(right: 8, top: 58, child: _comboChip()),
               if (_toast != null && _toastLeft > 0)
                 Align(
-                  alignment: const Alignment(0, -0.62),
+                  // 위에 안내·단골 카드가 떠 있으면 그 아래로
+                  alignment: Alignment(
+                      0, game.owner.tutorial != TutorialStep.done || (_regularNews != null && _regularLeft > 0) ? -0.2 : -0.62),
                   child: IgnorePointer(
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),

@@ -431,10 +431,14 @@ void showProductPicker(BuildContext context, Game game, ItemType t, void Functio
                     border: Border.all(color: inkColor, width: 1.5),
                   ),
                   child: Column(children: [
-                    Opacity(
-                      opacity: game.unlockedProduct(p) ? 1 : 0.35,
-                      child: SizedBox(width: 44, height: 44, child: CustomPaint(painter: FoodPreview(p.id))),
-                    ),
+                    Stack(clipBehavior: Clip.none, children: [
+                      Opacity(
+                        opacity: game.unlockedProduct(p) ? 1 : 0.6,
+                        child: SizedBox(width: 44, height: 44, child: CustomPaint(painter: FoodPreview(p.id))),
+                      ),
+                      if (!game.unlockedProduct(p))
+                        const Positioned(right: -10, bottom: -2, child: Icon(Icons.lock_rounded, size: 18, color: Colors.black54)),
+                    ]),
                     Text(S.t('p_${p.id}'), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, color: inkColor)),
                     game.unlockedProduct(p)
                         ? Coins(p.price, size: 12)
