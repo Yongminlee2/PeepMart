@@ -441,6 +441,7 @@ const Map<String, String> kDe = {
   'task_serve': '{n} Kunden bedienen',
   'town_annex': 'Peep Mart 2',
   'town_construction': 'Baustelle',
+  'town_forsale': 'For sale',
   'tut_build': 'Tippe unten rechts auf den Hammer und stell ein Regal auf. Auswählen, platzieren, dann ✓!',
   'tut_checkout': 'Kunden stehen Schlange. Tippe auf die Kasse, um dich dahinter zu stellen und abzukassieren.',
   'tut_collect': 'Das Geld stapelt sich neben der Kasse. Geh nah heran, um es einzusammeln.',

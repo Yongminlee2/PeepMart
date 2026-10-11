@@ -441,6 +441,7 @@ const Map<String, String> kZh = {
   'task_serve': '接待{n}位客人',
   'town_annex': '叽叽便利店分馆',
   'town_construction': '施工中',
+  'town_forsale': 'For sale',
   'tut_build': '点右下角的锤子，放一个货架吧。选择、定好位置，然后✓！',
   'tut_checkout': '客人排队了。点收银台，就会站到后面结账。',
   'tut_collect': '结账的钱堆在收银台旁边了。靠近收银台就能捡起来。',

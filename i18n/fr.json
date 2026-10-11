@@ -462,5 +462,6 @@
   "b_night_rule": "Rule: twice the VIPs, and twice the shoplifters",
   "b_snow_rule": "Rule: customers walk slowly on the snow, and machines break down often",
   "land_bonus": "Customers +{n}%",
-  "land_hint2": "Tap a glowing plot to buy it (next: {n}) · Your land brings +{b}% customers"
+  "land_hint2": "Tap a glowing plot to buy it (next: {n}) · Your land brings +{b}% customers",
+  "town_forsale": "For sale"
 }

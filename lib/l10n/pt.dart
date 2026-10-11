@@ -441,6 +441,7 @@ const Map<String, String> kPt = {
   'task_serve': 'Atender {n} clientes',
   'town_annex': 'Peep Mart 2',
   'town_construction': 'Em obras',
+  'town_forsale': 'For sale',
   'tut_build': 'Toque no martelo no canto inferior direito e coloque uma prateleira. Escolha, posicione e ✓!',
   'tut_checkout': 'Os clientes estão na fila. Toque no caixa para ficar atrás dele e atender.',
   'tut_collect': 'O dinheiro se acumula ao lado do caixa. Chegue perto para pegá-lo.',

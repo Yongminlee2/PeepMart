@@ -441,6 +441,7 @@ const Map<String, String> kVi = {
   'task_serve': 'Phục vụ {n} khách',
   'town_annex': 'Peep Mart 2',
   'town_construction': 'Đang xây',
+  'town_forsale': 'For sale',
   'tut_build': 'Chạm vào cây búa ở góc dưới bên phải và đặt thử một cái kệ. Chọn, đặt chỗ, rồi ✓!',
   'tut_checkout': 'Khách đang xếp hàng. Chạm vào quầy thu ngân để đứng phía sau tính tiền.',
   'tut_collect': 'Tiền tính xong chất đống cạnh quầy. Lại gần quầy để nhặt.',

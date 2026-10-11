@@ -441,6 +441,7 @@ const Map<String, String> kId = {
   'task_serve': 'Layani {n} pelanggan',
   'town_annex': 'Peep Mart 2',
   'town_construction': 'Sedang dibangun',
+  'town_forsale': 'For sale',
   'tut_build': 'Ketuk palu di kanan bawah dan taruh satu rak. Pilih, atur posisi, lalu ✓!',
   'tut_checkout': 'Pelanggan mulai antre. Ketuk kasir untuk berdiri di belakangnya dan melayani pembayaran.',
   'tut_collect': 'Uangnya menumpuk di samping kasir. Dekati untuk mengambilnya.',

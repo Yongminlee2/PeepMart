@@ -441,6 +441,7 @@ const Map<String, String> kEn = {
   'task_serve': 'Serve {n} customers',
   'town_annex': 'Peep Mart Annex',
   'town_construction': 'Coming soon',
+  'town_forsale': 'For sale',
   'tut_build': 'Tap the hammer at the bottom right and place a shelf. Pick, position, then ✓!',
   'tut_checkout': 'Customers are lining up. Tap the register to stand behind it and check out.',
   'tut_collect': 'The money piles up next to the register. Walk close to collect it.',

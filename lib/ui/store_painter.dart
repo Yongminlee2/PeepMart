@@ -246,8 +246,8 @@ class StorePainter extends CustomPainter {
         canvas.drawLine(box.topCenter, box.bottomCenter, Paint()..color = const Color(0xFF8D6E63)..strokeWidth = 2);
       }
     });
-    for (final (x, y, alongX, _, col) in _cars(clock)) {
-      if (!_behind(x, y)) add(x, y, () => _car(canvas, x, y, alongX, col));
+    for (final (x, y, alongX, dir, col) in _cars(clock)) {
+      if (!_behind(x, y)) add(x, y, () => _car(canvas, x, y, alongX, dir, col));
     }
     for (final (x, y, dx, dy, look) in _walkers(clock)) {
       if (!_behind(x, y)) add(x, y, () => _char(canvas, look, x, y, Anim.walk, facingOf(dx, dy), fps: 8));
@@ -320,8 +320,8 @@ class StorePainter extends CustomPainter {
   /// 벽 뒤쪽(먼저 그릴 쪽)의 차·사람. 앞쪽 것은 가게 물건과 함께 깊이 순서로 그린다.
   void _traffic(Canvas canvas, bool Function(double, double) seen, {required bool behind}) {
     final list = <(double, void Function())>[];
-    for (final (x, y, alongX, _, col) in _cars(clock)) {
-      if (_behind(x, y) == behind && seen(x, y)) list.add((x + y, () => _car(canvas, x, y, alongX, col)));
+    for (final (x, y, alongX, dir, col) in _cars(clock)) {
+      if (_behind(x, y) == behind && seen(x, y)) list.add((x + y, () => _car(canvas, x, y, alongX, dir, col)));
     }
     for (final (x, y, dx, dy, look) in _walkers(clock)) {
       if (_behind(x, y) == behind && seen(x, y)) {
@@ -359,6 +359,7 @@ class StorePainter extends CustomPainter {
     for (final s in _sceneryOf(g)) {
       if (!_behind(s.x, s.y) && (s.x >= mapW || s.y >= mapH)) s.draw(c);
     }
+    _townFog(c, themeOf(g.branch).sky, front: true);
     _frontKey = key;
     return _front = rec.endRecording();
   }
@@ -398,6 +399,7 @@ class StorePainter extends CustomPainter {
     for (final e in painted.entries) {
       c.drawPath(e.value, Paint()..color = floorColor(e.key));
     }
+    _lotGround(c, g);
     // 필지 경계(안 산 땅만, 옅게)
     final border = Paint()
       ..color = const Color(0x3365A30D)
@@ -415,6 +417,7 @@ class StorePainter extends CustomPainter {
     for (final s in _sceneryOf(g)) {
       if (_behind(s.x, s.y) || (s.x < mapW && s.y < mapH)) s.draw(c);
     }
+    _townFog(c, th0.sky, front: false);
     _cache = rec.endRecording();
     _cacheKey = key;
     return _cache!;
