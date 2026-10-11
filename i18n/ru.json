@@ -455,5 +455,10 @@
   "chest_open": "Found in the chest",
   "chest_jackpot": "Jackpot!",
   "help_extra_t": "Bulk orders, price wars and chests",
-  "help_extra_b": "From Supermarket, bulk orders sometimes arrive: lots of items in 2 minutes, so keep your shelves full (2.5x pay). While you're feuding with MegaMart, a price war day comes every 6 days: customers are price-sensitive and skip pricey shelves more often. Earn two stars to win a bonus! On two-star days you can open a treasure chest in the results; once in a while it's a jackpot. Place a claw machine and passing customers sometimes play a round."
+  "help_extra_b": "From Supermarket, bulk orders sometimes arrive: lots of items in 2 minutes, so keep your shelves full (2.5x pay). While you're feuding with MegaMart, a price war day comes every 6 days: customers are price-sensitive and skip pricey shelves more often. Earn two stars to win a bonus! On two-star days you can open a treasure chest in the results; once in a while it's a jackpot. Place a claw machine and passing customers sometimes play a round.",
+  "up_autoOrder": "Auto-order",
+  "up_autoOrder_desc": "Reorders boxes before they run out (25% extra cost)",
+  "b_beach_rule": "Rule: 20% more customers, but they're impatient",
+  "b_night_rule": "Rule: twice the VIPs, and twice the shoplifters",
+  "b_snow_rule": "Rule: customers walk slowly on the snow, and machines break down often"
 }

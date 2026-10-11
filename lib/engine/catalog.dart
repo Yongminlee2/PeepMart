@@ -142,12 +142,13 @@ const staffSpecs = {
   Staff.janitor: StaffSpec(80, 5, 6, 4),
 };
 
-enum Upgrade { shoes, arms }
+enum Upgrade { shoes, arms, autoOrder }
 
 /// 단계별 (값, 필요 레벨).
 const upgradeSteps = {
   Upgrade.shoes: [(100, 2), (400, 6), (1500, 12)],
   Upgrade.arms: [(80, 3), (500, 8), (2000, 14)],
+  Upgrade.autoOrder: [(3000, 15)], // 슈퍼마켓부터: 상자가 바닥나기 전에 저절로 주문(수수료 붙음)
 };
 
 // ------------------------------------------------------------------ 레벨
@@ -562,3 +563,26 @@ const chestJackpot = 0.05;
 const clawRange = 5; // 계산을 마친 자리(계산대 앞)에서 잰다
 const clawChance = 0.25;
 const clawPlay = 3;
+
+// ------------------------------------------------------------------ 자동 발주·동네 규칙·끝없는 목표
+
+/// 자동 발주: 상자가 [autoOrderAt] 개 아래면 저절로 주문한다. 값은 [autoOrderFee] 배(편한 대신 비싸다).
+const autoOrderAt = 6;
+const autoOrderFee = 1.25;
+
+/// 동네마다 다른 규칙. 1 이면 보통.
+class BranchRule {
+  final double visitors, patience, vip, thief, breakdown, walk;
+  const BranchRule({this.visitors = 1, this.patience = 1, this.vip = 1, this.thief = 1, this.breakdown = 1, this.walk = 1});
+}
+
+const branchRules = {
+  'beach': BranchRule(visitors: 1.2, patience: 0.85), // 피서객이 많지만 성격이 급하다
+  'night': BranchRule(vip: 2, thief: 2), // 큰손도 도둑도 많다
+  'snow': BranchRule(walk: 0.85, breakdown: 2), // 눈길에 느리고, 추위에 기계가 자주 고장 난다
+};
+BranchRule ruleOf(String branch) => branchRules[branch] ?? const BranchRule();
+
+/// 목표를 다 이루면 끝없이 이어지는 목표: 그때부터 손님 [extraGoalStep] 명마다.
+const extraGoalStep = 500;
+int extraGoalReward(int i) => 2000 + 500 * i;

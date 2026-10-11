@@ -44,6 +44,7 @@ class Owner {
   final Map<String, int> sold = {}; // 상품마다 지금까지 판 개수
   final Set<String> story = {}; // 본 이야기
   final Set<String> combosFound = {}; // 한 번이라도 만든 진열 세트
+  int goalBase = 0; // 목표를 다 이룬 때의 손님 수(끝없는 목표의 출발점)
   String current = 'piyak';
 
   Owner() {
@@ -141,6 +142,7 @@ class Owner {
         'met': met.toList()..sort(),
         'story': story.toList(),
         'combos': combosFound.toList(),
+        'goalBase': goalBase,
         'sold': sold,
       };
 
@@ -160,6 +162,7 @@ class Owner {
     o.met.addAll(((j['met'] as List?) ?? const []).cast<int>());
     o.story.addAll(((j['story'] as List?) ?? const []).cast<String>());
     o.combosFound.addAll(((j['combos'] as List?) ?? const []).cast<String>());
+    o.goalBase = j['goalBase'] as int? ?? 0;
     o.sold.addAll(((j['sold'] as Map?) ?? const {}).cast<String, int>());
     o.branches.clear();
     for (final e in (j['branches'] as Map).entries) {
@@ -367,7 +370,12 @@ class Game {
 
   // ---------------------------------------------------------------- 목표
 
-  Goal? get currentGoal => goal < goals.length ? goals[goal] : null;
+  /// 지금 목표. 목록을 다 이루면 '손님 N명 받기'가 끝없이 이어진다.
+  Goal? get currentGoal {
+    if (goal < goals.length) return goals[goal];
+    final i = goal - goals.length;
+    return Goal(GoalKind.served, owner.goalBase + extraGoalStep * (i + 1), extraGoalReward(i));
+  }
 
   /// 목표가 재는 지금 값.
   int progress(GoalKind k) => switch (k) {
@@ -387,10 +395,12 @@ class Game {
 
   /// 지금 목표를 이뤘으면 상금을 주고 다음으로 넘긴다. 이룬 목표를 돌려준다.
   Goal? checkGoal() {
+    if (goal >= goals.length && owner.goalBase == 0) owner.goalBase = served; // 예전 저장: 지금부터 센다
     final g = currentGoal;
     if (g == null || progress(g.kind) < g.target) return null;
     money += g.reward;
     goal++;
+    if (goal == goals.length) owner.goalBase = served;
     return g;
   }
 

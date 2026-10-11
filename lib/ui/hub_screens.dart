@@ -104,6 +104,8 @@ class _MapScreenState extends State<MapScreen> {
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(S.t('b_${b.id}'), style: const TextStyle(fontSize: 19, color: inkColor)),
                   Text(S.t('b_${b.id}_desc'), style: const TextStyle(fontSize: 13, color: Colors.black54)),
+                  if (branchRules.containsKey(b.id))
+                    Text(S.t('b_${b.id}_rule'), style: const TextStyle(fontSize: 12, color: Color(0xFFE65100))),
                   const SizedBox(height: 4),
                   Wrap(spacing: 2, children: [
                     for (final p in b.featured.take(5)) SizedBox(width: 22, height: 22, child: CustomPaint(painter: FoodPreview(p))),

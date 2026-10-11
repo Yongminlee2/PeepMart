@@ -195,9 +195,12 @@ class World {
       _incidents.add((inspectWindow.$1 + _rng.nextDouble() * (inspectWindow.$2 - inspectWindow.$1), Incident.inspectIn));
     }
     if (game.rank >= rankIncidents) {
+      final rule = ruleOf(game.branch);
       final kinds = [
         Incident.thiefFlee, Incident.kidLost, Incident.brokeDown,
         if (game.rank >= rankGrumpy) ...[Incident.grumpyIn, Incident.thiefFlee],
+        if (rule.thief > 1) Incident.thiefFlee,
+        if (rule.breakdown > 1) ...[Incident.brokeDown, Incident.brokeDown],
       ];
       for (var i = 0, n = incidentsPerDay(game.rank, _rng.nextInt(2)); i < n; i++) {
         _incidents.add((at(), kinds[_rng.nextInt(kinds.length)]));
@@ -570,7 +573,8 @@ class World {
       (weather == Weather.rain ? rainVisitors : 1.0) *
       (special == SpecialDay.festival ? festivalVisitors : 1.0) *
       (feverLeft > 0 ? feverVisitors : 1.0) *
-      (priceWar ? priceWarVisitors : 1.0);
+      (priceWar ? priceWarVisitors : 1.0) *
+      ruleOf(game.branch).visitors;
 
   void _rate(int satisfaction) {
     game.rate(satisfaction);
@@ -593,6 +597,16 @@ class World {
     }
     _day(dt);
     _incidentsTick(dt);
+    if (game.step(Upgrade.autoOrder) > 0) {
+      for (final b in game.ofKind(ItemKind.box)) {
+        final p = b.product;
+        if (p == null || b.incoming > 0 || b.units >= autoOrderAt) continue;
+        final cost = (reorderCost(p) * autoOrderFee).round();
+        if (game.money < cost) continue;
+        game.money -= cost;
+        b.incoming = restockDelay;
+      }
+    }
     for (final b in game.ofKind(ItemKind.box)) {
       if (b.incoming <= 0) continue;
       b.incoming -= dt;
@@ -1097,7 +1111,8 @@ class World {
       }
     }
     final vip = _vipQueue > 0 ||
-        (game.rating >= vipMinRating && _rng.nextDouble() < vipChance * (game.rank >= rankVip ? 2 : 1));
+        (game.rating >= vipMinRating &&
+            _rng.nextDouble() < vipChance * (game.rank >= rankVip ? 2 : 1) * ruleOf(game.branch).vip);
     final n = vip ? min(sale.length, 2 + _rng.nextInt(2)) : 1 + _rng.nextInt(min(3, sale.length));
     final wants = sale.take(n).toList();
     final fav = game.favored.toList()..sort();
@@ -1189,7 +1204,7 @@ class World {
       if (c.state == CState.toQueue) c.waited += dt;
       return;
     }
-    _walk(c, dt, customerSpeed * (c.fleeing ? thiefSpeed : 1));
+    _walk(c, dt, customerSpeed * (c.fleeing ? thiefSpeed : 1) * ruleOf(game.branch).walk);
     switch (c.state) {
       case CState.toShelf:
         if (c.arrived) c.state = CState.atShelf;
@@ -1216,7 +1231,7 @@ class World {
           c.carry.add(c.want);
           c.prices.add(game.salePrice(s, c.want));
           _nextWant(c);
-        } else if (c.timer > shelfPatience * c.patience * patienceFactor(game.rank)) {
+        } else if (c.timer > shelfPatience * c.patience * patienceFactor(game.rank) * ruleOf(game.branch).patience) {
           c
             ..missed += 1
             ..react = 0.8
@@ -1235,7 +1250,7 @@ class World {
         final i = queues[c.register]!.indexOf(c);
         final spot = tiles[min(i, tiles.length - 1)];
         if (c.goal != spot) _walkTo(c, spot);
-        if (c.waited > queuePatience * c.patience * patienceFactor(game.rank) && c.scanned == 0) {
+        if (c.waited > queuePatience * c.patience * patienceFactor(game.rank) * ruleOf(game.branch).patience && c.scanned == 0) {
           queues[c.register]?.remove(c);
           _rate(0);
           fx.add(Fx(FxKind.angry, c.x, c.y));

@@ -1393,4 +1393,40 @@ void main() {
       expect(plays, greaterThan(0));
     });
   });
+
+  group('자동 발주·동네 규칙·끝없는 목표', () {
+    test('자동 발주: 사면 상자가 바닥나기 전에 수수료를 붙여 저절로 주문한다', () {
+      final g = Game()
+        ..money = 99999
+        ..level = 15;
+      final w = World(g, seed: 1);
+      final box = g.items.firstWhere((i) => i.type == 'box')..units = 2;
+      w.tick(0.05);
+      expect(box.incoming, 0); // 안 샀으면 그대로
+      expect(g.buyUpgrade(Upgrade.autoOrder), isTrue);
+      final before = g.money;
+      w.tick(0.05);
+      expect(box.incoming, greaterThan(0));
+      expect(before - g.money, (reorderCost(box.product!) * autoOrderFee).round());
+    });
+
+    test('동네 규칙: 바닷가는 손님이 많고, 다른 동네는 보통', () {
+      expect(ruleOf('beach').visitors, greaterThan(1));
+      expect(ruleOf('night').thief, greaterThan(1));
+      expect(ruleOf('piyak').visitors, 1);
+    });
+
+    test('목표를 다 이루면 손님 500명마다 목표가 이어진다', () {
+      final g = Game()
+        ..goal = goals.length
+        ..served = 4000;
+      expect(g.checkGoal(), isNull); // 출발점을 지금으로
+      expect(g.currentGoal!.target, 4000 + extraGoalStep);
+      g.served = 4000 + extraGoalStep;
+      final before = g.money;
+      expect(g.checkGoal(), isNotNull);
+      expect(g.money - before, extraGoalReward(0));
+      expect(g.currentGoal!.target, 4000 + 2 * extraGoalStep);
+    });
+  });
 }

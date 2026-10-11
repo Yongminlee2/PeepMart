@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:peep_mart/engine/game.dart';
+import 'package:peep_mart/strings.dart';
 import 'package:peep_mart/ui/hub_screens.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -21,7 +22,10 @@ void main() {
       ..money = 10000;
     Game? entered;
     await show(tester, MapScreen(o, onEnter: (g) => entered = g));
-    await tester.tap(find.byType(InkWell).at(1)); // 두 번째 지점(바닷가)
+    final beach = find.text(S.t('b_beach'));
+    await tester.ensureVisible(beach); // 규칙 줄이 늘어 카드가 길어졌다
+    await tester.pump();
+    await tester.tap(beach); // 두 번째 지점(바닷가)
     await tester.pump();
     await tester.tap(find.byType(TextButton).last); // 확인
     await tester.pump();
