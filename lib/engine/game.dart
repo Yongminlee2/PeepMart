@@ -84,7 +84,7 @@ class Owner {
     final n = (sold[product] ?? 0) + 1;
     sold[product] = n;
     if (n != stampAt) return 0;
-    final reward = productById(product).price * stampAt;
+    final reward = productById(product).price * stampPay;
     money += reward;
     return reward;
   }
@@ -676,7 +676,8 @@ class Game {
     final avg = sale.map((p) => productById(p).price).reduce((a, b) => a + b) / sale.length;
     // 물건 원가(도매가)를 빼고 남는 만큼만
     final perSecond = avg * (1 - wholesaleRate) * 1.5 / spawnGap * (1 + 0.15 * managers.length);
-    return (min(seconds, offlineHours * 3600) * perSecond / 3).floor();
+    // 재고는 끝이 있으니 하루 평균 매출을 넘게 벌진 못한다
+    return min((min(seconds, offlineHours * 3600) * perSecond / 3).floor(), avgSales.round());
   }
 
   // ---------------------------------------------------------------- 내부

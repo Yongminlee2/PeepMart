@@ -599,9 +599,12 @@ void main() {
     final g = Game();
     expect(g.offlineEarnings(3600), 0);
     g.staff[Staff.cashier] = 1;
+    g.avgSales = 1e9;
     final hour = g.offlineEarnings(3600);
     expect(hour, greaterThan(0));
     expect(g.offlineEarnings(100000), g.offlineEarnings(7200));
+    g.avgSales = 50; // 하루 평균 매출보다 많이 벌진 못한다
+    expect(g.offlineEarnings(7200), 50);
   });
 
   test('저장했다 불러오면 그대로다', () {
@@ -964,7 +967,7 @@ void main() {
       for (var i = 0; i < 40; i++) {
         got += o.addSold('soda');
       }
-      expect(got, productById('soda').price * stampAt);
+      expect(got, productById('soda').price * stampPay);
       expect(o.sold['soda'], 40);
     });
 

@@ -1319,6 +1319,7 @@ class BranchThumb extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final th0 = themeOf(branch);
     final lk = _lookOf(branch);
+    canvas.clipRect(Offset.zero & size);
     canvas.drawRect(Offset.zero & size, Paint()..color = th0.sky);
     canvas.translate(size.width / 2, size.height * 0.34);
     canvas.scale(size.width / 190);
