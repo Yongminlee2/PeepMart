@@ -107,6 +107,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     final dt = ((now - _last).inMicroseconds / 1e6).clamp(0.0, 0.1);
     _last = now;
     clock += dt;
+    if (_storyOpen) return; // 이야기를 읽는 동안은 시간이 멈춘다
     world.tick(dt);
     if (building == null && _follow && widget.followCamera) {
       // 플레이어 쪽 60%, 가게 가운데 쪽 40%: 가게가 화면에 더 많이 들어온다
@@ -173,6 +174,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     flights.removeWhere((f) => f.age > f.life);
     _toastLeft -= dt;
     _regularLeft -= dt;
+    _maybeStory();
     _sinceSave += dt;
     if (_sinceSave > 5) {
       _sinceSave = 0;
@@ -192,6 +194,24 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     final head = S.tn('level_up', {'n': level});
     toast(news.isEmpty ? head : '$head\n${S.tn('unlocked', {'list': news.join(', ')})}');
     Sfx.play(FxKind.levelUp, clock);
+  }
+
+  bool _storyOpen = false;
+
+  /// 다음 이야기가 열렸으면 보여 준다. 장사 중에는 끝날 때까지 기다린다(첫 이야기만 바로).
+  void _maybeStory() {
+    if (_storyOpen || building != null || world.result != null) return;
+    final ch = game.owner.nextChapter;
+    if (ch == null || (world.phase != DayPhase.closed && ch.id != 'opening')) return;
+    if (ModalRoute.of(context)?.isCurrent != true) return; // 다른 창이 떠 있으면 나중에
+    _storyOpen = true;
+    _release();
+    showChapter(context, ch).then((_) {
+      game.owner.story.add(ch.id);
+      saveGame(game);
+      _storyOpen = false;
+      _last = Duration.zero;
+    });
   }
 
   /// 가게 등급이 올랐다: 간판과 새로 열린 것을 크게 보여 준다.
@@ -544,6 +564,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
         nav.push(MaterialPageRoute(builder: (_) => const HelpScreen()));
       case MenuChoice.dex:
         nav.push(MaterialPageRoute(builder: (_) => DexScreen(game.owner)));
+      case MenuChoice.story:
+        nav.push(MaterialPageRoute(builder: (_) => StoryScreen(game.owner)));
       case MenuChoice.settings:
         showSettings(context);
       case MenuChoice.title:

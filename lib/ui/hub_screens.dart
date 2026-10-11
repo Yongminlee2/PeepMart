@@ -263,7 +263,7 @@ class HelpScreen extends StatelessWidget {
 
 // ------------------------------------------------------------------ 게임 중 메뉴
 
-enum MenuChoice { map, regulars, dex, help, settings, title }
+enum MenuChoice { map, regulars, story, dex, help, settings, title }
 
 Future<MenuChoice?> showGameMenu(BuildContext context) => showModalBottomSheet<MenuChoice>(
       context: context,
@@ -276,6 +276,7 @@ Future<MenuChoice?> showGameMenu(BuildContext context) => showModalBottomSheet<M
             for (final (m, icon, key) in const [
               (MenuChoice.map, Icons.map_rounded, 'btn_map'),
               (MenuChoice.regulars, Icons.favorite_rounded, 'btn_regulars'),
+              (MenuChoice.story, Icons.auto_stories_rounded, 'btn_story'),
               (MenuChoice.dex, Icons.collections_bookmark_rounded, 'btn_dex'),
               (MenuChoice.help, Icons.help_rounded, 'btn_help'),
               (MenuChoice.settings, Icons.settings_rounded, 'settings_title'),
@@ -389,4 +390,109 @@ class DexScreen extends StatelessWidget {
       ]),
     );
   }
+}
+
+// ------------------------------------------------------------------ 삐약동 이야기
+
+/// 이야기 한 편을 말풍선으로 한 줄씩 보여 준다.
+Future<void> showChapter(BuildContext context, Chapter ch) async {
+  var i = 0;
+  await showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (c) => StatefulBuilder(builder: (c, set) {
+      final who = ch.lines[i];
+      final last = i == ch.lines.length - 1;
+      return AlertDialog(
+        backgroundColor: bg,
+        title: Text(S.t('story_${ch.id}_t'), textAlign: TextAlign.center, style: const TextStyle(fontSize: 15, color: Colors.black45)),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          SizedBox(
+            width: 96,
+            height: 96,
+            child: CustomPaint(painter: Portrait(npcLooks[who]!, anim: who == Npc.rival && i < ch.lines.length - 2 ? Anim.idle : Anim.yes)),
+          ),
+          Container(
+            margin: const EdgeInsets.only(top: 4, bottom: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+            decoration: BoxDecoration(color: _npcColor(who), borderRadius: BorderRadius.circular(10)),
+            child: Text(S.t('npc_${who.name}'), style: const TextStyle(color: Colors.white, fontSize: 14)),
+          ),
+          Text(S.t('story_${ch.id}_$i'), textAlign: TextAlign.center, style: const TextStyle(fontSize: 17, color: inkColor, height: 1.5)),
+          const SizedBox(height: 8),
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            for (var k = 0; k < ch.lines.length; k++)
+              Container(
+                width: 6,
+                height: 6,
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                decoration: BoxDecoration(shape: BoxShape.circle, color: k <= i ? inkColor : Colors.black12),
+              ),
+          ]),
+        ]),
+        actions: [
+          if (!last) TextButton(onPressed: () => Navigator.pop(c), child: Text(S.t('btn_skip'))),
+          TextButton(
+            onPressed: () => last ? Navigator.pop(c) : set(() => i++),
+            child: Text(S.t(last ? 'btn_ok' : 'btn_next')),
+          ),
+        ],
+      );
+    }),
+  );
+}
+
+Color _npcColor(Npc n) => switch (n) {
+      Npc.me => const Color(0xFFFF9800),
+      Npc.grandma => const Color(0xFFAB47BC),
+      Npc.rival => const Color(0xFF546E7A),
+      Npc.mayor => const Color(0xFF8D6E63),
+      Npc.bori => const Color(0xFF43A047),
+    };
+
+/// 본 이야기를 다시 본다. 아직 못 본 건 여는 조건만 보여 준다.
+class StoryScreen extends StatelessWidget {
+  final Owner owner;
+  const StoryScreen(this.owner, {super.key});
+
+  @override
+  Widget build(BuildContext context) => _Page(
+        S.t('btn_story'),
+        ListView(padding: const EdgeInsets.all(16), children: [
+          Text(S.t('story_hint'), style: const TextStyle(fontSize: 14, color: Colors.black54)),
+          const SizedBox(height: 10),
+          for (final (n, ch) in chapters.indexed)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Material(
+                color: owner.story.contains(ch.id) ? Colors.white : const Color(0xFFEEEEEE),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18), side: const BorderSide(color: inkColor, width: 2)),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(18),
+                  onTap: owner.story.contains(ch.id) ? () => showChapter(context, ch) : null,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(children: [
+                      SizedBox(
+                          width: 48,
+                          height: 48,
+                          child: CustomPaint(painter: Portrait(npcLooks[ch.lines.first]!, hidden: !owner.story.contains(ch.id)))),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(S.tn('story_no', {'n': n + 1}), style: const TextStyle(fontSize: 12, color: Colors.black45)),
+                          Text(owner.story.contains(ch.id) ? S.t('story_${ch.id}_t') : '???',
+                              style: const TextStyle(fontSize: 17, color: inkColor)),
+                          if (!owner.story.contains(ch.id))
+                            Text(S.t('story_${ch.id}_when'), style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                        ]),
+                      ),
+                      if (owner.story.contains(ch.id)) const Icon(Icons.play_circle_rounded, color: Color(0xFFFF9800)),
+                    ]),
+                  ),
+                ),
+              ),
+            ),
+        ]),
+      );
 }

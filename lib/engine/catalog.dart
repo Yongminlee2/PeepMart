@@ -420,3 +420,28 @@ int meetReward(int milestone) => 300 * milestone; // milestone = 10명째 1, 20�
 
 /// 상품 도장: 한 상품을 [stampAt] 개 팔면 도장과 상금(값 × [stampAt]).
 const stampAt = 30;
+
+// ------------------------------------------------------------------ 삐약동 이야기
+
+/// 이야기에 나오는 사람: 나(점장), 가게를 물려준 할머니, 길 건너 메가마트 사장 강대장, 이장님, 알바생 보리.
+enum Npc { me, grandma, rival, mayor, bori }
+
+/// 이야기 한 편: 줄마다 말하는 사람. 글은 `story_{id}_{줄 번호}`, 제목은 `story_{id}_t`.
+class Chapter {
+  final String id;
+  final List<Npc> lines;
+  const Chapter(this.id, this.lines);
+}
+
+/// 차례대로 열린다. 여는 조건은 [Owner.chapterReady].
+const chapters = [
+  Chapter('opening', [Npc.grandma, Npc.grandma, Npc.rival, Npc.me, Npc.rival]),
+  Chapter('rival', [Npc.bori, Npc.rival, Npc.me, Npc.bori]),
+  Chapter('mayor', [Npc.mayor, Npc.mayor, Npc.bori, Npc.me]),
+  Chapter('beach', [Npc.grandma, Npc.me, Npc.grandma]),
+  Chapter('scheme', [Npc.bori, Npc.rival, Npc.me, Npc.mayor]),
+  Chapter('night', [Npc.bori, Npc.rival, Npc.me]),
+  Chapter('festival', [Npc.mayor, Npc.rival, Npc.bori, Npc.me, Npc.rival]),
+  Chapter('snow', [Npc.mayor, Npc.bori, Npc.me]),
+  Chapter('finale', [Npc.grandma, Npc.rival, Npc.rival, Npc.me, Npc.grandma, Npc.me]),
+];

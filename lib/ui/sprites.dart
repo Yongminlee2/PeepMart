@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import '../engine/catalog.dart' show Npc;
 import 'store_painter.dart' show tw;
 
 // tool/render_chars.py 가 만든 캐릭터 시트와 같은 값이어야 한다.
@@ -52,9 +53,12 @@ Facing facingOf(double dx, double dy) {
 /// 시트 번호: 플레이어·알바는 고정, 손님은 나머지 전부에서 고른다.
 const playerChar = 6, cashierChar = 4, stockerChar = 9, janitorChar = 5;
 const _staffChars = {playerChar, cashierChar, stockerChar, janitorChar};
+
+/// 이야기 사람의 얼굴. 할머니·강대장·이장님은 손님으로는 안 나온다(헷갈리지 않게).
+const npcLooks = {Npc.me: playerChar, Npc.grandma: 21, Npc.rival: 41, Npc.mayor: 38, Npc.bori: cashierChar};
 final customerChars = [
   for (var i = 0; i < characterFiles.length; i++)
-    if (!_staffChars.contains(i)) i
+    if (!_staffChars.contains(i) && !npcLooks.values.contains(i)) i
 ];
 
 Future<ui.Image?> _image(String asset) async {

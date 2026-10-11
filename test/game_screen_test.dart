@@ -150,6 +150,7 @@ void main() {
     addTearDown(tester.view.reset);
     final g = Game();
     g.owner.tutorial = TutorialStep.done;
+    g.owner.story.addAll(chapters.map((c) => c.id)); // 이야기 창이 가리지 않게
     final w = World(g, seed: 6);
     await tester.pumpWidget(MaterialApp(home: GameScreen(g, world: w, followCamera: false)));
     await tester.pump();
@@ -180,6 +181,7 @@ void main() {
     addTearDown(tester.view.reset);
     final g = Game()..level = 15;
     g.owner.tutorial = TutorialStep.done;
+    g.owner.story.addAll(chapters.map((c) => c.id)); // 이야기 창이 가리지 않게
     final w = World(g, seed: 7)..openDay();
     w.order = Order(['soda', 'donut']);
     await tester.pumpWidget(MaterialApp(home: GameScreen(g, world: w, followCamera: false)));
@@ -188,6 +190,31 @@ void main() {
     await tester.pump();
     expect(w.order!.started, isTrue);
     expect(find.text(S.t('order_picking')), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('이야기: 안내를 마치면 첫 이야기가 뜨고, 읽는 동안 시간이 멈춘다', (tester) async {
+    tester.view.physicalSize = const Size(360, 760);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final g = Game();
+    g.owner.tutorial = TutorialStep.done;
+    final w = World(g, seed: 8);
+    await tester.pumpWidget(MaterialApp(home: GameScreen(g, world: w, followCamera: false)));
+    await runFor(tester, 0.3);
+    expect(find.text(S.t('story_opening_0')), findsOneWidget);
+    final t = w.time;
+    await runFor(tester, 1);
+    expect(w.time, t); // 멈춤
+    for (var i = 0; i < 4; i++) {
+      await tester.tap(find.text(S.t('btn_next')));
+      await tester.pump();
+    }
+    expect(find.text(S.t('story_opening_4')), findsOneWidget);
+    await tester.tap(find.text(S.t('btn_ok')));
+    await runFor(tester, 0.5);
+    expect(g.owner.story, contains('opening'));
+    expect(w.time, greaterThan(t));
     await tester.pumpWidget(const SizedBox());
   });
 }

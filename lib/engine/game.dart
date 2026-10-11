@@ -38,6 +38,7 @@ class Owner {
   final Map<String, Game> branches = {}; // 연 지점들
   final Set<int> met = {}; // 만난 손님 (캐릭터 시트 번호)
   final Map<String, int> sold = {}; // 상품마다 지금까지 판 개수
+  final Set<String> story = {}; // 본 이야기
   String current = 'piyak';
 
   Owner() {
@@ -49,6 +50,20 @@ class Owner {
   int heartsOf(String regular) => hearts[regular] ?? 0;
 
   int get rank => rankOf(level);
+
+  /// 이야기를 열 때가 됐는가.
+  bool chapterReady(String id) => switch (id) {
+        'opening' => tutorial == TutorialStep.done,
+        'rival' => rank >= 1,
+        'mayor' => rank >= 2,
+        'scheme' => rank >= 3,
+        'festival' => rank >= 4,
+        'finale' => rank >= 5,
+        _ => branches.containsKey(id), // 지점 이름: 그 동네를 열면
+      };
+
+  /// 아직 안 본 다음 이야기 (차례대로).
+  Chapter? get nextChapter => chapters.where((c) => !story.contains(c.id) && chapterReady(c.id)).firstOrNull;
 
   /// 손님을 만났다. 처음이면 true, [meetEvery] 명째마다 상금이 들어온다.
   (bool, int) meet(int sheet) {
@@ -119,6 +134,7 @@ class Owner {
         'current': current,
         'branches': {for (final e in branches.entries) e.key: e.value._toJson()},
         'met': met.toList()..sort(),
+        'story': story.toList(),
         'sold': sold,
       };
 
@@ -136,6 +152,7 @@ class Owner {
     }
     o.hearts.addAll((j['hearts'] as Map).cast<String, int>());
     o.met.addAll(((j['met'] as List?) ?? const []).cast<int>());
+    o.story.addAll(((j['story'] as List?) ?? const []).cast<String>());
     o.sold.addAll(((j['sold'] as Map?) ?? const {}).cast<String, int>());
     o.branches.clear();
     for (final e in (j['branches'] as Map).entries) {

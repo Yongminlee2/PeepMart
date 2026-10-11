@@ -975,4 +975,32 @@ void main() {
       expect(back.owner.met, contains(7));
     });
   });
+
+  group('삐약동 이야기', () {
+    test('차례대로 열린다: 안내 → 등급·지점', () {
+      final o = Game().owner;
+      expect(o.nextChapter, isNull);
+      o.tutorial = TutorialStep.done;
+      expect(o.nextChapter?.id, 'opening');
+      o.story.add('opening');
+      expect(o.nextChapter, isNull);
+      o.level = 10;
+      expect(o.nextChapter?.id, 'rival');
+      o.story.add('rival');
+      expect(o.nextChapter?.id, 'mayor');
+      o.story.add('mayor');
+      expect(o.nextChapter, isNull); // 바닷가는 아직 안 열었다
+      o.level = 12;
+      o.money = 99999;
+      o.open('beach');
+      expect(o.nextChapter?.id, 'beach');
+    });
+
+    test('본 이야기는 저장된다', () {
+      final g = Game();
+      g.owner.story.addAll(['opening', 'rival']);
+      final back = Game.fromJson(jsonDecode(jsonEncode(g.toJson())) as Map<String, dynamic>);
+      expect(back.owner.story, {'opening', 'rival'});
+    });
+  });
 }
