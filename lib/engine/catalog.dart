@@ -361,3 +361,40 @@ const rankIncidents = 2; // 도둑·길 잃은 아이
 const rankDelivery = 3; // 배달 주문
 const rankFestival = 4; // 특별한 날에 동네 축제가 끼어든다
 const rankVip = 5; // VIP 가 두 배로 자주
+
+// ------------------------------------------------------------------ 날씨·특별한 날
+
+/// 날씨(동네 편의점부터): 그날 잘 팔리는 상품이 바뀐다. 문 열기 전에 예보로 보여 준다.
+enum Weather { sunny, hot, rain, cold }
+
+const weatherGoods = {
+  Weather.sunny: <String>[],
+  Weather.hot: ['icecream', 'popsicle', 'sundae', 'bananamilk', 'soda', 'frappe', 'watermelon', 'milk'],
+  Weather.rain: ['cupramen', 'hoppang', 'tteokkochi', 'noodles', 'coffee', 'tea'],
+  Weather.cold: ['hoppang', 'coffee', 'tea', 'cupramen', 'tteokkochi', 'croissant'],
+};
+
+/// 지점마다 날씨가 나올 무게 (맑음, 더움, 비, 추움). 바닷가는 덥고, 눈 동네는 춥다.
+List<int> weatherOdds(String branch) => switch (branch) {
+      'beach' => const [3, 4, 2, 1],
+      'snow' => const [2, 0, 1, 5],
+      _ => const [4, 2, 2, 2],
+    };
+
+/// 손님이 날씨·특별한 날 상품을 맨 먼저 집을 확률 (진열돼 있을 때).
+const favoredPull = 0.5;
+const rainVisitors = 0.9; // 비 오는 날은 손님이 조금 덜 온다
+
+/// 특별한 날(큰 편의점부터 5일마다): 소풍날 → 시험 기간 → (대형마트부터) 동네 축제 차례로.
+enum SpecialDay { picnic, exam, festival }
+
+const specialEvery = 5;
+const specialGoods = {
+  SpecialDay.picnic: ['gimbap', 'riceball', 'sandwich', 'soda', 'bananamilk', 'fruit', 'banana'],
+  SpecialDay.exam: ['riceball', 'cupramen', 'coffee', 'chocolate', 'gimbap', 'bananamilk'],
+  SpecialDay.festival: ['tteokkochi', 'hotdog', 'soda', 'icecream', 'popsicle', 'fries'],
+};
+const picnicGroup = (2, 4); // 소풍날 한꺼번에 들어오는 손님 수 (최소, 최대)
+const examHurry = 3.0; // 시험 기간엔 급한 손님이 이만큼 많다
+const festivalVisitors = 1.6;
+const festivalBonus = 2; // 축제 날 별 보너스 배수

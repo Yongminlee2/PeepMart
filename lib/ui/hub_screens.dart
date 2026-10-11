@@ -218,6 +218,7 @@ class HelpScreen extends StatelessWidget {
     ('move', Icons.touch_app_rounded),
     ('day', Icons.wb_sunny_rounded),
     ('rank', Icons.storefront_rounded),
+    ('weather', Icons.umbrella_rounded),
     ('stock', Icons.inventory_2_rounded),
     ('checkout', Icons.point_of_sale_rounded),
     ('build', Icons.handyman_rounded),

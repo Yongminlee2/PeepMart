@@ -251,6 +251,35 @@ class StorePainter extends CustomPainter {
       canvas.restore();
     }
     canvas.restore();
+    if (world.phase != DayPhase.closed) _weather(canvas, size);
+  }
+
+  /// 비·눈은 화면 위에 그린다(가게 안팎 구분 없이 분위기만).
+  void _weather(Canvas canvas, Size size) {
+    final w = world.weather;
+    if (w == Weather.hot) {
+      canvas.drawRect(Offset.zero & size, Paint()..color = const Color(0x0FFF9800));
+      return;
+    }
+    if (w != Weather.rain && w != Weather.cold) return;
+    final rain = w == Weather.rain;
+    if (rain) canvas.drawRect(Offset.zero & size, Paint()..color = const Color(0x14546E7A));
+    final paint = Paint()
+      ..color = rain ? const Color(0x8878909C) : const Color(0xDDFFFFFF)
+      ..strokeWidth = rain ? 1.5 : 1;
+    const n = 70;
+    for (var i = 0; i < n; i++) {
+      // 고정된 무작위 자리 + 시간에 따라 떨어진다
+      final sx = (i * 73.13) % 1.0, sy = (i * 41.77) % 1.0;
+      final speed = rain ? 0.9 + (i % 5) * 0.08 : 0.12 + (i % 4) * 0.03;
+      final y = ((sy + clock * speed) % 1.0) * (size.height + 40) - 20;
+      final x = (sx * size.width + (rain ? -y * 0.15 : sin(clock + i) * 12)) % size.width;
+      if (rain) {
+        canvas.drawLine(Offset(x, y), Offset(x - 3, y + 14), paint);
+      } else {
+        canvas.drawCircle(Offset(x, y), 2 + (i % 3) * 0.7, paint);
+      }
+    }
   }
 
   // ---------------------------------------------------------------- 바닥·벽 (캐시)
@@ -916,3 +945,17 @@ class RankSign extends CustomPainter {
   @override
   bool shouldRepaint(RankSign old) => old.rank != rank;
 }
+
+IconData weatherIcon(Weather w) => switch (w) {
+      Weather.sunny => Icons.wb_sunny_rounded,
+      Weather.hot => Icons.local_fire_department_rounded,
+      Weather.rain => Icons.umbrella_rounded,
+      Weather.cold => Icons.ac_unit_rounded,
+    };
+
+Color weatherColor(Weather w) => switch (w) {
+      Weather.sunny => const Color(0xFFFFA000),
+      Weather.hot => const Color(0xFFFF5722),
+      Weather.rain => const Color(0xFF42A5F5),
+      Weather.cold => const Color(0xFF4FC3F7),
+    };

@@ -113,6 +113,8 @@ class World {
   int daySales = 0, dayServed = 0, dayUpset = 0, dayTarget = 0;
   final Map<String, int> daySold = {};
   List<DayTask> tasks = [];
+  Weather weather = Weather.sunny; // 오늘(연 날) 날씨
+  SpecialDay? special; // 오늘이 특별한 날이면
   DayResult? result; // 방금 끝난 하루. 화면이 보여 주고 null 로 지운다
 
   World(this.game, {int? seed}) : _rng = Random(seed) {
@@ -132,7 +134,10 @@ class World {
     daySales = dayServed = dayUpset = 0;
     daySold.clear();
     result = null;
+    weather = game.todayWeather;
+    special = game.todaySpecial;
     dayTarget = game.dayTarget;
+    if (special == SpecialDay.festival) dayTarget = (dayTarget * festivalVisitors / 10).round() * 10;
     tasks = _makeTasks();
     _spawnIn = 1;
   }
@@ -161,7 +166,7 @@ class World {
 
   void _closeDay() {
     final stars = dayStars.where((r) => daySales >= dayTarget * r).length;
-    final bonus = (daySales * dayBonus[stars]).round();
+    final bonus = (daySales * dayBonus[stars] * (special == SpecialDay.festival ? festivalBonus : 1)).round();
     final done = [for (final t in tasks) (t, taskDone(t))];
     final taskReward = done.where((d) => d.$2).length * (dayTarget * dayTaskReward).round();
     final best = daySales > game.bestSales;
@@ -170,9 +175,24 @@ class World {
     game.money += bonus + taskReward;
     result = DayResult(game.day, daySales, dayTarget, dayServed, dayUpset, stars, bonus, taskReward, best, done);
     game.day++;
+    game.weather = _pickWeather();
     phase = DayPhase.closed;
     fx.add(Fx(FxKind.day, player.x, player.y, amount: dayClosed));
   }
+
+  Weather _pickWeather() {
+    final odds = weatherOdds(game.branch);
+    var r = _rng.nextInt(odds.reduce((a, b) => a + b));
+    for (var i = 0; i < odds.length; i++) {
+      r -= odds[i];
+      if (r < 0) return Weather.values[i];
+    }
+    return Weather.sunny;
+  }
+
+  /// 날씨·특별한 날에 따라 손님이 오는 빠르기.
+  double get _visitorFactor =>
+      (weather == Weather.rain ? rainVisitors : 1.0) * (special == SpecialDay.festival ? festivalVisitors : 1.0);
 
   void _rate(int satisfaction) {
     game.rate(satisfaction);
@@ -193,10 +213,17 @@ class World {
     _day(dt);
     if (phase == DayPhase.open) _events(dt);
     final last = _clockRuns && dayLeft < lastCall ? lastCallFactor : 1.0;
-    _spawnIn -= dt * (event == EventKind.rush ? rushFactor : 1) * last;
+    _spawnIn -= dt * (event == EventKind.rush ? rushFactor : 1) * last * _visitorFactor;
     if (_spawnIn <= 0 && phase == DayPhase.open) {
       final cap = min(60, 3 + 2 * game.shelves.length);
       if (customers.length < cap) _spawn();
+      // 소풍날: 단체 손님이 줄줄이 들어온다
+      if (special == SpecialDay.picnic && _rng.nextDouble() < 0.3) {
+        final extra = picnicGroup.$1 - 1 + _rng.nextInt(picnicGroup.$2 - picnicGroup.$1 + 1);
+        for (var i = 0; i < extra && customers.length < cap; i++) {
+          _spawn();
+        }
+      }
       _spawnIn = game.spawnGap * (0.7 + _rng.nextDouble() * 0.6);
     }
     for (final c in [...customers]) {
@@ -637,11 +664,20 @@ class World {
     final vip = _vipQueue > 0 ||
         (game.rating >= vipMinRating && _rng.nextDouble() < vipChance * (game.rank >= rankVip ? 2 : 1));
     final n = vip ? min(sale.length, 2 + _rng.nextInt(2)) : 1 + _rng.nextInt(min(3, sale.length));
-    final c = Customer(_rng.nextInt(1024), door, sale.take(n).toList());
+    final wants = sale.take(n).toList();
+    final fav = game.favored.toList()..sort();
+    if (fav.isNotEmpty && _rng.nextDouble() < favoredPull) {
+      final f = fav[_rng.nextInt(fav.length)];
+      wants
+        ..remove(f)
+        ..insert(0, f);
+      if (wants.length > n) wants.removeLast();
+    }
+    final c = Customer(_rng.nextInt(1024), door, wants);
     if (vip) {
       c.kind = CustomerKind.vip;
       if (_vipQueue > 0) _vipQueue--;
-    } else if (_rng.nextDouble() < hurryChance) {
+    } else if (_rng.nextDouble() < hurryChance * (special == SpecialDay.exam ? examHurry : 1)) {
       c.kind = CustomerKind.hurry;
     }
     customers.add(c);

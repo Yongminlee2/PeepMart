@@ -764,6 +764,11 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                   size: 16, color: closing ? const Color(0xFF5C6BC0) : const Color(0xFFFFA000)),
               const SizedBox(width: 4),
               Flexible(child: Text(S.tn('day_n', {'n': game.day}), style: style.copyWith(fontSize: 14), maxLines: 1, overflow: TextOverflow.ellipsis)),
+              if (game.rank >= rankWeather) ...[
+                const SizedBox(width: 4),
+                Icon(weatherIcon(world.weather), size: 15, color: weatherColor(world.weather)),
+              ],
+              if (world.special != null) const Icon(Icons.celebration_rounded, size: 15, color: Color(0xFFE65100)),
               const SizedBox(width: 8),
               if (closing)
                 Text(S.t('day_closing_short'), style: style.copyWith(color: const Color(0xFF5C6BC0)))
@@ -831,8 +836,9 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     );
   }
 
-  /// 닫힌 동안: 다음 날 문 열기.
+  /// 닫힌 동안: 다음 날 예보와 문 열기.
   Widget _openButton() => Column(mainAxisSize: MainAxisSize.min, children: [
+        if (game.rank >= rankWeather) _forecast(),
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 40),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -855,6 +861,44 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
           ),
         ),
       ]);
+
+  /// 다음 날 예보: 날씨·특별한 날, 잘 팔릴 상품.
+  Widget _forecast() {
+    final w = game.todayWeather;
+    final sp = game.todaySpecial;
+    final goods = {...weatherGoods[w]!, ...?specialGoods[sp]}
+        .where((p) => productById(p).level <= game.level)
+        .take(5)
+        .map((p) => S.t('p_$p'))
+        .toList();
+    const style = TextStyle(fontSize: 14, color: inkColor);
+    return Container(
+      margin: const EdgeInsets.fromLTRB(28, 0, 28, 8),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+      decoration: BoxDecoration(
+        color: sp == null ? Colors.white.withValues(alpha: 0.92) : const Color(0xFFFFF8E1),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: sp == null ? inkColor.withValues(alpha: 0.5) : const Color(0xFFFFB300), width: 2),
+      ),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(weatherIcon(w), color: weatherColor(w), size: 22),
+          const SizedBox(width: 6),
+          Flexible(child: Text(S.tn('forecast', {'n': game.day, 'w': S.t('weather_${w.name}')}), style: style)),
+        ]),
+        if (sp != null) ...[
+          const SizedBox(height: 4),
+          Text('★ ${S.t('special_${sp.name}')}', style: style.copyWith(color: const Color(0xFFE65100), fontSize: 16)),
+          Text(S.t('special_${sp.name}_d'), textAlign: TextAlign.center, style: style.copyWith(fontSize: 13)),
+        ],
+        if (goods.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(S.tn('sells_well', {'list': goods.join(', ')}),
+              textAlign: TextAlign.center, style: style.copyWith(fontSize: 12, color: Colors.black54)),
+        ],
+      ]),
+    );
+  }
 
   Future<void> _dayResult(DayResult r) async {
     Sfx.play(FxKind.levelUp, clock);

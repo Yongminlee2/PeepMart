@@ -137,6 +137,7 @@ class Game {
   int day = 1; // 다음에 열 날
   int bestSales = 0; // 하루 최고 매출
   double avgSales = 0, avgServed = 0; // 최근 하루들의 평균. 목표·할 일을 내 가게 실력에 맞춘다
+  Weather weather = Weather.sunny; // 다음에 여는 날의 날씨 (닫을 때 정해 둔다)
 
   /// 바뀔 때마다 1씩 오른다. [World] 가 길을 다시 찾을지 보는 데 쓴다.
   int layoutVersion = 0;
@@ -493,6 +494,22 @@ class Game {
     return (visitors, visitors * avg * 2);
   }
 
+  /// 다음에 여는 날의 날씨. 동네 편의점 전에는 늘 맑음.
+  Weather get todayWeather => rank >= rankWeather ? weather : Weather.sunny;
+
+  /// 다음에 여는 날이 특별한 날이면 그 종류.
+  SpecialDay? get todaySpecial {
+    if (rank < rankSpecialDay || day % specialEvery != 0) return null;
+    final kinds = [SpecialDay.picnic, SpecialDay.exam, if (rank >= rankFestival) SpecialDay.festival];
+    return kinds[(day ~/ specialEvery - 1) % kinds.length];
+  }
+
+  /// 오늘 잘 팔리는 상품(날씨 + 특별한 날) 중 지금 진열된 것.
+  Set<String> get favored => {
+        ...weatherGoods[todayWeather]!,
+        ...?specialGoods[todaySpecial],
+      }.intersection(onSale);
+
   /// 해 본 날이 있는가. 있으면 목표·할 일을 최근 평균으로 정한다.
   /// (가게 크기로 어림하면 계산대·알바가 모자란 큰 가게에서 목표가 터무니없이 높아진다.)
   bool get hasHistory => avgServed > 0;
@@ -586,6 +603,7 @@ class Game {
         'day': day,
         'best': bestSales,
         'avg': [avgSales, avgServed],
+        'weather': weather.name,
       };
 
   void _fromJson(Map<String, dynamic> j) {
@@ -617,6 +635,7 @@ class Game {
     final avg = j['avg'] as List?;
     avgSales = (avg?[0] as num?)?.toDouble() ?? 0;
     avgServed = (avg?[1] as num?)?.toDouble() ?? 0;
+    weather = Weather.values.asNameMap()[j['weather']] ?? Weather.sunny;
     _reindex();
   }
 }

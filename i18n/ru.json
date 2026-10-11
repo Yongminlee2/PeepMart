@@ -290,5 +290,19 @@
   "rank_5_new": "VIPs visit twice as often. You run the best store in town!",
   "rank_visitors": "Your rank brings {n}% more customers",
   "help_rank_t": "Store rank",
-  "help_rank_b": "Your store ranks up at levels 5, 10, 15, 20 and 25 (Corner Shop → Convenience Store → Big Convenience Store → Supermarket → Hypermarket → Department Store). Each rank brings 8% more customers and unlocks something new: weather, special days, surprises, deliveries, festivals and VIPs. The sign on the wall shows your current rank."
+  "help_rank_b": "Your store ranks up at levels 5, 10, 15, 20 and 25 (Corner Shop → Convenience Store → Big Convenience Store → Supermarket → Hypermarket → Department Store). Each rank brings 8% more customers and unlocks something new: weather, special days, surprises, deliveries, festivals and VIPs. The sign on the wall shows your current rank.",
+  "forecast": "Day {n} weather: {w}",
+  "weather_sunny": "Sunny",
+  "weather_hot": "Heat wave",
+  "weather_rain": "Rain",
+  "weather_cold": "Cold",
+  "sells_well": "Sells well: {list}",
+  "special_picnic": "Picnic Day",
+  "special_picnic_d": "Groups of customers keep pouring in!",
+  "special_exam": "Exam Week",
+  "special_exam_d": "Lots of students in a hurry.",
+  "special_festival": "Town Festival",
+  "special_festival_d": "Huge crowds, and the star bonus is doubled!",
+  "help_weather_t": "Weather and special days",
+  "help_weather_b": "Once you're a Convenience Store, a weather forecast appears before you open. Ice cream and drinks sell well on hot days; cup ramyeon, buns and coffee on rainy or cold days, so adjust your shelves. From Big Convenience Store, a special day comes every 5 days (Picnic Day, Exam Week, and from Hypermarket, the Town Festival)."
 }

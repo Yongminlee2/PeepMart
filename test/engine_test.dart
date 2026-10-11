@@ -736,4 +736,70 @@ void main() {
       expect(g.spawnGap, closeTo(low / (1 + 2 * rankVisitorBonus), 1e-9));
     });
   });
+
+  group('날씨·특별한 날', () {
+    Game shop(int level) {
+      final g = Game()
+        ..money = 5000
+        ..level = level;
+      g.owner.tutorial = TutorialStep.done;
+      g.hire(Staff.cashier);
+      return g;
+    }
+
+    test('구멍가게는 늘 맑음, 동네 편의점부터 예보한 날씨가 그날 날씨가 된다', () {
+      final g = shop(1)..weather = Weather.rain;
+      expect(g.todayWeather, Weather.sunny);
+      g.level = 5;
+      expect(g.todayWeather, Weather.rain);
+      final w = World(g, seed: 1)..openDay();
+      expect(w.weather, Weather.rain);
+    });
+
+    test('특별한 날은 큰 편의점부터 5일마다, 축제는 대형마트부터', () {
+      final g = shop(10)..day = 5;
+      expect(g.todaySpecial, SpecialDay.picnic);
+      g.day = 10;
+      expect(g.todaySpecial, SpecialDay.exam);
+      g.day = 15;
+      expect(g.todaySpecial, SpecialDay.picnic);
+      g.day = 7;
+      expect(g.todaySpecial, isNull);
+      g
+        ..level = 20
+        ..day = 15;
+      expect(g.todaySpecial, SpecialDay.festival);
+    });
+
+    test('날씨 상품이 진열돼 있으면 손님이 그걸 더 자주 고른다', () {
+      int firstSoda(Weather wx, int seed) {
+        final g = shop(5)..weather = wx;
+        final w = World(g, seed: seed)..openDay();
+        var n = 0;
+        for (var i = 0; i < 4000; i++) {
+          w.tick(0.05);
+          for (final s in g.shelves) {
+            s.stock = s.capacity;
+          }
+        }
+        // 처음 가게는 콜라·도넛뿐: 더운 날엔 콜라가 먼저
+        n = w.daySold['soda'] ?? 0;
+        return n - (w.daySold['donut'] ?? 0);
+      }
+      expect(firstSoda(Weather.hot, 3), greaterThan(firstSoda(Weather.sunny, 3)));
+    });
+
+    test('닫을 때 다음 날 날씨를 정하고 저장된다', () {
+      final g = shop(5);
+      final w = World(g, seed: 9)..openDay();
+      w.dayTime = dayLength;
+      w.customers.clear();
+      w.tick(0.01);
+      w.customers.clear();
+      w.tick(0.01);
+      expect(w.phase, DayPhase.closed);
+      final back = Game.fromJson(jsonDecode(jsonEncode(g.toJson())) as Map<String, dynamic>);
+      expect(back.weather, g.weather);
+    });
+  });
 }
