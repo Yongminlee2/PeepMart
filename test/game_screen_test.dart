@@ -173,4 +173,21 @@ void main() {
     expect(find.text(S.tn('day_open', {'n': 2})), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
   });
+
+  testWidgets('배달 주문 카드: 배달 가기 → 문 앞으로', (tester) async {
+    tester.view.physicalSize = const Size(360, 760);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final g = Game()..level = 15;
+    g.owner.tutorial = TutorialStep.done;
+    final w = World(g, seed: 7)..openDay();
+    w.order = Order(['soda', 'donut']);
+    await tester.pumpWidget(MaterialApp(home: GameScreen(g, world: w, followCamera: false)));
+    await tester.pump();
+    await tester.tap(find.text(S.t('order_go')));
+    await tester.pump();
+    expect(w.order!.started, isTrue);
+    expect(find.text(S.t('order_picking')), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
 }

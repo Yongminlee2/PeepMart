@@ -92,7 +92,7 @@ class Flight {
         FxKind.pick || FxKind.place || FxKind.cash => 0.28,
         FxKind.scan => 0,
         FxKind.levelUp || FxKind.goal || FxKind.regular => 1.6,
-        FxKind.event || FxKind.day => 0,
+        FxKind.event || FxKind.day || FxKind.incident => 0,
         _ => 1.0,
       };
 }
@@ -217,6 +217,13 @@ class StorePainter extends CustomPainter {
             ..style = PaintingStyle.stroke
             ..strokeWidth = 3);
       _walker(canvas, pl, playerChar);
+      if (world.order?.carrying == true) {
+        final top = iso(pl.x, pl.y) + const Offset(0, -50);
+        final box = Rect.fromCenter(center: top, width: 20, height: 15);
+        canvas.drawRect(box, Paint()..color = const Color(0xFFD7A86E));
+        canvas.drawRect(box, _stroke(1.5));
+        canvas.drawLine(box.topCenter, box.bottomCenter, Paint()..color = const Color(0xFF8D6E63)..strokeWidth = 2);
+      }
     });
     draws.sort((a, b) => a.$1.compareTo(b.$1));
     for (final d in draws) {
@@ -400,11 +407,13 @@ class StorePainter extends CustomPainter {
 
   // ---------------------------------------------------------------- 사람
 
-  void _char(Canvas canvas, int who, double x, double y, Anim anim, Facing f, {double lift = 0, double fps = 10}) {
+  void _char(Canvas canvas, int who, double x, double y, Anim anim, Facing f,
+      {double lift = 0, double fps = 10, double scale = 1}) {
     final feet = iso(x, y);
-    canvas.drawOval(Rect.fromCenter(center: feet, width: 24, height: 10), Paint()..color = const Color(0x33000000));
+    canvas.drawOval(Rect.fromCenter(center: feet, width: 24 * scale, height: 10 * scale), Paint()..color = const Color(0x33000000));
     canvas.save();
     canvas.translate(feet.dx, feet.dy + lift);
+    canvas.scale(scale);
     if (!Sprites.draw(canvas, who, Offset.zero, anim, f, clock + who * 0.37, fps: fps)) {
       drawCritter(canvas, Offset.zero, who, clock);
     }
@@ -436,6 +445,8 @@ class StorePainter extends CustomPainter {
       anim = c.happy ? Anim.yes : Anim.no;
     } else if (c.state == CState.sitting) {
       anim = Anim.sit;
+    } else if (c.kind == CustomerKind.lost && c.state == CState.atShelf) {
+      anim = Anim.no; // 울고 있다
     } else if (c.state == CState.atShelf && c.timer < pickTime) {
       anim = Anim.pickUp;
     } else if (c.moving) {
@@ -443,8 +454,29 @@ class StorePainter extends CustomPainter {
     } else {
       anim = Anim.idle;
     }
-    _char(canvas, who, c.x, c.y, anim, f, fps: c.moving ? 12 : 8);
+    final kid = c.kind == CustomerKind.lost;
+    _char(canvas, who, c.x, c.y, anim, f, fps: c.moving ? 12 : 8, scale: kid ? kidScale : 1);
     final crownAt = iso(c.x, c.y) + const Offset(0, -40);
+    if (c.fleeing) {
+      // 도둑: 빨간 느낌표가 깜빡이고 훔친 물건을 들고 뛴다
+      final a = 0.6 + 0.4 * sin(clock * 12);
+      _text(canvas, crownAt + const Offset(0, -6), '!', Color.fromRGBO(229, 57, 53, a), 26, outline: 1);
+      for (var i = 0; i < c.carry.length; i++) {
+        _food(canvas, c.carry[i], iso(c.x, c.y) + Offset(10, -22 - i * 8.0), 12);
+      }
+    }
+    if (kid && c.state == CState.atShelf) {
+      final p = iso(c.x, c.y) + Offset(0, -34 + sin(clock * 4) * 2);
+      canvas.drawCircle(p, 10, Paint()..color = Colors.white);
+      canvas.drawCircle(p, 10, _stroke(1.5));
+      _text(canvas, p, '?', const Color(0xFF42A5F5), 15);
+      // 남은 참을성
+      final k = (1 - c.timer / lostPatience).clamp(0.0, 1.0);
+      canvas.drawLine(p + const Offset(-10, 14), p + Offset(-10 + 20 * k, 14),
+          Paint()
+            ..color = const Color(0xFFFF7043)
+            ..strokeWidth = 3);
+    }
     if (c.regular != null) {
       // 단골: 머리 위 하트와 이름
       final hearts = game.owner.heartsOf(c.regular!);
@@ -558,7 +590,7 @@ class StorePainter extends CustomPainter {
         _float(canvas, e, k, '✨', const Color(0xFF42A5F5));
       case FxKind.goal:
         _float(canvas, e, k, '+${e.amount}', const Color(0xFF43A047), size: 24);
-      case FxKind.event || FxKind.day:
+      case FxKind.event || FxKind.day || FxKind.incident:
         break; // 화면 위 알림으로 보여 준다
       case FxKind.regular:
         _float(canvas, e, k, e.amount > 0 ? '♥' * e.amount : '♥', const Color(0xFFEC407A), size: 22);

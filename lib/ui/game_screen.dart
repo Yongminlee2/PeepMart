@@ -129,6 +129,16 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
           final want = world.customers.where((c) => c.regular == e.product).firstOrNull?.wants.first;
           toast(S.tn('regular_arrive', {'name': regularName(e.product), 'item': want == null ? '' : S.t('p_$want')}));
         }
+      } else if (e.kind == FxKind.incident) {
+        final k = Incident.values[e.amount];
+        toast(S.tn('inc_${k.name}', {'n': e.product}));
+        Sfx.play(
+            switch (k) {
+              Incident.thiefCaught || Incident.kidFound || Incident.orderDone => FxKind.levelUp,
+              Incident.thiefEscaped || Incident.kidGone || Incident.orderLate => FxKind.angry,
+              _ => FxKind.pay,
+            },
+            clock);
       } else if (e.kind == FxKind.day) {
         if (e.amount == dayClosed) {
           final r = world.result;
@@ -431,7 +441,15 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
               ),
               Positioned(left: 8, right: 8, top: 6, child: _hud()),
               if (b == null && game.owner.tutorial == TutorialStep.done)
-                Positioned(left: 8, top: 58, child: world.phase == DayPhase.closed ? _goalCard() : _dayCard()),
+                Positioned(
+                    left: 8,
+                    top: 58,
+                    child: world.phase == DayPhase.closed
+                        ? _goalCard()
+                        : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            _dayCard(),
+                            if (world.order != null) _orderCard(world.order!),
+                          ])),
               if (game.owner.tutorial != TutorialStep.done && (b == null || game.owner.tutorial == TutorialStep.build))
                 Positioned(left: 0, right: 0, top: 58, child: _tutorialCard(game.owner.tutorial)),
               if (_regularNews != null && _regularLeft > 0)
@@ -831,6 +849,52 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text('${S.t(ev == EventKind.rush ? 'event_rush' : 'event_vip')}  ${world.eventLeft.ceil()}s', style: style),
+          ),
+      ]),
+    );
+  }
+
+  /// 배달 주문: 상품·남은 시간, 출발 단추.
+  Widget _orderCard(Order o) {
+    const style = TextStyle(fontSize: 13, color: inkColor);
+    final ok = world.canDeliver;
+    return Container(
+      margin: const EdgeInsets.only(top: 6),
+      padding: const EdgeInsets.fromLTRB(10, 6, 8, 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE3F2FD),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF42A5F5), width: 2),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        const Icon(Icons.delivery_dining_rounded, color: Color(0xFF1E88E5), size: 22),
+        const SizedBox(width: 4),
+        for (final p in o.items) SizedBox(width: 24, height: 24, child: CustomPaint(painter: FoodPreview(p))),
+        const SizedBox(width: 4),
+        Text('${o.left.ceil()}s', style: style.copyWith(color: o.left < 20 ? const Color(0xFFE53935) : Colors.black54)),
+        const SizedBox(width: 6),
+        if (o.started)
+          Text(S.t(o.carrying ? 'order_door' : 'order_picking'), style: style.copyWith(color: const Color(0xFF1E88E5)))
+        else
+          Material(
+            color: ok ? const Color(0xFF64B5F6) : const Color(0xFFE0E0E0),
+            borderRadius: BorderRadius.circular(10),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: ok
+                  ? () {
+                      if (world.startDelivery()) {
+                        _dest = world.player.goal;
+                        _follow = true;
+                      }
+                      setState(() {});
+                    }
+                  : null,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                child: Text(S.t(ok ? 'order_go' : 'order_short'), style: style.copyWith(color: ok ? Colors.white : Colors.black38)),
+              ),
+            ),
           ),
       ]),
     );

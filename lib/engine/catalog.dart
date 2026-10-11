@@ -218,7 +218,7 @@ const goals = [
 // ------------------------------------------------------------------ 손님 종류·행사
 
 /// 보통 / 급한 손님(참을성 절반, 팁 50%) / VIP(여러 개 사고 두 배로 낸다, 별점 4 이상일 때만).
-enum CustomerKind { normal, hurry, vip }
+enum CustomerKind { normal, hurry, vip, thief, lost }
 
 const hurryChance = 0.15;
 const vipChance = 0.05;
@@ -398,3 +398,16 @@ const picnicGroup = (2, 4); // 소풍날 한꺼번에 들어오는 손님 수 (�
 const examHurry = 3.0; // 시험 기간엔 급한 손님이 이만큼 많다
 const festivalVisitors = 1.6;
 const festivalBonus = 2; // 축제 날 별 보너스 배수
+
+// ------------------------------------------------------------------ 돌발 사건
+
+/// 하루 동안 끼어드는 일(큰 편의점부터 도둑·길 잃은 아이, 슈퍼마켓부터 배달 주문).
+const incidentWindow = (20.0, 150.0); // 하루 중 이 사이(초)에 일어난다
+const thiefFine = 2; // 잡으면 훔친 값의 이만큼을 벌금으로
+const thiefSpeed = 1.25; // 도망칠 때 손님 걸음의 이만큼 (플레이어보다는 느리다)
+const catchRange = 1.1; // 이만큼 가까이 가면 잡는다/달랜다
+const lostPatience = 45.0; // 길 잃은 아이가 기다리는 초
+const lostReward = 0.1; // 아이를 찾아 주면 오늘 목표의 이만큼
+const kidScale = 0.72;
+const orderTime = 75.0; // 배달 주문 제한 시간
+const orderPay = 2; // 배달은 값의 이만큼을 받는다

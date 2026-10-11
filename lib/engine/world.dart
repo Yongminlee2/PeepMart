@@ -52,6 +52,7 @@ class Customer extends Walker {
   CustomerKind kind = CustomerKind.normal;
   final List<int> prices = []; // 집은 물건마다 낼 값 (집을 때 정해진다)
   String? regular; // 단골이면 그 이름
+  bool fleeing = false; // 도둑: 물건을 들고 도망치는 중
   Customer(this.look, super.at, this.wants);
 
   double get patience => kind == CustomerKind.hurry ? 0.5 : 1.0;
@@ -70,10 +71,24 @@ class StaffAgent extends Walker {
   StaffAgent(this.kind, super.at);
 }
 
-enum FxKind { pick, place, scan, cash, pay, angry, sad, levelUp, litter, clean, goal, event, regular, day }
+enum FxKind { pick, place, scan, cash, pay, angry, sad, levelUp, litter, clean, goal, event, regular, day, incident }
 
 /// FxKind.day 의 amount.
 const dayLastCall = 0, dayClosing = 1, dayClosed = 2;
+
+/// FxKind.incident 의 amount (돈이 걸린 건 product 에 금액 문자열).
+enum Incident { thiefFlee, thiefCaught, thiefEscaped, kidLost, kidFound, kidGone, orderIn, orderDone, orderLate }
+
+/// 배달 주문: 진열대를 돌며 상품을 챙기고(진열대에서 빠진다) 입구까지 들고 가면 끝.
+class Order {
+  final List<String> items;
+  final List<String> toPick; // 아직 못 챙긴 것
+  double left = orderTime;
+  bool started = false;
+  Order(this.items) : toPick = [...items];
+  bool get carrying => started && toPick.isEmpty;
+  int get pay => items.fold(0, (s, p) => s + productById(p).price) * orderPay;
+}
 
 /// 화면 연출용 사건. 엔진은 쌓기만 하고 화면이 가져가 비운다.
 class Fx {
@@ -115,6 +130,10 @@ class World {
   List<DayTask> tasks = [];
   Weather weather = Weather.sunny; // 오늘(연 날) 날씨
   SpecialDay? special; // 오늘이 특별한 날이면
+  Order? order; // 들어온 배달 주문
+  Customer? chase; // 쫓고 있는 도둑
+  double _chaseStep = 0;
+  final List<(double, Incident)> _incidents = []; // 오늘 일어날 일 (시각, 종류)
   DayResult? result; // 방금 끝난 하루. 화면이 보여 주고 null 로 지운다
 
   World(this.game, {int? seed}) : _rng = Random(seed) {
@@ -140,6 +159,198 @@ class World {
     if (special == SpecialDay.festival) dayTarget = (dayTarget * festivalVisitors / 10).round() * 10;
     tasks = _makeTasks();
     _spawnIn = 1;
+    _planIncidents();
+  }
+
+  void _planIncidents() {
+    _incidents.clear();
+    order = null;
+    double at() => incidentWindow.$1 + _rng.nextDouble() * (incidentWindow.$2 - incidentWindow.$1);
+    if (game.rank >= rankIncidents) {
+      for (var i = 0, n = 1 + _rng.nextInt(2); i < n; i++) {
+        _incidents.add((at(), _rng.nextBool() ? Incident.thiefFlee : Incident.kidLost));
+      }
+    }
+    if (game.rank >= rankDelivery) {
+      for (var i = 0, n = 1 + _rng.nextInt(2); i < n; i++) {
+        _incidents.add((at(), Incident.orderIn));
+      }
+    }
+  }
+
+  void _fx(Incident k, {int money = 0}) =>
+      fx.add(Fx(FxKind.incident, player.x, player.y, amount: k.index, product: money > 0 ? '$money' : ''));
+
+  /// 지금 일어날 일을 일으키고, 도둑·아이·배달을 돌본다.
+  void _incidentsTick(double dt) {
+    if (phase == DayPhase.open && _clockRuns) {
+      for (final e in _incidents.where((e) => e.$1 <= dayTime).toList()) {
+        _incidents.remove(e);
+        switch (e.$2) {
+          case Incident.thiefFlee:
+            _spawnSpecial(CustomerKind.thief);
+          case Incident.kidLost:
+            _spawnSpecial(CustomerKind.lost);
+          default:
+            final sale = game.onSale.toList()..sort();
+            if (order == null && sale.isNotEmpty) {
+              sale.shuffle(_rng);
+              order = Order(sale.take(min(sale.length, 2 + _rng.nextInt(2))).toList());
+              _fx(Incident.orderIn);
+            }
+        }
+      }
+    }
+    // 도둑: 가까이 가면 잡는다. 누른 도둑은 계속 쫓아간다.
+    for (final c in customers) {
+      if (!c.fleeing) continue;
+      if (sqrt(pow(player.x - c.x, 2) + pow(player.y - c.y, 2)) < catchRange) {
+        final fine = c.prices.fold(0, (s, p) => s + p) * thiefFine;
+        game.money += fine;
+        daySales += fine;
+        c
+          ..fleeing = false
+          ..react = 0.8
+          ..happy = false;
+        c.carry.clear();
+        _fx(Incident.thiefCaught, money: fine);
+      }
+    }
+    final ch = chase;
+    if (ch != null) {
+      if (!ch.fleeing || ch.state == CState.gone) {
+        chase = null;
+      } else if ((_chaseStep -= dt) <= 0) {
+        _chaseStep = 0.3;
+        walkPlayerTo(ch.tile);
+      }
+    }
+    final o = order;
+    if (o != null) {
+      o.left -= dt;
+      _pickForOrder(o);
+      if (o.carrying && game.entrances.any((e) => player.distTo(e.tile) < 0.6)) {
+        game.money += o.pay;
+        daySales += o.pay;
+        order = null;
+        _fx(Incident.orderDone, money: o.pay);
+      } else if (o.left <= 0) {
+        order = null;
+        dayUpset++;
+        _fx(Incident.orderLate);
+      }
+    }
+  }
+
+  /// 도둑이나 길 잃은 아이가 들어온다.
+  void _spawnSpecial(CustomerKind kind) {
+    final doors = game.entrances.toList();
+    final sale = game.onSale.toList()..shuffle(_rng);
+    if (doors.isEmpty || sale.isEmpty) return;
+    final door = doors[_rng.nextInt(doors.length)].tile;
+    final c = Customer(_rng.nextInt(1024), door, kind == CustomerKind.thief ? sale.take(1 + _rng.nextInt(2)).toList() : [])
+      ..kind = kind;
+    customers.add(c);
+    if (kind == CustomerKind.thief) {
+      _toShelf(c);
+      return;
+    }
+    // 아이: 가게 안 빈 칸 아무 데나 가서 운다
+    final spots = [
+      for (var y = 0; y < mapH; y++)
+        for (var x = 0; x < mapW; x++)
+          if (game.walkable((x, y)) && game.at((x, y)) == null && !game.trash.contains((x, y))) (x, y)
+    ];
+    if (spots.isEmpty) {
+      customers.remove(c);
+      return;
+    }
+    c.state = CState.toShelf;
+    _walkTo(c, spots[_rng.nextInt(spots.length)]);
+    _fx(Incident.kidLost);
+  }
+
+  void _updateLost(Customer c, double dt) {
+    if (c.react > 0) {
+      c.react -= dt;
+      return;
+    }
+    _walk(c, dt, customerSpeed * 0.8);
+    switch (c.state) {
+      case CState.toShelf:
+        if (c.arrived) {
+          c
+            ..state = CState.atShelf
+            ..timer = 0;
+        }
+      case CState.atShelf:
+        c.timer += dt;
+        if (sqrt(pow(player.x - c.x, 2) + pow(player.y - c.y, 2)) < catchRange) {
+          final reward = max(20, (dayTarget * lostReward).round());
+          game.money += reward;
+          game.rate(5);
+          c
+            ..happy = true
+            ..react = 1.0
+            ..state = CState.leaving;
+          _walkTo(c, game.entrances.first.tile);
+          _fx(Incident.kidFound, money: reward);
+        } else if (c.timer > lostPatience) {
+          dayUpset++;
+          c
+            ..happy = false
+            ..react = 0.8
+            ..state = CState.leaving;
+          _walkTo(c, game.entrances.first.tile);
+          _fx(Incident.kidGone);
+        }
+      case CState.leaving:
+        if (c.arrived) c.state = CState.gone;
+      default:
+        break;
+    }
+  }
+
+  /// 남은 배달 물건이 진열대에 다 있는가.
+  bool get canDeliver {
+    final o = order;
+    if (o == null || o.carrying) return false;
+    final need = <String, int>{};
+    for (final p in o.toPick) {
+      need[p] = (need[p] ?? 0) + 1;
+    }
+    return need.entries.every((e) => game.shelves.where((s) => s.product == e.key).fold(0, (n, s) => n + s.stock) >= e.value);
+  }
+
+  /// 배달 출발: 남은 상품 진열대를 차례로 들렀다가 입구로 간다(진열대 앞에 서면 챙긴다).
+  bool startDelivery() {
+    if (!canDeliver) return false;
+    final o = order!..started = true;
+    plan.clear();
+    chase = null;
+    final stops = <Tile>[];
+    for (final p in o.toPick.toSet()) {
+      final s = game.shelves.where((s) => s.product == p && s.stock > 0).reduce((a, b) => b.stock > a.stock ? b : a);
+      stops.add(s.tile);
+    }
+    final door = game.entrances.toList()..sort((a, b) => player.distTo(a.tile).compareTo(player.distTo(b.tile)));
+    stops.add(door.first.tile);
+    walkPlayerTo(stops.first);
+    plan.addAll(stops.skip(1));
+    return true;
+  }
+
+  /// 배달 중: 멈춰 선 자리 옆 진열대에서 남은 상품을 챙긴다.
+  void _pickForOrder(Order o) {
+    if (!o.started || o.carrying || player.moving) return;
+    for (final s in game.shelves) {
+      final p = s.product!;
+      if (s.stock <= 0 || !o.toPick.contains(p) || player.distTo(s.tile) > 1.6) continue;
+      while (s.stock > 0 && o.toPick.remove(p)) {
+        s.stock--;
+        fx.add(Fx(FxKind.pick, s.c.toDouble(), s.r.toDouble(), tx: player.x, ty: player.y, product: p));
+      }
+    }
   }
 
   List<DayTask> _makeTasks() {
@@ -176,6 +387,7 @@ class World {
     result = DayResult(game.day, daySales, dayTarget, dayServed, dayUpset, stars, bonus, taskReward, best, done);
     game.day++;
     game.weather = _pickWeather();
+    order = null;
     phase = DayPhase.closed;
     fx.add(Fx(FxKind.day, player.x, player.y, amount: dayClosed));
   }
@@ -211,6 +423,7 @@ class World {
       _staffWork(s, dt);
     }
     _day(dt);
+    _incidentsTick(dt);
     if (phase == DayPhase.open) _events(dt);
     final last = _clockRuns && dayLeft < lastCall ? lastCallFactor : 1.0;
     _spawnIn -= dt * (event == EventKind.rush ? rushFactor : 1) * last * _visitorFactor;
@@ -281,7 +494,9 @@ class World {
     final items = game.items.toSet();
     for (final c in customers) {
       // 가던 진열대·계산대·의자가 없어졌거나 바뀌었으면 다시 고른다
-      if (c.state == CState.toShelf || c.state == CState.atShelf) {
+      if (c.kind == CustomerKind.lost) {
+        // 아이는 진열대와 상관없다
+      } else if (c.state == CState.toShelf || c.state == CState.atShelf) {
         if (c.shelf == null || !items.contains(c.shelf) || c.shelf!.product != c.want) _toShelf(c);
       } else if (c.state == CState.toQueue && !regs.contains(c.register)) {
         _toRegister(c);
@@ -335,6 +550,15 @@ class World {
   /// 화면에서 누른 칸. 진열대를 눌렀는데 그 상품을 안 들고 있으면 상자에 먼저 들렀다 간다.
   Tile? tapAt(Tile t) {
     plan.clear();
+    chase = null;
+    final thief = customers
+        .where((c) => c.fleeing && sqrt(pow(c.x - t.$1, 2) + pow(c.y - t.$2, 2)) < 1.6)
+        .firstOrNull;
+    if (thief != null) {
+      chase = thief;
+      _chaseStep = 0.3;
+      return walkPlayerTo(thief.tile);
+    }
     final item = game.at(t);
     final p = item?.product;
     if (item != null && item.t.kind == ItemKind.shelf && p != null && !player.carry.contains(p)) {
@@ -479,7 +703,7 @@ class World {
     final paid = switch (c.kind) {
       CustomerKind.vip => base * 2,
       CustomerKind.hurry => (base * 1.5).round(),
-      CustomerKind.normal => base,
+      CustomerKind.normal || CustomerKind.thief || CustomerKind.lost => base,
     };
     if (staffed) {
       game.money += paid;
@@ -732,12 +956,16 @@ class World {
   }
 
   void _updateCustomer(Customer c, double dt) {
+    if (c.kind == CustomerKind.lost) {
+      _updateLost(c, dt);
+      return;
+    }
     if (c.react > 0) {
       c.react -= dt;
       if (c.state == CState.toQueue) c.waited += dt;
       return;
     }
-    _walk(c, dt, customerSpeed);
+    _walk(c, dt, customerSpeed * (c.fleeing ? thiefSpeed : 1));
     switch (c.state) {
       case CState.toShelf:
         if (c.arrived) c.state = CState.atShelf;
@@ -790,7 +1018,13 @@ class World {
           _leave(c);
         }
       case CState.leaving:
-        if (c.arrived) c.state = CState.gone;
+        if (c.arrived) {
+          c.state = CState.gone;
+          if (c.fleeing) {
+            c.fleeing = false;
+            _fx(Incident.thiefEscaped);
+          }
+        }
       case CState.gone:
         break;
     }
@@ -800,6 +1034,15 @@ class World {
     c.wantIndex++;
     if (c.wantIndex < c.wants.length) {
       _toShelf(c);
+    } else if (c.kind == CustomerKind.thief) {
+      // 도둑: 계산대에 안 가고 문으로 달아난다
+      c.state = CState.leaving;
+      final doors = game.entrances.toList()..sort((a, b) => c.distTo(a.tile).compareTo(c.distTo(b.tile)));
+      _walkTo(c, doors.first.tile);
+      if (c.carry.isNotEmpty) {
+        c.fleeing = true;
+        _fx(Incident.thiefFlee);
+      }
     } else if (c.carry.isEmpty) {
       _rate(1);
       _leave(c, rated: true);

@@ -304,5 +304,20 @@
   "special_festival": "Town Festival",
   "special_festival_d": "Huge crowds, and the star bonus is doubled!",
   "help_weather_t": "Weather and special days",
-  "help_weather_b": "Once you're a Convenience Store, a weather forecast appears before you open. Ice cream and drinks sell well on hot days; cup ramyeon, buns and coffee on rainy or cold days, so adjust your shelves. From Big Convenience Store, a special day comes every 5 days (Picnic Day, Exam Week, and from Hypermarket, the Town Festival)."
+  "help_weather_b": "Once you're a Convenience Store, a weather forecast appears before you open. Ice cream and drinks sell well on hot days; cup ramyeon, buns and coffee on rainy or cold days, so adjust your shelves. From Big Convenience Store, a special day comes every 5 days (Picnic Day, Exam Week, and from Hypermarket, the Town Festival).",
+  "inc_thiefFlee": "Shoplifter! Tap to chase them down!",
+  "inc_thiefCaught": "Caught the shoplifter! Fine: {n}",
+  "inc_thiefEscaped": "The shoplifter got away...",
+  "inc_kidLost": "A lost kid is crying. Go comfort them!",
+  "inc_kidFound": "The kid found their mom! Reward: {n}",
+  "inc_kidGone": "The kid left in tears...",
+  "inc_orderIn": "Ring ring! A delivery order came in",
+  "inc_orderDone": "Delivered! {n}",
+  "inc_orderLate": "The delivery order was cancelled...",
+  "order_go": "Deliver",
+  "order_short": "Out of stock",
+  "order_door": "To the door!",
+  "help_incident_t": "Surprises",
+  "help_incident_b": "From Big Convenience Store, things happen during the day. Tap a running shoplifter (red !) to chase them and catch them on contact; the fine is double what they took. Walk up to a crying kid (?) to help them find their mom. From Supermarket, delivery orders arrive: tap 'Deliver' to grab the items from your shelves and carry them to the door in time for double pay.",
+  "order_picking": "Picking up..."
 }

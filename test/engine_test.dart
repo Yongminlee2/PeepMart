@@ -802,4 +802,131 @@ void main() {
       expect(back.weather, g.weather);
     });
   });
+
+  group('돌발 사건', () {
+    (Game, World) shop(int level, int seed) {
+      final g = Game()
+        ..money = 5000
+        ..level = level;
+      g.owner.tutorial = TutorialStep.done;
+      g.hire(Staff.cashier);
+      final w = World(g, seed: seed)..openDay();
+      return (g, w);
+    }
+
+    Customer? find(World w, CustomerKind k) => w.customers.where((c) => c.kind == k).firstOrNull;
+
+    void fill(Game g) {
+      for (final s in g.shelves) {
+        s.stock = s.capacity;
+      }
+    }
+
+    test('구멍가게엔 사건이 없다', () {
+      final (_, w) = shop(4, 1);
+      expect(w.tasks, isNotEmpty);
+      for (var i = 0; i < 3200; i++) {
+        w.tick(0.05);
+        expect(w.customers.where((c) => c.kind == CustomerKind.thief || c.kind == CustomerKind.lost), isEmpty);
+      }
+      expect(w.order, isNull);
+    });
+
+    test('도둑: 문 앞을 지키고 있으면 잡아서 벌금을 받는다', () {
+      for (var seed = 0; seed < 20; seed++) {
+        final (g, w) = shop(10, seed);
+        final before = g.money;
+        Customer? thief;
+        final fx = <Incident>[];
+        for (var i = 0; i < 4000 && !fx.contains(Incident.thiefCaught); i++) {
+          fill(g);
+          w.tick(0.05);
+          thief ??= find(w, CustomerKind.thief);
+          for (final e in w.fx.where((e) => e.kind == FxKind.incident)) {
+            fx.add(Incident.values[e.amount]);
+          }
+          w.fx.clear();
+          // 도망치기 시작하면 입구에 선다
+          if (thief != null && thief.fleeing) stand(w, g.entrances.first.tile);
+        }
+        if (!fx.contains(Incident.thiefFlee)) continue;
+        expect(fx, contains(Incident.thiefCaught));
+        expect(g.money, greaterThan(before));
+        return;
+      }
+      fail('20번 씨앗 안에 도둑이 한 번도 안 나왔다');
+    });
+
+    test('도둑: 아무도 안 쫓으면 달아난다', () {
+      for (var seed = 0; seed < 20; seed++) {
+        final (g, w) = shop(10, seed);
+        final fx = <Incident>[];
+        for (var i = 0; i < 4000; i++) {
+          fill(g);
+          stand(w, (0, 7)); // 문(7,7)에서 멀리
+          w.tick(0.05);
+          for (final e in w.fx.where((e) => e.kind == FxKind.incident)) {
+            fx.add(Incident.values[e.amount]);
+          }
+          w.fx.clear();
+        }
+        if (!fx.contains(Incident.thiefFlee)) continue;
+        expect(fx, contains(Incident.thiefEscaped));
+        expect(fx, isNot(contains(Incident.thiefCaught)));
+        return;
+      }
+      fail('20번 씨앗 안에 도둑이 한 번도 안 나왔다');
+    });
+
+    test('길 잃은 아이: 가까이 가면 사례금, 안 가면 울며 나간다', () {
+      for (var seed = 0; seed < 20; seed++) {
+        final (g, w) = shop(10, seed);
+        Customer? kid;
+        var found = false;
+        for (var i = 0; i < 4000 && !found; i++) {
+          w.tick(0.05);
+          kid ??= find(w, CustomerKind.lost);
+          if (kid != null && kid.state == CState.atShelf) stand(w, kid.tile);
+          found = w.fx.any((e) => e.kind == FxKind.incident && e.amount == Incident.kidFound.index);
+          w.fx.clear();
+        }
+        if (kid == null) continue;
+        expect(found, isTrue);
+        return;
+      }
+      fail('20번 씨앗 안에 아이가 한 번도 안 나왔다');
+    });
+
+    test('배달: 진열대를 돌며 챙기고(재고가 빠진다) 입구에 닿으면 값의 두 배', () {
+      final (g, w) = shop(15, 3);
+      w.order = Order(['soda', 'donut']);
+      final before = g.money;
+      fill(g);
+      expect(w.canDeliver, isTrue);
+      expect(w.startDelivery(), isTrue);
+      expect(w.order!.carrying, isFalse); // 입구에 서 있어도 아직 못 챙겼다
+      var picked = false;
+      for (var i = 0; i < 1200 && w.order != null; i++) {
+        w.tick(0.05);
+        picked |= w.fx.any((e) => e.kind == FxKind.pick);
+        w.fx.clear();
+      }
+      expect(picked, isTrue);
+      expect(w.order, isNull);
+      expect(g.money, greaterThanOrEqualTo(before + (productById('soda').price + productById('donut').price) * orderPay));
+    });
+
+    test('배달: 재고가 없으면 못 떠나고, 시간이 지나면 취소', () {
+      final (g, w) = shop(15, 4);
+      w.order = Order(['soda']);
+      for (final s in g.shelves) {
+        s.stock = 0;
+      }
+      expect(w.canDeliver, isFalse);
+      expect(w.startDelivery(), isFalse);
+      w.order!.left = 0.01;
+      w.tick(0.05);
+      expect(w.order, isNull);
+    });
+  });
 }
