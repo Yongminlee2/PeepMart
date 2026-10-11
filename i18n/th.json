@@ -233,7 +233,7 @@
   "help_move_t": "การเดิน",
   "help_move_b": "แตะที่ที่อยากไปหรือของที่อยากใช้ แล้วจะเดินไปทำสิ่งนั้น ลากนิ้วเดียวเพื่อเลื่อนแผนที่ ใช้สองนิ้วเพื่อซูมเข้าออก ถ้าชอบจอยสติ๊กก็เปิดได้ในตั้งค่า",
   "help_stock_t": "Stocking and inventory",
-  "help_stock_b": "Tap an empty shelf (red !) to grab that product from its box and fill the shelf. Each box holds 24 and runs down as you take from it. When a box is empty, tap it to reorder at wholesale price; it arrives in 15 seconds. Your staff can't stock from an empty box, so order ahead. You can also select a box in build mode to order before it runs out.",
+  "help_stock_b": "Tap an empty shelf (red !) to grab that product from its box and fill the shelf. Each box holds 16 and runs down as you take from it. When a box is empty, tap it to reorder at wholesale price; it arrives in 20 seconds. Your staff can't stock from an empty box, so order ahead. You can also select a box in build mode to order before it runs out.",
   "help_checkout_t": "คิดเงินและเงิน",
   "help_checkout_b": "แตะแคชเชียร์เพื่อไปยืนช่องสีฟ้าด้านหลังและคิดเงิน เงินที่คุณคิดเองจะกองอยู่ข้างแคชเชียร์ เดินเข้าไปใกล้ๆ เพื่อเก็บ ถ้าจ้างพนักงานแคชเชียร์ เงินจะเข้าทันที",
   "help_build_t": "การสร้าง",

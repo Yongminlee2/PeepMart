@@ -140,7 +140,7 @@ const Map<String, String> kDe = {
   'help_regulars_t': 'Stammkunden',
   'help_staff_b': 'Kassierer bedienen die Kassen, Auffüller tragen Kisten zu den Regalen, Hausmeister räumen Müll weg. Ein Abteilungsleiter lässt seine Abteilung sich ohne Kisten selbst auffüllen und teurer verkaufen. Das Personal wird jede Minute bezahlt.',
   'help_staff_t': 'Personal und Leitung',
-  'help_stock_b': 'Tap an empty shelf (red !) to grab that product from its box and fill the shelf. Each box holds 24 and runs down as you take from it. When a box is empty, tap it to reorder at wholesale price; it arrives in 15 seconds. Your staff can\'t stock from an empty box, so order ahead. You can also select a box in build mode to order before it runs out.',
+  'help_stock_b': 'Tap an empty shelf (red !) to grab that product from its box and fill the shelf. Each box holds 16 and runs down as you take from it. When a box is empty, tap it to reorder at wholesale price; it arrives in 20 seconds. Your staff can\'t stock from an empty box, so order ahead. You can also select a box in build mode to order before it runs out.',
   'help_stock_t': 'Stocking and inventory',
   'help_weather_b': 'Sobald du ein Minimarkt bist, erscheint vor dem Öffnen eine Wettervorhersage. An heißen Tagen verkaufen sich Eis und Getränke gut, an Regen- oder kalten Tagen Becher-Ramyeon, Hoppang und Kaffee – pass also deine Regale an. Ab Großer Minimarkt kommt alle 5 Tage ein besonderer Tag (Ausflugstag, Prüfungswoche und ab Riesenmarkt das Stadtfest).',
   'help_weather_t': 'Wetter und besondere Tage',

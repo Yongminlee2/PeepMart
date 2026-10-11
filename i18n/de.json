@@ -233,7 +233,7 @@
   "help_move_t": "Bewegen",
   "help_move_b": "Tippe, wohin du gehen oder was du benutzen willst, dann läufst du hin und erledigst es. Mit einem Finger ziehen bewegt die Karte, mit zwei Fingern zoomen. Lieber einen Joystick? Schalte ihn in den Einstellungen ein.",
   "help_stock_t": "Stocking and inventory",
-  "help_stock_b": "Tap an empty shelf (red !) to grab that product from its box and fill the shelf. Each box holds 24 and runs down as you take from it. When a box is empty, tap it to reorder at wholesale price; it arrives in 15 seconds. Your staff can't stock from an empty box, so order ahead. You can also select a box in build mode to order before it runs out.",
+  "help_stock_b": "Tap an empty shelf (red !) to grab that product from its box and fill the shelf. Each box holds 16 and runs down as you take from it. When a box is empty, tap it to reorder at wholesale price; it arrives in 20 seconds. Your staff can't stock from an empty box, so order ahead. You can also select a box in build mode to order before it runs out.",
   "help_checkout_t": "Kasse und Geld",
   "help_checkout_b": "Tippe auf die Kasse, um dich auf das blaue Feld dahinter zu stellen und abzukassieren. Dein kassiertes Geld stapelt sich neben der Kasse, geh nah heran, um es einzusammeln. Mit einem Kassierer kommt das Geld direkt rein.",
   "help_build_t": "Bauen",

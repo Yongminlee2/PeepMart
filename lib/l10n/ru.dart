@@ -140,7 +140,7 @@ const Map<String, String> kRu = {
   'help_regulars_t': 'Постоянные покупатели',
   'help_staff_b': 'Кассиры работают на кассах, раскладчики носят коробки к полкам, уборщики убирают мусор. Менеджер отдела делает так, что его отдел пополняется сам без коробок и продаёт дороже. Зарплата персоналу платится каждую минуту.',
   'help_staff_t': 'Персонал и менеджеры',
-  'help_stock_b': 'Tap an empty shelf (red !) to grab that product from its box and fill the shelf. Each box holds 24 and runs down as you take from it. When a box is empty, tap it to reorder at wholesale price; it arrives in 15 seconds. Your staff can\'t stock from an empty box, so order ahead. You can also select a box in build mode to order before it runs out.',
+  'help_stock_b': 'Tap an empty shelf (red !) to grab that product from its box and fill the shelf. Each box holds 16 and runs down as you take from it. When a box is empty, tap it to reorder at wholesale price; it arrives in 20 seconds. Your staff can\'t stock from an empty box, so order ahead. You can also select a box in build mode to order before it runs out.',
   'help_stock_t': 'Stocking and inventory',
   'help_weather_b': 'Когда магазин станет Минимаркетом, перед открытием будет появляться прогноз погоды. В жару хорошо продаются мороженое и напитки, а в дождь и холод — рамён в стакане, пирожки хоппан и кофе, так что меняйте выкладку. С ранга «Большой минимаркет» каждые 5 дней наступает особый день (День пикника, Неделя экзаменов, а с ранга «Гипермаркет» — Праздник района).',
   'help_weather_t': 'Погода и особые дни',

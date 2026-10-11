@@ -140,7 +140,7 @@ const Map<String, String> kFr = {
   'help_regulars_t': 'Habitués',
   'help_staff_b': 'Les caissiers tiennent les caisses, les employés de rayon portent les cartons aux rayons, les agents d\'entretien ramassent les déchets. Un chef de rayon fait que son rayon se remplit tout seul sans cartons et se vend plus cher. Le personnel est payé chaque minute.',
   'help_staff_t': 'Personnel et chefs',
-  'help_stock_b': 'Tap an empty shelf (red !) to grab that product from its box and fill the shelf. Each box holds 24 and runs down as you take from it. When a box is empty, tap it to reorder at wholesale price; it arrives in 15 seconds. Your staff can\'t stock from an empty box, so order ahead. You can also select a box in build mode to order before it runs out.',
+  'help_stock_b': 'Tap an empty shelf (red !) to grab that product from its box and fill the shelf. Each box holds 16 and runs down as you take from it. When a box is empty, tap it to reorder at wholesale price; it arrives in 20 seconds. Your staff can\'t stock from an empty box, so order ahead. You can also select a box in build mode to order before it runs out.',
   'help_stock_t': 'Stocking and inventory',
   'help_weather_b': 'Dès que tu es une Supérette, la météo s\'affiche avant l\'ouverture. Les glaces et les boissons se vendent bien quand il fait chaud ; le ramyeon en pot, les brioches hoppang et le café quand il pleut ou fait froid, alors adapte tes rayons. À partir de Grande supérette, un jour spécial arrive tous les 5 jours (Jour de pique-nique, Semaine d\'examens et, dès Hypermarché, la Fête du quartier).',
   'help_weather_t': 'Météo et jours spéciaux',

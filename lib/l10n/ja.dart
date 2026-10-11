@@ -140,7 +140,7 @@ const Map<String, String> kJa = {
   'help_regulars_t': '常連さん',
   'help_staff_b': 'レジ係はレジを、品出し係は箱から棚への補充を、清掃係はゴミ掃除を担当します。コーナーマネージャーを置くと、そのコーナーは箱なしで自動補充され、高く売れます。スタッフには1分ごとに給料がかかります。',
   'help_staff_t': 'スタッフとマネージャー',
-  'help_stock_b': 'Tap an empty shelf (red !) to grab that product from its box and fill the shelf. Each box holds 24 and runs down as you take from it. When a box is empty, tap it to reorder at wholesale price; it arrives in 15 seconds. Your staff can\'t stock from an empty box, so order ahead. You can also select a box in build mode to order before it runs out.',
+  'help_stock_b': 'Tap an empty shelf (red !) to grab that product from its box and fill the shelf. Each box holds 16 and runs down as you take from it. When a box is empty, tap it to reorder at wholesale price; it arrives in 20 seconds. Your staff can\'t stock from an empty box, so order ahead. You can also select a box in build mode to order before it runs out.',
   'help_stock_t': 'Stocking and inventory',
   'help_weather_b': '町のコンビニになると、開店前に天気予報が出ます。暑い日はアイスクリーム・飲み物、雨や寒い日はカップラーメン・ホッパン・コーヒーがよく売れるので、陳列を変えてみましょう。大きなコンビニからは、5日ごとに特別な日（遠足の日・試験期間、大型スーパーからは町のお祭り）がやってきます。',
   'help_weather_t': '天気と特別な日',

@@ -140,7 +140,7 @@ const Map<String, String> kZh = {
   'help_regulars_t': '常客',
   'help_staff_b': '收银员负责收银台，理货员负责把箱子里的商品摆上货架，清洁员负责打扫垃圾。安排区域经理后，该区域不需要箱子就会自动补货，而且卖得更贵。店员每分钟都要发工资。',
   'help_staff_t': '店员和经理',
-  'help_stock_b': 'Tap an empty shelf (red !) to grab that product from its box and fill the shelf. Each box holds 24 and runs down as you take from it. When a box is empty, tap it to reorder at wholesale price; it arrives in 15 seconds. Your staff can\'t stock from an empty box, so order ahead. You can also select a box in build mode to order before it runs out.',
+  'help_stock_b': 'Tap an empty shelf (red !) to grab that product from its box and fill the shelf. Each box holds 16 and runs down as you take from it. When a box is empty, tap it to reorder at wholesale price; it arrives in 20 seconds. Your staff can\'t stock from an empty box, so order ahead. You can also select a box in build mode to order before it runs out.',
   'help_stock_t': 'Stocking and inventory',
   'help_weather_b': '成为社区便利店后，开门前会出现天气预报。热天冰淇淋和饮料好卖，下雨或寒冷的日子杯面、韩式豆沙包、咖啡好卖，试着调整陈列吧。从大型便利店开始，每5天会迎来特别的日子（郊游日、考试周，从大卖场开始还有社区庆典）。',
   'help_weather_t': '天气和特别的日子',

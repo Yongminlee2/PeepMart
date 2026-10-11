@@ -233,7 +233,7 @@
   "help_move_t": "Di chuyển",
   "help_move_b": "Chạm vào nơi muốn đến hoặc đồ muốn dùng, bạn sẽ đi tới và làm việc đó. Kéo một ngón tay để di chuyển bản đồ, dùng hai ngón để phóng to thu nhỏ. Thích cần điều khiển hơn? Bật trong Cài đặt.",
   "help_stock_t": "Stocking and inventory",
-  "help_stock_b": "Tap an empty shelf (red !) to grab that product from its box and fill the shelf. Each box holds 24 and runs down as you take from it. When a box is empty, tap it to reorder at wholesale price; it arrives in 15 seconds. Your staff can't stock from an empty box, so order ahead. You can also select a box in build mode to order before it runs out.",
+  "help_stock_b": "Tap an empty shelf (red !) to grab that product from its box and fill the shelf. Each box holds 16 and runs down as you take from it. When a box is empty, tap it to reorder at wholesale price; it arrives in 20 seconds. Your staff can't stock from an empty box, so order ahead. You can also select a box in build mode to order before it runs out.",
   "help_checkout_t": "Tính tiền và tiền",
   "help_checkout_b": "Chạm vào quầy thu ngân để đứng ở ô xanh phía sau và tính tiền. Tiền bạn tự tính sẽ chất cạnh quầy, nên lại gần để nhặt. Thuê thu ngân thì tiền vào thẳng túi.",
   "help_build_t": "Xây dựng",

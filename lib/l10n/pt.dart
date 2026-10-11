@@ -140,7 +140,7 @@ const Map<String, String> kPt = {
   'help_regulars_t': 'Clientes fiéis',
   'help_staff_b': 'Caixas cuidam dos caixas, repositores levam caixas às prateleiras, faxineiros limpam o lixo. Um gerente de seção faz a seção se repor sozinha sem caixas e vender mais caro. A equipe recebe a cada minuto.',
   'help_staff_t': 'Equipe e gerentes',
-  'help_stock_b': 'Tap an empty shelf (red !) to grab that product from its box and fill the shelf. Each box holds 24 and runs down as you take from it. When a box is empty, tap it to reorder at wholesale price; it arrives in 15 seconds. Your staff can\'t stock from an empty box, so order ahead. You can also select a box in build mode to order before it runs out.',
+  'help_stock_b': 'Tap an empty shelf (red !) to grab that product from its box and fill the shelf. Each box holds 16 and runs down as you take from it. When a box is empty, tap it to reorder at wholesale price; it arrives in 20 seconds. Your staff can\'t stock from an empty box, so order ahead. You can also select a box in build mode to order before it runs out.',
   'help_stock_t': 'Stocking and inventory',
   'help_weather_b': 'Quando virar Minimercado, a previsão do tempo aparece antes de abrir. Sorvete e bebidas vendem bem em dias quentes; ramyeon de copo, pão hoppang e café em dias de chuva ou frio, então mude suas prateleiras. A partir de Minimercado grande, a cada 5 dias chega um dia especial (Dia de passeio, Semana de provas e, a partir de Hipermercado, a Festa do bairro).',
   'help_weather_t': 'Tempo e dias especiais',

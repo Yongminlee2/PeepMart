@@ -233,7 +233,7 @@
   "help_move_t": "移動",
   "help_move_b": "行きたい場所や物をタップすると、歩いていってその作業をします。1本指でドラッグすると地図が動き、2本指で拡大・縮小できます。ジョイスティックが好きなら設定でオンにできます。",
   "help_stock_t": "Stocking and inventory",
-  "help_stock_b": "Tap an empty shelf (red !) to grab that product from its box and fill the shelf. Each box holds 24 and runs down as you take from it. When a box is empty, tap it to reorder at wholesale price; it arrives in 15 seconds. Your staff can't stock from an empty box, so order ahead. You can also select a box in build mode to order before it runs out.",
+  "help_stock_b": "Tap an empty shelf (red !) to grab that product from its box and fill the shelf. Each box holds 16 and runs down as you take from it. When a box is empty, tap it to reorder at wholesale price; it arrives in 20 seconds. Your staff can't stock from an empty box, so order ahead. You can also select a box in build mode to order before it runs out.",
   "help_checkout_t": "会計とお金",
   "help_checkout_b": "レジをタップすると、後ろの青いマスに立って会計します。自分で会計したお金はレジの横にたまるので、近づいて拾いましょう。レジ係を雇うとお金がすぐ入ります。",
   "help_build_t": "建てる",

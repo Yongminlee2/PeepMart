@@ -140,7 +140,7 @@ const Map<String, String> kId = {
   'help_regulars_t': 'Pelanggan setia',
   'help_staff_b': 'Kasir menjaga kasir, penata rak membawa kardus ke rak, petugas kebersihan memungut sampah. Manajer bagian membuat bagiannya terisi sendiri tanpa kardus dan dijual lebih mahal. Karyawan dibayar setiap menit.',
   'help_staff_t': 'Karyawan dan manajer',
-  'help_stock_b': 'Tap an empty shelf (red !) to grab that product from its box and fill the shelf. Each box holds 24 and runs down as you take from it. When a box is empty, tap it to reorder at wholesale price; it arrives in 15 seconds. Your staff can\'t stock from an empty box, so order ahead. You can also select a box in build mode to order before it runs out.',
+  'help_stock_b': 'Tap an empty shelf (red !) to grab that product from its box and fill the shelf. Each box holds 16 and runs down as you take from it. When a box is empty, tap it to reorder at wholesale price; it arrives in 20 seconds. Your staff can\'t stock from an empty box, so order ahead. You can also select a box in build mode to order before it runs out.',
   'help_stock_t': 'Stocking and inventory',
   'help_weather_b': 'Setelah jadi Minimarket, prakiraan cuaca muncul sebelum toko buka. Di hari panas es krim dan minuman laris; di hari hujan atau dingin ramyeon cup, bakpao hoppang, dan kopi yang laris, jadi ubah isi rakmu. Mulai Minimarket besar, setiap 5 hari ada hari spesial (Hari Piknik, Pekan Ujian, dan mulai Hipermarket, Festival Kota).',
   'help_weather_t': 'Cuaca dan hari spesial',

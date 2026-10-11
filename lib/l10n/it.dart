@@ -140,7 +140,7 @@ const Map<String, String> kIt = {
   'help_regulars_t': 'Clienti abituali',
   'help_staff_b': 'I cassieri gestiscono le casse, i magazzinieri portano le scatole agli scaffali, gli addetti alle pulizie raccolgono i rifiuti. Un capo reparto fa sì che il suo reparto si rifornisca da solo senza scatole e venda di più. Lo staff viene pagato ogni minuto.',
   'help_staff_t': 'Staff e capireparto',
-  'help_stock_b': 'Tap an empty shelf (red !) to grab that product from its box and fill the shelf. Each box holds 24 and runs down as you take from it. When a box is empty, tap it to reorder at wholesale price; it arrives in 15 seconds. Your staff can\'t stock from an empty box, so order ahead. You can also select a box in build mode to order before it runs out.',
+  'help_stock_b': 'Tap an empty shelf (red !) to grab that product from its box and fill the shelf. Each box holds 16 and runs down as you take from it. When a box is empty, tap it to reorder at wholesale price; it arrives in 20 seconds. Your staff can\'t stock from an empty box, so order ahead. You can also select a box in build mode to order before it runs out.',
   'help_stock_t': 'Stocking and inventory',
   'help_weather_b': 'Quando diventi un Minimarket, prima dell\'apertura compaiono le previsioni del tempo. Nei giorni caldi si vendono bene gelati e bibite; nei giorni di pioggia o freddo ramyeon in tazza, panini hoppang e caffè, quindi cambia i tuoi scaffali. Da Grande minimarket, ogni 5 giorni arriva un giorno speciale (Giorno della gita, Settimana degli esami e, da Ipermercato, la Festa di quartiere).',
   'help_weather_t': 'Meteo e giorni speciali',

@@ -140,7 +140,7 @@ const Map<String, String> kVi = {
   'help_regulars_t': 'Khách quen',
   'help_staff_b': 'Thu ngân lo quầy tính tiền, nhân viên xếp hàng mang thùng lên kệ, nhân viên dọn dẹp nhặt rác. Có quản lý khu thì khu đó tự bổ sung hàng không cần thùng và bán đắt hơn. Nhân viên được trả lương mỗi phút.',
   'help_staff_t': 'Nhân viên và quản lý',
-  'help_stock_b': 'Tap an empty shelf (red !) to grab that product from its box and fill the shelf. Each box holds 24 and runs down as you take from it. When a box is empty, tap it to reorder at wholesale price; it arrives in 15 seconds. Your staff can\'t stock from an empty box, so order ahead. You can also select a box in build mode to order before it runs out.',
+  'help_stock_b': 'Tap an empty shelf (red !) to grab that product from its box and fill the shelf. Each box holds 16 and runs down as you take from it. When a box is empty, tap it to reorder at wholesale price; it arrives in 20 seconds. Your staff can\'t stock from an empty box, so order ahead. You can also select a box in build mode to order before it runs out.',
   'help_stock_t': 'Stocking and inventory',
   'help_weather_b': 'Khi thành Cửa hàng tiện lợi, trước giờ mở cửa sẽ có dự báo thời tiết. Ngày nóng thì kem và đồ uống bán chạy, ngày mưa hoặc lạnh thì mì ly, bánh bao hoppang và cà phê bán chạy, nên hãy đổi hàng trên kệ. Từ Tiện lợi cỡ lớn, cứ 5 ngày lại có ngày đặc biệt (Ngày dã ngoại, Mùa thi, và từ Đại siêu thị có thêm Lễ hội khu phố).',
   'help_weather_t': 'Thời tiết và ngày đặc biệt',

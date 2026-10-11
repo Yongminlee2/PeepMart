@@ -140,7 +140,7 @@ const Map<String, String> kEs = {
   'help_regulars_t': 'Clientes fieles',
   'help_staff_b': 'Los cajeros atienden las cajas, los reponedores llevan cajas a los estantes y los conserjes limpian la basura. Un encargado de sección hace que su sección se reponga sola sin cajas y venda más caro. Al personal se le paga cada minuto.',
   'help_staff_t': 'Personal y encargados',
-  'help_stock_b': 'Tap an empty shelf (red !) to grab that product from its box and fill the shelf. Each box holds 24 and runs down as you take from it. When a box is empty, tap it to reorder at wholesale price; it arrives in 15 seconds. Your staff can\'t stock from an empty box, so order ahead. You can also select a box in build mode to order before it runs out.',
+  'help_stock_b': 'Tap an empty shelf (red !) to grab that product from its box and fill the shelf. Each box holds 16 and runs down as you take from it. When a box is empty, tap it to reorder at wholesale price; it arrives in 20 seconds. Your staff can\'t stock from an empty box, so order ahead. You can also select a box in build mode to order before it runs out.',
   'help_stock_t': 'Stocking and inventory',
   'help_weather_b': 'Cuando seas un Minimercado, verás el pronóstico del tiempo antes de abrir. Los helados y las bebidas se venden bien en días de calor; el ramyeon en vaso, los bollos hoppang y el café en días de lluvia o frío, así que cambia tus estantes. Desde Gran minimercado, cada 5 días llega un día especial (Día de excursión, Semana de exámenes y, desde Hipermercado, la Fiesta del barrio).',
   'help_weather_t': 'El tiempo y los días especiales',
