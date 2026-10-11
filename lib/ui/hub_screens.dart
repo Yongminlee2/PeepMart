@@ -224,6 +224,7 @@ class HelpScreen extends StatelessWidget {
     ('incident', Icons.local_police_rounded),
     ('dex', Icons.collections_bookmark_rounded),
     ('combo', Icons.auto_awesome_rounded),
+    ('fever', Icons.local_fire_department_rounded),
     ('stock', Icons.inventory_2_rounded),
     ('checkout', Icons.point_of_sale_rounded),
     ('build', Icons.handyman_rounded),

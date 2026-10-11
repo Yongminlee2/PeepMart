@@ -544,6 +544,15 @@ class StorePainter extends CustomPainter {
       anim = Anim.idle;
     }
     final kid = c.kind == CustomerKind.lost, grumpy = c.kind == CustomerKind.grumpy;
+    if (c.kind == CustomerKind.inspector) {
+      // 점검관: 머리 위 클립보드
+      final p = iso(c.x, c.y) + const Offset(14, -54);
+      canvas.drawRect(Rect.fromCenter(center: p, width: 14, height: 18), Paint()..color = Colors.white);
+      canvas.drawRect(Rect.fromCenter(center: p, width: 14, height: 18), _stroke(1.5));
+      for (var k = 0; k < 3; k++) {
+        canvas.drawLine(p + Offset(-4, -5 + k * 5.0), p + Offset(4, -5 + k * 5.0), _stroke(1));
+      }
+    }
     _char(canvas, who, c.x, c.y, anim, f, fps: c.moving ? 12 : 8, scale: kid ? kidScale : 1);
     final crownAt = iso(c.x, c.y) + const Offset(0, -40);
     if (c.fleeing) {

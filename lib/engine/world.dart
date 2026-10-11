@@ -84,7 +84,8 @@ const dayLastCall = 0, dayClosing = 1, dayClosed = 2;
 /// 도장을 받았을 때 FxKind.stamp (product = 상품, amount = 상금).
 enum Incident {
   thiefFlee, thiefCaught, thiefEscaped, kidLost, kidFound, kidGone, orderIn, orderDone, orderLate,
-  brokeDown, repaired, grumpyIn, grumpyCalmed, grumpyLeft
+  brokeDown, repaired, grumpyIn, grumpyCalmed, grumpyLeft,
+  fever, inspectIn, inspectGood, inspectOk, inspectBad
 }
 
 /// 배달 주문: 진열대를 돌며 상품을 챙기고(진열대에서 빠진다) 입구까지 들고 가면 끝.
@@ -143,6 +144,8 @@ class World {
   double _chaseStep = 0, _repairStill = 0;
   final List<(double, Incident)> _incidents = []; // 오늘 일어날 일 (시각, 종류)
   final Map<Tile, int> tips = {}; // 바닥에 떨어진 팁
+  int combo = 0; // 이어진 계산 수
+  double sinceServe = 99, feverLeft = 0; // 마지막 계산 뒤 초, 남은 피버 타임
   DayResult? result; // 방금 끝난 하루. 화면이 보여 주고 null 로 지운다
 
   World(this.game, {int? seed}) : _rng = Random(seed) {
@@ -174,7 +177,12 @@ class World {
   void _planIncidents() {
     _incidents.clear();
     order = null;
+    combo = 0;
+    feverLeft = 0;
     double at() => incidentWindow.$1 + _rng.nextDouble() * (incidentWindow.$2 - incidentWindow.$1);
+    if (game.inspectionDay) {
+      _incidents.add((inspectWindow.$1 + _rng.nextDouble() * (inspectWindow.$2 - inspectWindow.$1), Incident.inspectIn));
+    }
     if (game.rank >= rankIncidents) {
       final kinds = [
         Incident.thiefFlee, Incident.kidLost, Incident.brokeDown,
@@ -206,6 +214,8 @@ class World {
             _spawnSpecial(CustomerKind.lost);
           case Incident.grumpyIn:
             _spawnSpecial(CustomerKind.grumpy);
+          case Incident.inspectIn:
+            _spawnSpecial(CustomerKind.inspector);
           case Incident.brokeDown:
             final can = game.shelves.where((s) => !s.broken && breakableShelves.contains(s.t.shelf)).toList();
             if (can.isNotEmpty) {
@@ -297,7 +307,7 @@ class World {
       _toShelf(c);
       return;
     }
-    // 아이: 가게 안 빈 칸 아무 데나 가서 운다. 진상 손님: 계산대 가까이에서 화를 낸다.
+    // 아이: 가게 안 빈 칸 아무 데나 가서 운다. 진상 손님: 계산대 가까이에서 화를 낸다. 점검관: 몇 곳을 둘러본다.
     var spots = [
       for (var y = 0; y < mapH; y++)
         for (var x = 0; x < mapW; x++)
@@ -314,8 +324,75 @@ class World {
     }
     c.state = CState.toShelf;
     _walkTo(c, spots[_rng.nextInt(spots.length)]);
+    if (kind == CustomerKind.inspector) {
+      _inspectSpots = spots;
+      _fx(Incident.inspectIn);
+      return;
+    }
     _fx(kind == CustomerKind.grumpy ? Incident.grumpyIn : Incident.kidLost);
   }
+
+  List<Tile> _inspectSpots = [];
+
+  /// 점검관: 둘러볼 곳마다 2초씩 서 있다가, 다 보면 점수를 매기고 나간다.
+  void _updateInspector(Customer c, double dt) {
+    _walk(c, dt, customerSpeed * 0.9);
+    switch (c.state) {
+      case CState.toShelf:
+        if (c.arrived) {
+          c
+            ..state = CState.atShelf
+            ..timer = 0;
+        }
+      case CState.atShelf:
+        c.timer += dt;
+        if (c.timer < 2) break;
+        c.scanned++; // 둘러본 곳 수
+        if (c.scanned < inspectStops && _inspectSpots.isNotEmpty) {
+          c.state = CState.toShelf;
+          _walkTo(c, _inspectSpots[_rng.nextInt(_inspectSpots.length)]);
+          break;
+        }
+        final score = inspectionScore;
+        final Incident k;
+        var money = 0;
+        if (score >= inspectGood) {
+          money = max(30, (dayTarget * inspectReward).round());
+          game.money += money;
+          for (var i = 0; i < 3; i++) {
+            game.rate(5);
+          }
+          k = Incident.inspectGood;
+        } else if (score < inspectBad) {
+          money = max(20, (dayTarget * inspectFine).round());
+          game.money -= money;
+          for (var i = 0; i < 3; i++) {
+            game.rate(1);
+          }
+          k = Incident.inspectBad;
+        } else {
+          k = Incident.inspectOk;
+        }
+        c
+          ..happy = score >= inspectBad
+          ..react = 1.0
+          ..state = CState.leaving;
+        _walkTo(c, game.entrances.first.tile);
+        fx.add(Fx(FxKind.incident, c.x, c.y, amount: k.index, product: '$score|$money'));
+      case CState.leaving:
+        if (c.arrived) c.state = CState.gone;
+      default:
+        break;
+    }
+  }
+
+  /// 지금 위생 점수: 100점에서 쓰레기·빈 진열대·고장마다 뺀다.
+  int get inspectionScore => max(
+      0,
+      100 -
+          inspectTrash * game.trash.length -
+          inspectEmpty * game.shelves.where((s) => s.stock == 0).length -
+          inspectBroken * game.shelves.where((s) => s.broken).length);
 
   void _updateLost(Customer c, double dt) {
     if (c.react > 0) {
@@ -462,11 +539,16 @@ class World {
 
   /// 날씨·특별한 날에 따라 손님이 오는 빠르기.
   double get _visitorFactor =>
-      (weather == Weather.rain ? rainVisitors : 1.0) * (special == SpecialDay.festival ? festivalVisitors : 1.0);
+      (weather == Weather.rain ? rainVisitors : 1.0) *
+      (special == SpecialDay.festival ? festivalVisitors : 1.0) *
+      (feverLeft > 0 ? feverVisitors : 1.0);
 
   void _rate(int satisfaction) {
     game.rate(satisfaction);
-    if (satisfaction <= 2 && phase != DayPhase.closed) dayUpset++;
+    if (satisfaction <= 2 && phase != DayPhase.closed) {
+      dayUpset++;
+      combo = 0; // 실망한 손님이 나오면 콤보가 끊긴다
+    }
   }
 
   void tick(double dt) {
@@ -482,6 +564,9 @@ class World {
     }
     _day(dt);
     _incidentsTick(dt);
+    sinceServe += dt;
+    if (sinceServe > comboWindow(game.spawnGap)) combo = 0;
+    if (feverLeft > 0) feverLeft = max(0, feverLeft - dt);
     if (phase == DayPhase.open) _events(dt);
     final last = _clockRuns && dayLeft < lastCall ? lastCallFactor : 1.0;
     _spawnIn -= dt * (event == EventKind.rush ? rushFactor : 1) * last * _visitorFactor;
@@ -555,8 +640,8 @@ class World {
     final items = game.items.toSet();
     for (final c in customers) {
       // 가던 진열대·계산대·의자가 없어졌거나 바뀌었으면 다시 고른다
-      if (c.kind == CustomerKind.lost || c.kind == CustomerKind.grumpy) {
-        // 아이·진상 손님은 진열대와 상관없다
+      if (c.kind == CustomerKind.lost || c.kind == CustomerKind.grumpy || c.kind == CustomerKind.inspector) {
+        // 아이·진상 손님·점검관은 진열대와 상관없다
       } else if (c.state == CState.toShelf || c.state == CState.atShelf) {
         if (c.shelf == null || !items.contains(c.shelf) || c.shelf!.product != c.want) _toShelf(c);
       } else if (c.state == CState.toQueue && !regs.contains(c.register)) {
@@ -762,11 +847,20 @@ class World {
     fx.add(Fx(FxKind.scan, c.x, c.y));
     if (c.scanned < c.carry.length) return;
     final base = c.prices.fold(0, (s, p) => s + p);
-    final paid = switch (c.kind) {
+    var paid = switch (c.kind) {
       CustomerKind.vip => base * 2,
       CustomerKind.hurry => (base * 1.5).round(),
-      CustomerKind.normal || CustomerKind.thief || CustomerKind.lost || CustomerKind.grumpy => base,
+      CustomerKind.normal || CustomerKind.thief || CustomerKind.lost || CustomerKind.grumpy || CustomerKind.inspector => base,
     };
+    if (feverLeft > 0) paid = (paid * feverPay).round();
+    // 콤보: 계산을 이어 가면 쌓이고, 다 차면 피버 타임
+    combo = sinceServe < comboWindow(game.spawnGap) ? combo + 1 : 1;
+    sinceServe = 0;
+    if (combo >= feverAt && feverLeft <= 0 && _clockRuns) {
+      feverLeft = feverTime;
+      combo = 0;
+      _fx(Incident.fever);
+    }
     if (staffed) {
       game.money += paid;
     } else {
@@ -1031,6 +1125,10 @@ class World {
   void _updateCustomer(Customer c, double dt) {
     if (c.kind == CustomerKind.lost || c.kind == CustomerKind.grumpy) {
       _updateLost(c, dt);
+      return;
+    }
+    if (c.kind == CustomerKind.inspector) {
+      _updateInspector(c, dt);
       return;
     }
     if (c.react > 0) {

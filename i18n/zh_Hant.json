@@ -427,5 +427,15 @@
   "price_2_d": "貴一點：價格+20%，有時客人不買就走",
   "price_3_d": "高級：價格+40%，客人常常不買就走",
   "help_combo_t": "套餐·價格·小費",
-  "help_combo_b": "把指定的三種商品（例如：紫菜飯捲、年糕串、杯麵）的貨架放在兩格以內，就能組成套餐。價格上漲20%，客人會整套買走。在圖鑑的「套餐」裡可以查看組合。點擊貨架可以更換價籤。賣得貴賺得多，但會有客人直接離開；賣得便宜客人會很開心。非常滿意的客人會在地上留下小費。在一天結束前走過去撿起來吧！"
+  "help_combo_b": "把指定的三種商品（例如：紫菜飯捲、年糕串、杯麵）的貨架放在兩格以內，就能組成套餐。價格上漲20%，客人會整套買走。在圖鑑的「套餐」裡可以查看組合。點擊貨架可以更換價籤。賣得貴賺得多，但會有客人直接離開；賣得便宜客人會很開心。非常滿意的客人會在地上留下小費。在一天結束前走過去撿起來吧！",
+  "combo_n": "Combo {n}",
+  "fever_left": "FEVER! {n}s",
+  "inc_fever": "Fever time! Prices x1.5 and a rush of customers for 15 seconds!",
+  "inc_inspectIn": "The health inspector is here! Clean up trash and fill your shelves",
+  "inc_inspectGood": "Inspection score {s}: excellent! Reward {n}",
+  "inc_inspectOk": "Inspection score {s}: okay",
+  "inc_inspectBad": "Inspection score {s}: poor... Fine {n}",
+  "inspect_forecast": "📋 Health inspection day! Clean up trash and keep your shelves full",
+  "help_fever_t": "Fever time and inspections",
+  "help_fever_b": "Check out customers within 6 seconds of each other to build a combo. At 10 combo it's fever time: for 15 seconds prices go up 1.5x and customers rush in. An upset customer breaks your combo. From Convenience Store, a health inspector visits every 7 days and tours your store. Trash, empty shelves and broken shelves lower the score. 80 or more earns a reward; under 50 means a fine."
 }

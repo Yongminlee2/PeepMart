@@ -140,7 +140,12 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
         Sfx.play(FxKind.levelUp, clock);
       } else if (e.kind == FxKind.incident) {
         final k = Incident.values[e.amount];
-        toast(S.tn('inc_${k.name}', {'n': e.product}));
+        if (k == Incident.inspectGood || k == Incident.inspectOk || k == Incident.inspectBad) {
+          final parts = e.product.split('|');
+          toast(S.tn('inc_${k.name}', {'s': parts[0], 'n': parts.length > 1 ? parts[1] : ''}));
+        } else {
+          toast(S.tn('inc_${k.name}', {'n': e.product}));
+        }
         Sfx.play(
             switch (k) {
               Incident.thiefCaught || Incident.kidFound || Incident.orderDone => FxKind.levelUp,
@@ -491,6 +496,9 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                 Positioned(left: 0, right: 0, top: 58, child: _tutorialCard(game.owner.tutorial)),
               if (_regularNews != null && _regularLeft > 0)
                 Positioned(left: 0, right: 0, top: 150, child: _regularCard(_regularNews!)),
+              if (world.feverLeft > 0) Positioned.fill(child: IgnorePointer(child: _feverGlow())),
+              if (b == null && world.phase != DayPhase.closed && (world.combo >= 2 || world.feverLeft > 0))
+                Positioned(right: 8, top: 58, child: _comboChip()),
               if (_toast != null && _toastLeft > 0)
                 Align(
                   alignment: const Alignment(0, -0.62),
@@ -909,6 +917,58 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     );
   }
 
+  /// 피버 타임: 화면 가장자리가 불꽃색으로 빛난다.
+  Widget _feverGlow() {
+    final a = 0.35 + 0.15 * sin(clock * 8);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: const Color(0xFFFF6D00).withValues(alpha: a), width: 10),
+        gradient: RadialGradient(
+          radius: 1.2,
+          colors: [Colors.transparent, const Color(0xFFFFAB00).withValues(alpha: a * 0.35)],
+        ),
+      ),
+    );
+  }
+
+  /// 콤보 칩(오른쪽 위): 콤보 수와 피버까지 남은 칸, 피버 중이면 남은 시간.
+  Widget _comboChip() {
+    final fever = world.feverLeft > 0;
+    final pulse = 1 + 0.06 * sin(clock * (fever ? 14 : 6));
+    return IgnorePointer(
+      child: Transform.scale(
+        scale: pulse,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(10, 5, 10, 6),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(colors: fever ? const [Color(0xFFFF6D00), Color(0xFFFFD600)] : const [Colors.white, Colors.white]),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFFF6D00), width: 2),
+          ),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text(fever ? S.tn('fever_left', {'n': world.feverLeft.ceil()}) : S.tn('combo_n', {'n': world.combo}),
+                style: TextStyle(fontSize: fever ? 16 : 14, color: fever ? Colors.white : const Color(0xFFE65100))),
+            if (!fever) ...[
+              const SizedBox(height: 3),
+              SizedBox(
+                width: 70,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(3),
+                  child: LinearProgressIndicator(
+                    value: world.combo / feverAt,
+                    minHeight: 5,
+                    backgroundColor: const Color(0xFFFFE0B2),
+                    color: const Color(0xFFFF6D00),
+                  ),
+                ),
+              ),
+            ],
+          ]),
+        ),
+      ),
+    );
+  }
+
   /// 배달 주문: 상품·남은 시간, 출발 단추.
   Widget _orderCard(Order o) {
     const style = TextStyle(fontSize: 13, color: inkColor);
@@ -1005,6 +1065,10 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
           const SizedBox(width: 6),
           Flexible(child: Text(S.tn('forecast', {'n': game.day, 'w': S.t('weather_${w.name}')}), style: style)),
         ]),
+        if (game.inspectionDay) ...[
+          const SizedBox(height: 4),
+          Text(S.t('inspect_forecast'), textAlign: TextAlign.center, style: style.copyWith(color: const Color(0xFF1565C0), fontSize: 13)),
+        ],
         if (sp != null) ...[
           const SizedBox(height: 4),
           Text('★ ${S.t('special_${sp.name}')}', style: style.copyWith(color: const Color(0xFFE65100), fontSize: 16)),

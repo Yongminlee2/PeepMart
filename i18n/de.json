@@ -427,5 +427,15 @@
   "price_2_d": "Teuer: Preis +20%, manche gehen ohne Kauf",
   "price_3_d": "Premium: Preis +40%, viele gehen ohne Kauf",
   "help_combo_t": "Sets, Preise und Trinkgeld",
-  "help_combo_b": "Stell die Regale von drei passenden Produkten (z. B. Gimbap, Reiskuchen-Spieß und Becher-Ramyeon) höchstens zwei Felder voneinander entfernt auf, dann wird daraus ein Set: Die Preise steigen um 20% und Kunden kaufen das ganze Set. Alle Sets findest du unter 'Sets' in der Sammlung. Tippe auf ein Regal, um sein Preisschild zu ändern: Hohe Preise bringen mehr ein, aber manche Kunden gehen ohne Kauf, niedrige Preise machen Kunden glücklich. Sehr zufriedene Kunden lassen manchmal Trinkgeld auf dem Boden liegen; lauf hin und heb es auf, bevor der Tag endet!"
+  "help_combo_b": "Stell die Regale von drei passenden Produkten (z. B. Gimbap, Reiskuchen-Spieß und Becher-Ramyeon) höchstens zwei Felder voneinander entfernt auf, dann wird daraus ein Set: Die Preise steigen um 20% und Kunden kaufen das ganze Set. Alle Sets findest du unter 'Sets' in der Sammlung. Tippe auf ein Regal, um sein Preisschild zu ändern: Hohe Preise bringen mehr ein, aber manche Kunden gehen ohne Kauf, niedrige Preise machen Kunden glücklich. Sehr zufriedene Kunden lassen manchmal Trinkgeld auf dem Boden liegen; lauf hin und heb es auf, bevor der Tag endet!",
+  "combo_n": "Combo {n}",
+  "fever_left": "FEVER! {n}s",
+  "inc_fever": "Fever time! Prices x1.5 and a rush of customers for 15 seconds!",
+  "inc_inspectIn": "The health inspector is here! Clean up trash and fill your shelves",
+  "inc_inspectGood": "Inspection score {s}: excellent! Reward {n}",
+  "inc_inspectOk": "Inspection score {s}: okay",
+  "inc_inspectBad": "Inspection score {s}: poor... Fine {n}",
+  "inspect_forecast": "📋 Health inspection day! Clean up trash and keep your shelves full",
+  "help_fever_t": "Fever time and inspections",
+  "help_fever_b": "Check out customers within 6 seconds of each other to build a combo. At 10 combo it's fever time: for 15 seconds prices go up 1.5x and customers rush in. An upset customer breaks your combo. From Convenience Store, a health inspector visits every 7 days and tours your store. Trash, empty shelves and broken shelves lower the score. 80 or more earns a reward; under 50 means a fine."
 }

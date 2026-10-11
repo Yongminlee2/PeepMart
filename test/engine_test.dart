@@ -715,11 +715,11 @@ void main() {
       expect(back.avgServed, 30);
     });
 
-    test('둘째 날부터 목표는 최근 평균의 1.1배(가게 크기와 상관없이)', () {
+    test('둘째 날부터 목표는 최근 평균의 1.15배(가게 크기와 상관없이)', () {
       final g = ready();
       expect(g.hasHistory, isFalse);
       g.recordDay(200, 30);
-      expect(g.dayTarget, 220);
+      expect(g.dayTarget, 230);
       g.recordDay(100, 20); // 못한 날은 목표도 내려간다
       expect(g.avgSales, closeTo(160, 0.01));
       expect(g.dayTarget, 180);
@@ -1160,6 +1160,93 @@ void main() {
       w.customers.clear();
       w.tick(0.01);
       expect(w.tips, isEmpty);
+    });
+  });
+
+  group('피버 타임·위생 점검', () {
+    test('계산을 이어 가면 콤보, 다 차면 피버 타임, 시간이 지나면 끊긴다', () {
+      final g = Game()
+        ..money = 5000
+        ..level = 5;
+      g.owner.tutorial = TutorialStep.done;
+      g.hire(Staff.cashier);
+      g.hire(Staff.stocker);
+      final w = World(g, seed: 6)..openDay();
+      w
+        ..combo = feverAt - 1
+        ..sinceServe = 0;
+      var fever = false;
+      for (var i = 0; i < 1200 && !fever; i++) {
+        for (final s in g.shelves) {
+          s.stock = s.capacity;
+        }
+        w.tick(0.05);
+        if (w.combo == 0 && w.feverLeft == 0) {
+          // 손님 간격이 길어 끊겨도 다시 채워 둔다
+          w
+            ..combo = feverAt - 1
+            ..sinceServe = 0;
+        }
+        fever = w.feverLeft > 0;
+      }
+      expect(fever, isTrue);
+      expect(w.feverLeft, lessThanOrEqualTo(feverTime));
+      w.combo = 5;
+      w.sinceServe = comboWindow(g.spawnGap) + 1;
+      w.tick(0.01);
+      expect(w.combo, 0); // 시간이 지나면 끊긴다
+    });
+
+    test('점검 날은 동네 편의점부터 7일마다', () {
+      final g = Game()..day = 7;
+      expect(g.inspectionDay, isFalse); // 구멍가게
+      g.level = 5;
+      expect(g.inspectionDay, isTrue);
+      g.day = 8;
+      expect(g.inspectionDay, isFalse);
+    });
+
+    test('점수: 쓰레기·빈 진열대·고장마다 깎인다', () {
+      final g = Game()..level = 5;
+      g.owner.tutorial = TutorialStep.done;
+      final w = World(g, seed: 7)..openDay();
+      for (final s in g.shelves) {
+        s.stock = s.capacity;
+      }
+      expect(w.inspectionScore, 100);
+      g.trash.add((5, 5));
+      first(g, 'rack').stock = 0;
+      first(g, 'fridge').broken = true;
+      expect(w.inspectionScore, 100 - inspectTrash - inspectEmpty - inspectBroken);
+    });
+
+    test('점검관이 둘러보고 깨끗하면 상금, 지저분하면 벌금', () {
+      for (final clean in [true, false]) {
+        final g = Game()
+          ..money = 1000
+          ..level = 5
+          ..day = 7;
+        g.owner.tutorial = TutorialStep.done;
+        g.hire(Staff.cashier);
+        final w = World(g, seed: 8)..openDay();
+        if (!clean) {
+          g.trash.addAll([(4, 5), (5, 5), (6, 5), (4, 6)]);
+        }
+        Incident? result;
+        for (var i = 0; i < 4800 && result == null; i++) {
+          for (final s in g.shelves) {
+            s.stock = clean ? s.capacity : 0;
+          }
+          stand(w, (0, 6));
+          w.tick(0.05);
+          for (final e in w.fx.where((e) => e.kind == FxKind.incident)) {
+            final k = Incident.values[e.amount];
+            if (k == Incident.inspectGood || k == Incident.inspectOk || k == Incident.inspectBad) result = k;
+          }
+          w.fx.clear();
+        }
+        expect(result, clean ? Incident.inspectGood : Incident.inspectBad);
+      }
     });
   });
 }

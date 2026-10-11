@@ -585,6 +585,9 @@ class Game {
   /// 다음에 여는 날의 날씨. 동네 편의점 전에는 늘 맑음.
   Weather get todayWeather => rank >= rankWeather ? weather : Weather.sunny;
 
+  /// 다음에 여는 날이 위생 점검 날인가.
+  bool get inspectionDay => rank >= rankInspection && day % inspectEvery == 0;
+
   /// 다음에 여는 날이 특별한 날이면 그 종류.
   SpecialDay? get todaySpecial {
     if (rank < rankSpecialDay || day % specialEvery != 0) return null;

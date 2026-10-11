@@ -152,7 +152,7 @@ const upgradeSteps = {
 // ------------------------------------------------------------------ 레벨
 
 /// 다음 레벨까지 필요한 경험치. 팔린 물건값만큼 경험치가 쌓인다.
-int xpToNext(int level) => 40 * level * level;
+int xpToNext(int level) => 45 * level * level; // 피버 타임이 들어와 40 에서 올림(자동 플레이 레벨 20 이 110분 → 약 125분)
 const maxLevel = 30;
 
 // ------------------------------------------------------------------ 움직임·시간
@@ -218,7 +218,7 @@ const goals = [
 // ------------------------------------------------------------------ 손님 종류·행사
 
 /// 보통 / 급한 손님(참을성 절반, 팁 50%) / VIP(여러 개 사고 두 배로 낸다, 별점 4 이상일 때만).
-enum CustomerKind { normal, hurry, vip, thief, lost, grumpy }
+enum CustomerKind { normal, hurry, vip, thief, lost, grumpy, inspector }
 
 const hurryChance = 0.15;
 const vipChance = 0.05;
@@ -332,7 +332,7 @@ const dayLength = 180.0;
 const lastCall = 30.0; // 마감 전 이만큼은 손님이 더 몰린다
 const lastCallFactor = 1.5;
 const dayTargetShare = 1.0; // 첫날 목표 = 진열대가 늘 차 있을 때 벌 돈의 이만큼(× 처음 며칠 낮춤)
-const dayTargetGrowth = 1.1; // 둘째 날부터 목표 = 최근 하루 평균의 1.1배 (평소만큼이면 별 하나, 더 잘해야 둘·셋)
+const dayTargetGrowth = 1.15; // 둘째 날부터 목표 = 최근 하루 평균의 1.15배 (평소만큼이면 별 하나, 더 잘해야 둘·셋)
 const dayAverageWeight = 0.4; // 오늘이 평균에 얼마나 들어가나
 const dayStars = [0.7, 1.0, 1.3]; // 목표의 이만큼 벌면 별 1·2·3개
 const dayBonus = [0.0, 0.1, 0.2, 0.3]; // 별 개수별 보너스 (그날 번 돈 대비)
@@ -450,14 +450,14 @@ const chapters = [
 // ------------------------------------------------------------------ 어려움 (알바를 다 둬도 할 일이 남게)
 
 /// 하루에 끼어드는 사건 수: 1 + 등급 (+0~1). 알바가 못 하는 일이라 가게가 커질수록 바빠진다.
-int incidentsPerDay(int rank, int extra) => rank + 1 + extra;
+int incidentsPerDay(int rank, int extra) => rank + 2 + extra;
 const breakableShelves = {ShelfKind.fridge, ShelfKind.freezer, ShelfKind.coffee, ShelfKind.hot}; // 고장 나는 전기 진열대
 const repairTime = 1.2; // 고장 난 진열대 옆에 멈춰 서 있으면 이만큼 뒤 고친다
 const grumpyPatience = 30.0; // 진상 손님이 참는 초
 const grumpyAngerRate = 2; // 못 달래면 실망 손님으로 이만큼 센다
-double patienceFactor(int rank) => 1 - 0.06 * rank; // 등급이 오를수록 손님이 덜 참는다
+double patienceFactor(int rank) => 1 - 0.07 * rank; // 등급이 오를수록 손님이 덜 참는다
 // 하루 운영비: 땅 한 필지 임대료 × (1 + 0.3 × 등급) + 진열대마다 관리비
-const rentPerPlot = 20;
+const rentPerPlot = 24;
 const rentPerRank = 0.3;
 const upkeepPerShelf = 3;
 
@@ -502,3 +502,27 @@ const defaultPrice = 1;
 const tipChance = 0.3;
 const tipShare = 0.3; // 낸 값의 이만큼
 const tipRange = 1.0;
+
+// ------------------------------------------------------------------ 피버 타임 (연속 계산 콤보)
+
+/// 계산을 손님이 오는 간격의 [comboSlack] 배(6~14초) 안에 이어 가면 콤보가 쌓이고, [feverAt] 콤보면 피버 타임:
+/// [feverTime] 초 동안 값 [feverPay] 배, 손님 [feverVisitors] 배. 실망한 손님이 나오면 콤보가 끊긴다.
+/// (고정 6초로 하니 작은 가게는 손님 간격이 5~6초라 피버를 거의 못 봤다.)
+const comboSlack = 2.2;
+double comboWindow(double spawnGap) => (spawnGap * comboSlack).clamp(6.0, 14.0);
+const feverAt = 15;
+const feverTime = 15.0;
+const feverPay = 1.3;
+const feverVisitors = 1.4;
+
+// ------------------------------------------------------------------ 위생 점검의 날
+
+/// 동네 편의점부터 [inspectEvery] 일마다 점검관이 가게를 둘러보고 점수를 매긴다.
+/// 100점에서 쓰레기·빈 진열대·고장마다 깎는다. 80점 이상 우수(상금), 50점 미만 불량(벌금).
+const inspectEvery = 7;
+const rankInspection = 1;
+const inspectWindow = (50.0, 110.0); // 이 사이(초)에 온다
+const inspectStops = 3; // 둘러보는 곳 수
+const inspectTrash = 15, inspectEmpty = 10, inspectBroken = 20;
+const inspectGood = 80, inspectBad = 50;
+const inspectReward = 0.3, inspectFine = 0.2; // 오늘 목표 대비
