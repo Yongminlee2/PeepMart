@@ -36,6 +36,7 @@ class Game {
   final Set<Tile> trash = {};
   final List<int> recent = []; // 최근 손님 만족도 0~5
   int savedAt = 0; // 마지막 저장 시각(밀리초). 꺼 둔 동안 번 돈 계산용
+  int goal = 0; // 지금 목표 (goals 의 번호, 다 하면 goals.length)
 
   /// 바뀔 때마다 1씩 오른다. [World] 가 길을 다시 찾을지 보는 데 쓴다.
   int layoutVersion = 0;
@@ -107,6 +108,35 @@ class Game {
   /// 다른 계산대의 계산 자리·맨 앞 자리인가 (거기엔 아무것도 못 놓는다).
   bool _reserved(Tile t, {Item? except}) =>
       registers.any((r) => r != except && (r.till == t || r.front == t));
+
+  // ---------------------------------------------------------------- 목표
+
+  Goal? get currentGoal => goal < goals.length ? goals[goal] : null;
+
+  /// 목표가 재는 지금 값.
+  int progress(GoalKind k) => switch (k) {
+        GoalKind.shelves => shelves.length,
+        GoalKind.served => served,
+        GoalKind.cashiers => count(Staff.cashier),
+        GoalKind.registers => registers.length,
+        GoalKind.level => level,
+        GoalKind.plots => plots.length,
+        GoalKind.decor => decorCount,
+        GoalKind.stockers => count(Staff.stocker),
+        GoalKind.products => onSale.length,
+        GoalKind.rating => (rating * 10).floor(),
+        GoalKind.seats => ofKind(ItemKind.seat).length,
+        GoalKind.janitors => count(Staff.janitor),
+      };
+
+  /// 지금 목표를 이뤘으면 상금을 주고 다음으로 넘긴다. 이룬 목표를 돌려준다.
+  Goal? checkGoal() {
+    final g = currentGoal;
+    if (g == null || progress(g.kind) < g.target) return null;
+    money += g.reward;
+    goal++;
+    return g;
+  }
 
   // ---------------------------------------------------------------- 레벨
 
@@ -355,6 +385,7 @@ class Game {
         'trash': [for (final t in trash) [t.$1, t.$2]],
         'recent': recent,
         'savedAt': savedAt,
+        'goal': goal,
       };
 
   static Game fromJson(Map<String, dynamic> j) {
@@ -363,7 +394,8 @@ class Game {
       ..level = j['level'] as int
       ..xp = j['xp'] as int
       ..served = j['served'] as int
-      ..savedAt = j['savedAt'] as int? ?? 0;
+      ..savedAt = j['savedAt'] as int? ?? 0
+      ..goal = j['goal'] as int? ?? 0;
     Tile tile(List l) => (l[0] as int, l[1] as int);
     g.plots
       ..clear()

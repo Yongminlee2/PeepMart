@@ -116,5 +116,21 @@
   "moving": "{item} 옮기는 중",
   "paint_hint": "칠할 곳을 누르거나 손가락으로 쓸어요",
   "drag_hint": "미리보기를 끌거나 눌러서 자리를 정하고 ✓를 눌러요",
-  "build_hint": "아래에서 놓을 것을 고르거나, 놓인 물건을 눌러요"
+  "build_hint": "아래에서 놓을 것을 고르거나, 놓인 물건을 눌러요",
+  "goal_shelves": "진열대 {n}개 갖추기",
+  "goal_served": "손님 {n}명 계산하기",
+  "goal_cashiers": "계산원 {n}명 고용하기",
+  "goal_registers": "계산대 {n}개 놓기",
+  "goal_level": "레벨 {n} 달성하기",
+  "goal_plots": "땅 {n}필지 갖기",
+  "goal_decor": "꾸미기 {n}개 놓기",
+  "goal_stockers": "진열원 {n}명 고용하기",
+  "goal_products": "상품 {n}종 팔기",
+  "goal_rating": "별점 {n} 넘기기",
+  "goal_seats": "의자 {n}개 놓기",
+  "goal_janitors": "청소부 {n}명 고용하기",
+  "goal_done": "목표 달성! 상금 {n}",
+  "goal_all": "모든 목표를 이뤘어요! 마음껏 꾸며 보세요",
+  "event_rush": "손님이 몰려와요!",
+  "event_vip": "VIP 손님이 와요! 두 배로 내요"
 }

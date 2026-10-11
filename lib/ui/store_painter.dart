@@ -45,7 +45,8 @@ class Flight {
   double get life => switch (fx.kind) {
         FxKind.pick || FxKind.place || FxKind.cash => 0.28,
         FxKind.scan => 0,
-        FxKind.levelUp => 1.6,
+        FxKind.levelUp || FxKind.goal => 1.6,
+        FxKind.event => 0,
         _ => 1.0,
       };
 }
@@ -347,6 +348,31 @@ class StorePainter extends CustomPainter {
       anim = Anim.idle;
     }
     _char(canvas, who, c.x, c.y, anim, f, fps: c.moving ? 12 : 8);
+    final crownAt = iso(c.x, c.y) + const Offset(0, -40);
+    if (c.kind == CustomerKind.vip) {
+      // 금관
+      final cr = Path()
+        ..moveTo(crownAt.dx - 9, crownAt.dy)
+        ..lineTo(crownAt.dx - 9, crownAt.dy - 8)
+        ..lineTo(crownAt.dx - 4, crownAt.dy - 3)
+        ..lineTo(crownAt.dx, crownAt.dy - 10)
+        ..lineTo(crownAt.dx + 4, crownAt.dy - 3)
+        ..lineTo(crownAt.dx + 9, crownAt.dy - 8)
+        ..lineTo(crownAt.dx + 9, crownAt.dy)
+        ..close();
+      canvas.drawPath(cr, Paint()..color = const Color(0xFFFFC107));
+      canvas.drawPath(cr, _stroke(1.5));
+    } else if (c.kind == CustomerKind.hurry) {
+      // 땀방울
+      final d = crownAt + const Offset(12, 4);
+      final drop = Path()
+        ..moveTo(d.dx, d.dy - 7)
+        ..quadraticBezierTo(d.dx + 5, d.dy, d.dx, d.dy + 3)
+        ..quadraticBezierTo(d.dx - 5, d.dy, d.dx, d.dy - 7)
+        ..close();
+      canvas.drawPath(drop, Paint()..color = const Color(0xFF81D4FA));
+      canvas.drawPath(drop, _stroke(1.2));
+    }
     final head = iso(c.x, c.y) + const Offset(0, -52);
     if (c.state == CState.atShelf && c.timer >= pickTime) {
       final worry = (c.timer / shelfPatience).clamp(0.0, 1.0);
@@ -427,6 +453,10 @@ class StorePainter extends CustomPainter {
         _float(canvas, e, k, '!', const Color(0xFF8D6E63));
       case FxKind.clean:
         _float(canvas, e, k, '✨', const Color(0xFF42A5F5));
+      case FxKind.goal:
+        _float(canvas, e, k, '+${e.amount}', const Color(0xFF43A047), size: 24);
+      case FxKind.event:
+        break; // 화면 위 알림으로 보여 준다
     }
   }
 

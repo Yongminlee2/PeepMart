@@ -116,5 +116,21 @@
   "moving": "Moving {item}",
   "paint_hint": "Tap or swipe to paint",
   "drag_hint": "Drag or tap the preview into place, then press ✓",
-  "build_hint": "Pick something below, or tap a placed item"
+  "build_hint": "Pick something below, or tap a placed item",
+  "goal_shelves": "Have {n} shelves",
+  "goal_served": "Serve {n} customers",
+  "goal_cashiers": "Hire {n} cashier",
+  "goal_registers": "Place {n} registers",
+  "goal_level": "Reach level {n}",
+  "goal_plots": "Own {n} lots",
+  "goal_decor": "Place {n} decorations",
+  "goal_stockers": "Hire {n} stocker",
+  "goal_products": "Sell {n} products",
+  "goal_rating": "Get a rating above {n}",
+  "goal_seats": "Place {n} chairs",
+  "goal_janitors": "Hire {n} janitor",
+  "goal_done": "Goal complete! Reward {n}",
+  "goal_all": "All goals done! Decorate as you like",
+  "event_rush": "Rush hour!",
+  "event_vip": "VIP guests! They pay double"
 }

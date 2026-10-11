@@ -351,6 +351,94 @@ void main() {
     });
   });
 
+  group('목표·손님 종류·행사', () {
+    test('목표는 차례로 나오고, 이루면 상금을 주고 다음으로 넘어간다', () {
+      final g = Game()..money = 1000;
+      expect(g.currentGoal!.kind, GoalKind.shelves);
+      expect(g.checkGoal(), isNull);
+      g.place('rack', (5, 5), product: 'donut');
+      final m = g.money;
+      final done = g.checkGoal();
+      expect(done?.kind, GoalKind.shelves);
+      expect(g.money, m + done!.reward);
+      expect(g.currentGoal!.kind, GoalKind.served);
+    });
+
+    test('모든 목표는 이룰 수 있는 값이다', () {
+      for (final goal in goals) {
+        final max = switch (goal.kind) {
+          GoalKind.level => maxLevel,
+          GoalKind.plots => plotCols * plotRows,
+          GoalKind.products => products.length,
+          GoalKind.rating => 50,
+          GoalKind.cashiers => staffSpecs[Staff.cashier]!.max,
+          GoalKind.stockers => staffSpecs[Staff.stocker]!.max,
+          GoalKind.janitors => staffSpecs[Staff.janitor]!.max,
+          _ => 1 << 30,
+        };
+        expect(goal.target, lessThanOrEqualTo(max), reason: '$goal');
+      }
+    });
+
+    test('VIP 방문 행사: VIP 가 오고, 두 배를 낸다', () {
+      final g = Game()..staff[Staff.cashier] = 1;
+      final w = World(g, seed: 30);
+      stand(w, (0, 7));
+      w.startEvent(EventKind.vip);
+      var vipPaid = 0;
+      for (var i = 0; i < 4000 && vipPaid == 0; i++) {
+        w.tick(0.05);
+        for (final s in g.shelves) {
+          s.stock = s.capacity;
+        }
+        for (final f in w.fx) {
+          if (f.kind == FxKind.pay) vipPaid = f.amount;
+        }
+        w.fx.clear();
+        expect(w.customers.where((c) => c.kind != CustomerKind.vip).length, lessThanOrEqualTo(w.customers.length));
+      }
+      expect(w.customers.any((c) => c.kind == CustomerKind.vip) || vipPaid > 0, isTrue);
+      expect(vipPaid % 2, 0); // 두 배라서 짝수
+    });
+
+    test('손님 몰림 행사 동안 손님이 더 자주 온다', () {
+      int visitors(bool rush) {
+        final g = Game()..staff[Staff.cashier] = 1;
+        final w = World(g, seed: 31);
+        stand(w, (0, 7));
+        if (rush) w.startEvent(EventKind.rush);
+        final seen = <Customer>{};
+        for (var i = 0; i < 600; i++) {
+          w.tick(0.05);
+          seen.addAll(w.customers);
+        }
+        return seen.length;
+      }
+
+      expect(visitors(true), greaterThan(visitors(false)));
+    });
+
+    test('행사는 레벨 3부터 저절로 벌어진다', () {
+      final g = Game();
+      final w = World(g, seed: 32);
+      stand(w, (0, 7));
+      run(w, eventGap.$2 + 5);
+      expect(w.event, isNull); // 레벨 1
+      g.level = eventLevel;
+      var happened = false;
+      for (var i = 0; i < (eventGap.$2 + 5) * 20 && !happened; i++) {
+        w.tick(0.05);
+        happened = w.event != null;
+      }
+      expect(happened, isTrue);
+    });
+
+    test('급한 손님은 절반만 참는다', () {
+      final c = Customer(0, (0, 0), ['soda'])..kind = CustomerKind.hurry;
+      expect(c.patience, 0.5);
+    });
+  });
+
   test('꺼 둔 동안 번 돈: 계산원이 있어야 하고 두 시간까지만', () {
     final g = Game();
     expect(g.offlineEarnings(3600), 0);

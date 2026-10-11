@@ -37,7 +37,10 @@ class Customer extends Walker {
   int bonus = 0; // 앉아서 먹고 가면 +1
   double react = 0; // 남은 반응 시간. 반응하는 동안은 멈춰 선다
   bool happy = false;
+  CustomerKind kind = CustomerKind.normal;
   Customer(this.look, super.at, this.wants);
+
+  double get patience => kind == CustomerKind.hurry ? 0.5 : 1.0;
 
   String get want => wants[wantIndex];
 }
@@ -53,7 +56,7 @@ class StaffAgent extends Walker {
   StaffAgent(this.kind, super.at);
 }
 
-enum FxKind { pick, place, scan, cash, pay, angry, sad, levelUp, litter, clean }
+enum FxKind { pick, place, scan, cash, pay, angry, sad, levelUp, litter, clean, goal, event }
 
 /// 화면 연출용 사건. 엔진은 쌓기만 하고 화면이 가져가 비운다.
 class Fx {
@@ -79,6 +82,9 @@ class World {
   double time = 0;
   final Map<Item, double> lastScan = {};
   double _spawnIn = 1, _playerStep = 0, _cashStep = 0, _wageIn = wagePeriod;
+  EventKind? event; // 지금 벌어지는 행사
+  double eventLeft = 0, _eventIn = eventGap.$1;
+  int _vipQueue = 0; // VIP 방문 행사로 아직 올 VIP 수
   int _seenLayout = -1;
 
   World(this.game, {int? seed}) : _rng = Random(seed) {
@@ -94,7 +100,8 @@ class World {
     for (final s in [...staff]) {
       _staffWork(s, dt);
     }
-    _spawnIn -= dt;
+    _events(dt);
+    _spawnIn -= dt * (event == EventKind.rush ? rushFactor : 1);
     if (_spawnIn <= 0) {
       final cap = min(60, 3 + 2 * game.shelves.length);
       if (customers.length < cap) _spawn();
@@ -109,6 +116,28 @@ class World {
       _wageIn = wagePeriod;
       game.money -= game.wages;
     }
+    final done = game.checkGoal();
+    if (done != null) fx.add(Fx(FxKind.goal, player.x, player.y, amount: done.reward));
+  }
+
+  void _events(double dt) {
+    if (event != null) {
+      eventLeft -= dt;
+      if (eventLeft <= 0) event = null;
+      return;
+    }
+    if (game.level < eventLevel) return;
+    _eventIn -= dt;
+    if (_eventIn > 0) return;
+    _eventIn = eventGap.$1 + _rng.nextDouble() * (eventGap.$2 - eventGap.$1);
+    startEvent(_rng.nextBool() ? EventKind.rush : EventKind.vip);
+  }
+
+  void startEvent(EventKind k) {
+    event = k;
+    eventLeft = k == EventKind.rush ? rushTime : 30;
+    if (k == EventKind.vip) _vipQueue = vipVisitors;
+    fx.add(Fx(FxKind.event, player.x, player.y, amount: k.index));
   }
 
   // ---------------------------------------------------------------- 짓기가 바뀌었을 때
@@ -262,7 +291,12 @@ class World {
     lastScan[reg] = time;
     fx.add(Fx(FxKind.scan, c.x, c.y));
     if (c.scanned < c.carry.length) return;
-    final paid = c.carry.fold(0, (s, p) => s + productById(p).price);
+    final base = c.carry.fold(0, (s, p) => s + productById(p).price);
+    final paid = switch (c.kind) {
+      CustomerKind.vip => base * 2,
+      CustomerKind.hurry => (base * 1.5).round(),
+      CustomerKind.normal => base,
+    };
     if (staffed) {
       game.money += paid;
     } else {
@@ -415,7 +449,15 @@ class World {
     final sale = game.onSale.toList()..shuffle(_rng);
     if (doors.isEmpty || sale.isEmpty) return;
     final door = doors[_rng.nextInt(doors.length)].tile;
-    final c = Customer(_rng.nextInt(10), door, sale.take(1 + _rng.nextInt(min(3, sale.length))).toList());
+    final vip = _vipQueue > 0 || (game.rating >= vipMinRating && _rng.nextDouble() < vipChance);
+    final n = vip ? min(sale.length, 2 + _rng.nextInt(2)) : 1 + _rng.nextInt(min(3, sale.length));
+    final c = Customer(_rng.nextInt(10), door, sale.take(n).toList());
+    if (vip) {
+      c.kind = CustomerKind.vip;
+      if (_vipQueue > 0) _vipQueue--;
+    } else if (_rng.nextDouble() < hurryChance) {
+      c.kind = CustomerKind.hurry;
+    }
     customers.add(c);
     _toShelf(c);
   }
@@ -484,7 +526,7 @@ class World {
           s.stock--;
           c.carry.add(c.want);
           _nextWant(c);
-        } else if (c.timer > shelfPatience) {
+        } else if (c.timer > shelfPatience * c.patience) {
           c
             ..missed += 1
             ..react = 0.8
@@ -503,7 +545,7 @@ class World {
         final i = queues[c.register]!.indexOf(c);
         final spot = tiles[min(i, tiles.length - 1)];
         if (c.goal != spot) _walkTo(c, spot);
-        if (c.waited > queuePatience && c.scanned == 0) {
+        if (c.waited > queuePatience * c.patience && c.scanned == 0) {
           queues[c.register]?.remove(c);
           game.rate(0);
           fx.add(Fx(FxKind.angry, c.x, c.y));

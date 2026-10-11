@@ -105,7 +105,13 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
       camera.center = Offset.lerp(camera.center, target, (dt * 5).clamp(0.0, 1.0))!;
     }
     for (final e in world.fx) {
-      if (e.kind == FxKind.levelUp) {
+      if (e.kind == FxKind.goal) {
+        toast(S.tn('goal_done', {'n': e.amount}));
+        Sfx.play(FxKind.levelUp, clock);
+      } else if (e.kind == FxKind.event) {
+        toast(S.t(EventKind.values[e.amount] == EventKind.rush ? 'event_rush' : 'event_vip'));
+        Sfx.play(FxKind.levelUp, clock);
+      } else if (e.kind == FxKind.levelUp) {
         _levelUp(e.amount);
       } else {
         Sfx.play(e.kind, clock);
@@ -345,6 +351,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                 }),
               ),
               Positioned(left: 8, right: 8, top: 6, child: _hud()),
+              if (b == null) Positioned(left: 8, top: 58, child: _goalCard()),
               if (_toast != null && _toastLeft > 0)
                 Align(
                   alignment: const Alignment(0, -0.62),
@@ -433,6 +440,64 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
         round(Icons.close_rounded, Colors.white, _cancelGhost, size: 48),
       ]),
     ]);
+  }
+
+  /// 지금 목표와 진행, 행사 중이면 남은 시간.
+  Widget _goalCard() {
+    final g = game.currentGoal;
+    final ev = world.event;
+    final style = const TextStyle(fontSize: 13, color: inkColor);
+    String label(Goal g) => S.tn('goal_${g.kind.name}',
+        {'n': g.kind == GoalKind.rating ? (g.target / 10).toStringAsFixed(1) : g.target});
+    return IgnorePointer(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Container(
+          constraints: const BoxConstraints(maxWidth: 230),
+          padding: const EdgeInsets.fromLTRB(10, 5, 10, 7),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.88),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: inkColor.withValues(alpha: 0.6), width: 1.5),
+          ),
+          child: g == null
+              ? Text(S.t('goal_all'), style: style)
+              : Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                  Row(mainAxisSize: MainAxisSize.min, children: [
+                    const Icon(Icons.flag_rounded, size: 16, color: Color(0xFFE53935)),
+                    const SizedBox(width: 4),
+                    Flexible(child: Text(label(g), style: style, overflow: TextOverflow.ellipsis)),
+                  ]),
+                  const SizedBox(height: 4),
+                  Row(mainAxisSize: MainAxisSize.min, children: [
+                    SizedBox(
+                      width: 110,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: (game.progress(g.kind) / g.target).clamp(0.0, 1.0),
+                          minHeight: 6,
+                          backgroundColor: const Color(0xFFEEEEEE),
+                          color: const Color(0xFF66BB6A),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Coins(g.reward, size: 12),
+                  ]),
+                ]),
+        ),
+        if (ev != null)
+          Container(
+            margin: const EdgeInsets.only(top: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: ev == EventKind.rush ? const Color(0xFFFFE0B2) : const Color(0xFFF3E5F5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text('${S.t(ev == EventKind.rush ? 'event_rush' : 'event_vip')}  ${world.eventLeft.ceil()}s', style: style),
+          ),
+      ]),
+    );
   }
 
   Widget _hud() {

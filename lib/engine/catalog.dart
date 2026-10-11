@@ -172,3 +172,58 @@ const wagePeriod = 60.0; // 이만큼마다 일당을 낸다
 const litterChance = 0.2; // 휴지통이 멀면 이 확률로 쓰레기를 버린다
 const binRange = 5; // 이 칸 수 안에 휴지통이 있으면 안 버린다
 const sellRefund = 0.5;
+
+// ------------------------------------------------------------------ 목표
+
+/// 하나씩 차례로 나오는 목표. 다 하면 상금을 받고 다음 목표가 나온다.
+enum GoalKind { shelves, served, cashiers, registers, level, plots, decor, stockers, products, rating, seats, janitors }
+
+class Goal {
+  final GoalKind kind;
+  final int target; // rating 은 별점×10 (45 = 4.5)
+  final int reward;
+  const Goal(this.kind, this.target, this.reward);
+}
+
+const goals = [
+  Goal(GoalKind.shelves, 3, 50),
+  Goal(GoalKind.served, 10, 60),
+  Goal(GoalKind.cashiers, 1, 80),
+  Goal(GoalKind.registers, 2, 100),
+  Goal(GoalKind.level, 5, 150),
+  Goal(GoalKind.plots, 2, 200),
+  Goal(GoalKind.decor, 5, 150),
+  Goal(GoalKind.stockers, 1, 200),
+  Goal(GoalKind.products, 8, 300),
+  Goal(GoalKind.rating, 45, 300),
+  Goal(GoalKind.seats, 4, 300),
+  Goal(GoalKind.level, 10, 500),
+  Goal(GoalKind.plots, 4, 800),
+  Goal(GoalKind.janitors, 1, 400),
+  Goal(GoalKind.served, 500, 1000),
+  Goal(GoalKind.products, 15, 1500),
+  Goal(GoalKind.level, 15, 1500),
+  Goal(GoalKind.plots, 8, 3000),
+  Goal(GoalKind.products, 25, 4000),
+  Goal(GoalKind.level, 20, 5000),
+  Goal(GoalKind.plots, plotCols * plotRows, 20000),
+  Goal(GoalKind.level, maxLevel, 30000),
+];
+
+// ------------------------------------------------------------------ 손님 종류·행사
+
+/// 보통 / 급한 손님(참을성 절반, 팁 50%) / VIP(여러 개 사고 두 배로 낸다, 별점 4 이상일 때만).
+enum CustomerKind { normal, hurry, vip }
+
+const hurryChance = 0.15;
+const vipChance = 0.05;
+const vipMinRating = 4.0;
+
+/// 가끔 벌어지는 일. 레벨 3부터, 2~4분마다.
+enum EventKind { rush, vip }
+
+const eventLevel = 3;
+const eventGap = (120.0, 240.0); // 다음 행사까지 (최소, 최대) 초
+const rushTime = 40.0; // 손님 몰림이 이어지는 초
+const rushFactor = 2.5; // 그동안 손님이 이만큼 자주 온다
+const vipVisitors = 3; // VIP 방문 행사 때 연달아 오는 VIP 수
