@@ -92,9 +92,13 @@ class _MapScreenState extends State<MapScreen> {
               height: 100,
               color: th.sky,
               child: Stack(alignment: Alignment.center, children: [
-                Positioned(bottom: 10, child: Container(width: 70, height: 28, decoration: BoxDecoration(color: th.floorB, borderRadius: BorderRadius.circular(6)))),
-                Positioned(top: 18, child: Container(width: 70, height: 34, decoration: BoxDecoration(color: th.wallR, border: Border(bottom: BorderSide(color: th.band, width: 6))))),
-                if (locked) const Icon(Icons.lock_rounded, color: Colors.black45, size: 34),
+                Positioned.fill(child: CustomPaint(painter: BranchThumb(b.id))),
+                if (locked)
+                  Container(
+                    color: Colors.black26,
+                    alignment: Alignment.center,
+                    child: const Icon(Icons.lock_rounded, color: Colors.white, size: 34),
+                  ),
               ]),
             ),
             const SizedBox(width: 12),

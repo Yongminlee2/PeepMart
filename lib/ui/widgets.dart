@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 const bg = Color(0xFFFFF3E0);
 const inkColor = Color(0xFF5D4037);
 
+/// 화면 위 카드·알림에 다는 부드러운 그림자.
+const softShadow = [BoxShadow(color: Color(0x30000000), blurRadius: 10, offset: Offset(0, 4))];
+
 class Coins extends StatelessWidget {
   final int amount;
   final double size;

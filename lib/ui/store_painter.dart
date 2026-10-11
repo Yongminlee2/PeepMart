@@ -873,6 +873,112 @@ void _box(Canvas canvas, Tile t, double h, Color top, Color left, Color right, {
   }
 }
 
+// ---------------------------------------------------------------- 가구 그리기 도구 (입체감)
+
+/// 깎은 상자: 바닥 (x0..x0+w, y0..y0+d) 칸 좌표, 높이 h. 면마다 위가 밝고 아래가 어두운 그라데이션,
+/// 윗모서리 하이라이트, 부드러운 그림자. 앞 두 면(왼쪽 아래·오른쪽 아래를 보는 면)과 윗면만 보인다.
+void _nbox(Canvas canvas, double x0, double y0, double w, double d, double h, Color col, {bool shadow = true}) {
+  final up = Offset(0, -h);
+  final a = corner(x0 + 0.5, y0 + d + 0.5), b = corner(x0 + w + 0.5, y0 + d + 0.5);
+  final rt = corner(x0 + w + 0.5, y0 + 0.5), tl = corner(x0 + 0.5, y0 + 0.5);
+  if (shadow) {
+    final mid = Offset((a.dx + rt.dx) / 2, (a.dy + rt.dy) / 2);
+    canvas.drawOval(Rect.fromCenter(center: mid + const Offset(2, 3), width: tw * (w + d) * 0.55, height: th * (w + d) * 0.55),
+        Paint()..color = const Color(0x2A000000));
+  }
+  Paint grad(Color top, Color bottom, Offset from, Offset to) =>
+      Paint()..shader = ui.Gradient.linear(from, to, [top, bottom]);
+  final left = Color.lerp(col, Colors.black, 0.06)!, right = Color.lerp(col, Colors.black, 0.2)!;
+  final lf = _quad(a, b, b + up, a + up), rf = _quad(b, rt, rt + up, b + up), tf = _quad(tl + up, rt + up, b + up, a + up);
+  canvas.drawPath(lf, grad(Color.lerp(left, Colors.white, 0.18)!, Color.lerp(left, Colors.black, 0.08)!, a + up, a));
+  canvas.drawPath(rf, grad(Color.lerp(right, Colors.white, 0.12)!, Color.lerp(right, Colors.black, 0.1)!, b + up, b));
+  canvas.drawPath(tf, Paint()..color = Color.lerp(col, Colors.white, 0.35)!);
+  final edge = Paint()
+    ..color = ink.withValues(alpha: 0.85)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1.6
+    ..strokeJoin = StrokeJoin.round;
+  canvas.drawPath(lf, edge);
+  canvas.drawPath(rf, edge);
+  canvas.drawPath(tf, edge);
+  // 윗모서리 하이라이트
+  final hl = Paint()
+    ..color = Colors.white.withValues(alpha: 0.7)
+    ..strokeWidth = 1.4;
+  canvas.drawLine(a + up + const Offset(1, 1), b + up + const Offset(0, 1), hl);
+  canvas.drawLine(b + up + const Offset(0, 1), rt + up + const Offset(-1, 1), hl);
+}
+
+/// 앞면(왼쪽 아래를 보는 면)의 유리문: x0..x0+w, 앞 y, 높이 from..to. 칸 선과 비스듬한 반사.
+void _glass(Canvas canvas, double x0, double y, double w, double from, double to, {int shelves = 0}) {
+  final a = corner(x0 + 0.5, y + 0.5), b = corner(x0 + w + 0.5, y + 0.5);
+  final g = _quad(a + Offset(0, -from), b + Offset(0, -from), b + Offset(0, -to), a + Offset(0, -to));
+  canvas.drawPath(g, Paint()..color = const Color(0x55B3E5FC));
+  for (var k = 1; k <= shelves; k++) {
+    final hh = from + (to - from) * k / (shelves + 1) - 4;
+    canvas.drawLine(a + Offset(0, -hh), b + Offset(0, -hh), Paint()
+      ..color = const Color(0x99FFFFFF)
+      ..strokeWidth = 1.5);
+  }
+  // 반사 줄 두 개
+  canvas.save();
+  canvas.clipPath(g);
+  final sh = Paint()
+    ..color = const Color(0x66FFFFFF)
+    ..strokeWidth = 5;
+  final mid = Offset.lerp(a, b, 0.3)! + Offset(0, -(from + to) / 2);
+  canvas.drawLine(mid + const Offset(-14, 26), mid + const Offset(10, -30), sh);
+  canvas.drawLine(mid + const Offset(2, 26), mid + const Offset(20, -16), sh..strokeWidth = 2.5);
+  canvas.restore();
+  canvas.drawPath(g, _stroke(1.4));
+}
+
+/// 앞면 띠(간판·손잡이 자리): 앞 y, 높이 from..to.
+void _faceBand(Canvas canvas, double x0, double y, double w, double from, double to, Color col) {
+  final a = corner(x0 + 0.5, y + 0.5), b = corner(x0 + w + 0.5, y + 0.5);
+  final band = _quad(a + Offset(0, -from), b + Offset(0, -from), b + Offset(0, -to), a + Offset(0, -to));
+  canvas.drawPath(band, Paint()..color = col);
+  canvas.drawPath(band, _stroke(1.2));
+}
+
+/// 윗면 유리 뚜껑(냉동고).
+void _topGlass(Canvas canvas, double x0, double y0, double w, double d, double h) {
+  final up = Offset(0, -h);
+  final q = _quad(corner(x0 + 0.5, y0 + 0.5) + up, corner(x0 + w + 0.5, y0 + 0.5) + up, corner(x0 + w + 0.5, y0 + d + 0.5) + up,
+      corner(x0 + 0.5, y0 + d + 0.5) + up);
+  canvas.drawPath(q, Paint()..color = const Color(0x44B3E5FC));
+  canvas.save();
+  canvas.clipPath(q);
+  final c0 = corner(x0 + w * 0.3 + 0.5, y0 + d * 0.5 + 0.5) + up;
+  canvas.drawLine(c0 + const Offset(-20, 6), c0 + const Offset(20, -8), Paint()
+    ..color = const Color(0x77FFFFFF)
+    ..strokeWidth = 4);
+  canvas.restore();
+  canvas.drawPath(q, _stroke(1.2));
+}
+
+/// 유리 상자(쇼케이스): 받침 높이 base 위로 top 까지, 앞·옆·위 유리.
+void _glassBox(Canvas canvas, double x0, double y0, double w, double d, double base, double top,
+    {Color tint = const Color(0x40B3E5FC)}) {
+  Offset at(double x, double y, double hgt) => corner(x + 0.5, y + 0.5) + Offset(0, -hgt);
+  final a0 = at(x0, y0 + d, base), b0 = at(x0 + w, y0 + d, base), r0 = at(x0 + w, y0, base);
+  final a1 = at(x0, y0 + d, top), b1 = at(x0 + w, y0 + d, top), r1 = at(x0 + w, y0, top), t1 = at(x0, y0, top);
+  for (final q in [_quad(a0, b0, b1, a1), _quad(b0, r0, r1, b1), _quad(t1, r1, b1, a1)]) {
+    canvas.drawPath(q, Paint()..color = tint);
+  }
+  canvas.save();
+  canvas.clipPath(_quad(a0, b0, b1, a1));
+  final m = Offset.lerp(a0, b1, 0.35)!;
+  canvas.drawLine(m + const Offset(-10, 14), m + const Offset(8, -16), Paint()
+    ..color = const Color(0x77FFFFFF)
+    ..strokeWidth = 4);
+  canvas.restore();
+  final e = _stroke(1.3);
+  canvas.drawPath(_quad(a0, b0, b1, a1), e);
+  canvas.drawPath(_quad(b0, r0, r1, b1), e);
+  canvas.drawPath(_quad(t1, r1, b1, a1), e);
+}
+
 void _dot(Canvas canvas, Offset p, Color col, double rad) {
   canvas.drawCircle(p, rad, Paint()..color = col);
   canvas.drawCircle(p, rad, _stroke(1.5));
@@ -921,53 +1027,72 @@ void drawItem(Canvas canvas, String type, Tile t,
       }
       _items(canvas, c, r, h, stock, cap, product, 4);
     case 'fridge':
-      const h = 58.0;
-      _box(canvas, t, h, const Color(0xFFE3F2FD), const Color(0xFFB3E5FC), const Color(0xFF90CAF9));
+      // 편의점 유리문 냉장고: 하얀 몸통, 위 파란 간판, 앞(왼쪽 아래를 보는 면)은 유리문, 칸마다 상품
+      const h = 62.0;
+      final x0 = c - 0.42, y0 = r - 0.42;
+      _nbox(canvas, x0, y0, 0.84, 0.84, h, const Color(0xFFF5F7FA));
+      final front = y0 + 0.84;
       if (product != null) {
-        final per = cap ~/ 2;
+        final per = (cap / 2).ceil();
         for (var i = 0; i < min(stock, cap); i++) {
           final row = i ~/ per, k = i % per;
-          _food(canvas, product, corner(c + 0.2 + (k + 0.5) * 0.6 / per, r + 0.9) + Offset(0, -h * (0.28 + row * 0.38)), 12);
+          _food(canvas, product, corner(x0 + 0.08 + (k + 0.5) * 0.68 / per + 0.5, front + 0.5 - 0.06) + Offset(0, -12 - row * 20.0), 11);
         }
       }
+      _glass(canvas, x0 + 0.06, front, 0.72, 4, h - 12, shelves: 2);
+      _faceBand(canvas, x0, front, 0.84, h - 10, h, const Color(0xFF42A5F5));
     case 'freezer':
-      _box(canvas, t, 24, const Color(0xFFB2EBF2), const Color(0xFFE0F7FA), const Color(0xFF80DEEA));
+      // 아이스크림 냉동고: 낮은 하얀 통, 유리 뚜껑 아래 상품
+      _nbox(canvas, c - 0.44, r - 0.4, 0.88, 0.8, 26, const Color(0xFFE0F7FA));
       _items(canvas, c, r, 24, stock, cap, product, 3);
+      _topGlass(canvas, c - 0.38, r - 0.34, 0.76, 0.68, 27);
+      _faceBand(canvas, c - 0.44, r + 0.4, 0.88, 4, 10, const Color(0xFF4DD0E1));
     case 'fruitstand':
-      _box(canvas, t, 22, const Color(0xFFA5D6A7), const Color(0xFF8D6E63), const Color(0xFF6D4C41));
-      _items(canvas, c, r, 22, stock, cap, product, 4);
-      final a = corner(c + 0.05, r + 0.05) + const Offset(0, -50), b = corner(c + 0.95, r + 0.05) + const Offset(0, -50);
-      canvas.drawLine(corner(c + 0.1, r + 0.1) + const Offset(0, -22), a + const Offset(0, 6), _stroke(2));
-      canvas.drawLine(corner(c + 0.9, r + 0.1) + const Offset(0, -22), b + const Offset(0, 6), _stroke(2));
-      final aw = _quad(a, b, b + const Offset(-6, 10), a + const Offset(6, 10));
-      canvas.drawPath(aw, Paint()..color = const Color(0xFFEF9A9A));
-      canvas.drawPath(aw, _stroke(1.5));
+      // 과일 매대: 나무 받침에 비스듬한 상자, 줄무늬 차양
+      _nbox(canvas, c - 0.44, r - 0.44, 0.88, 0.88, 18, const Color(0xFFA1887F));
+      _items(canvas, c, r, 20, stock, cap, product, 4);
+      final a = corner(c - 0.4, r - 0.4) + const Offset(0, -44), b = corner(c + 0.5, r - 0.4) + const Offset(0, -44);
+      canvas.drawLine(corner(c - 0.38, r - 0.38) + const Offset(0, -18), a + const Offset(0, 8), Paint()..color = const Color(0xFF6D4C41)..strokeWidth = 3);
+      canvas.drawLine(corner(c + 0.48, r - 0.38) + const Offset(0, -18), b + const Offset(0, 8), Paint()..color = const Color(0xFF6D4C41)..strokeWidth = 3);
+      for (var k = 0; k < 6; k++) {
+        final p0 = Offset.lerp(a, b, k / 6)!, p1 = Offset.lerp(a, b, (k + 1) / 6)!;
+        final stripe = _quad(p0, p1, p1 + const Offset(-6, 12), p0 + const Offset(-6, 12));
+        canvas.drawPath(stripe, Paint()..color = k.isEven ? const Color(0xFFEF5350) : Colors.white);
+      }
+      canvas.drawPath(_quad(a, b, b + const Offset(-6, 12), a + const Offset(-6, 12)), _stroke(1.5));
     case 'bakerycase':
-      _box(canvas, t, 34, const Color(0xFFFFF3E0), const Color(0xFFE1F5FE), const Color(0xFFFFCC80));
+      // 빵 쇼케이스: 나무 받침 위 유리 상자, 안에 빵 두 줄
+      const h = 40.0;
+      _nbox(canvas, c - 0.44, r - 0.4, 0.88, 0.8, 16, const Color(0xFFBCAAA4));
       if (product != null) {
         for (var i = 0; i < min(stock, cap); i++) {
-          _food(canvas, product, corner(c + 0.2 + (i % 3 + 0.5) * 0.2, r + 0.9) + Offset(0, -10.0 - (i ~/ 3) * 12), 11);
+          _food(canvas, product, corner(c - 0.3 + (i % 3 + 0.5) * 0.24 + 0.5, r + 0.34 + 0.5) + Offset(0, -20.0 - (i ~/ 3) * 12), 11);
         }
       }
+      _glassBox(canvas, c - 0.42, r - 0.38, 0.84, 0.76, 16, h);
     case 'coffeemachine':
-      _box(canvas, t, 26, const Color(0xFFD7CCC8), const Color(0xFFBCAAA4), const Color(0xFFA1887F));
-      final m = RRect.fromRectAndRadius(Rect.fromCenter(center: feet + const Offset(-4, -40), width: 20, height: 24),
-          const Radius.circular(4));
-      canvas.drawRRect(m, Paint()..color = const Color(0xFF5D4037));
-      canvas.drawRRect(m, _stroke(1.5));
-      canvas.drawCircle(feet + const Offset(-4, -44), 3, Paint()..color = const Color(0xFFFF7043));
+      // 커피 기계: 카운터 위 짙은 기계, 빨간 불, 컵
+      _nbox(canvas, c - 0.44, r - 0.44, 0.88, 0.88, 26, const Color(0xFFD7CCC8));
+      canvas.save();
+      canvas.translate(0, -26);
+      _nbox(canvas, c - 0.3, r - 0.3, 0.42, 0.42, 30, const Color(0xFF5D4037), shadow: false);
+      canvas.restore();
+      canvas.drawCircle(feet + const Offset(-12, -44), 3, Paint()..color = const Color(0xFFFF7043));
+      canvas.drawCircle(feet + const Offset(-12, -44), 6, Paint()..color = const Color(0x44FF7043));
       if (product != null) {
         for (var i = 0; i < min(stock, 3); i++) {
-          _food(canvas, product, feet + Offset(10.0 + (i % 2) * 6, -30.0 - i * 3), 10);
+          _food(canvas, product, feet + Offset(10.0 + (i % 2) * 7, -32.0 - i * 3), 10);
         }
       }
     case 'hotcounter':
-      _box(canvas, t, 28, const Color(0xFFCFD8DC), const Color(0xFFB0BEC5), const Color(0xFF90A4AE));
-      _items(canvas, c, r, 28, stock, cap, product, 3);
+      // 온장 진열대: 스테인리스 받침, 따뜻한 빛 유리 칸, 김
+      _nbox(canvas, c - 0.44, r - 0.4, 0.88, 0.8, 20, const Color(0xFFB0BEC5));
+      _items(canvas, c, r, 22, stock, cap, product, 3);
+      _glassBox(canvas, c - 0.42, r - 0.38, 0.84, 0.76, 20, 38, tint: const Color(0x33FFB74D));
       if (stock > 0) {
         for (var k = 0; k < 2; k++) {
           final y = (clock * 20 + k * 10) % 20;
-          _text(canvas, feet + Offset(-6.0 + k * 12, -46 - y), '~',
+          _text(canvas, feet + Offset(-6.0 + k * 12, -50 - y), '~',
               Color.fromARGB((200 - y * 9).round().clamp(0, 255), 255, 255, 255), 14);
         }
       }
@@ -981,23 +1106,30 @@ void drawItem(Canvas canvas, String type, Tile t,
         }
       }
     case 'register':
-      _box(canvas, t, 26, const Color(0xFFFFE0B2), const Color(0xFFFFCC80), const Color(0xFFFFB74D));
-      final p = feet + const Offset(0, -26);
-      final rr = RRect.fromRectAndRadius(Rect.fromCenter(center: p + const Offset(0, -9), width: 26, height: 18),
-          const Radius.circular(4));
-      canvas.drawRRect(rr, Paint()..color = const Color(0xFF7986CB));
-      canvas.drawRRect(rr, _stroke(2));
-      canvas.drawRect(Rect.fromCenter(center: p + const Offset(0, -12), width: 16, height: 6),
-          Paint()..color = const Color(0xFFC5E1A5));
+      // 계산대: 나무 카운터, 포스 화면(초록 글자), 카드 단말기
+      _nbox(canvas, c - 0.44, r - 0.44, 0.88, 0.88, 28, const Color(0xFFFFCC80));
+      final p = feet + const Offset(0, -28);
+      final stand = Rect.fromCenter(center: p + const Offset(-2, -4), width: 6, height: 8);
+      canvas.drawRect(stand, Paint()..color = const Color(0xFF455A64));
+      final scr = RRect.fromRectAndRadius(Rect.fromCenter(center: p + const Offset(-2, -16), width: 28, height: 18), const Radius.circular(3));
+      canvas.drawRRect(scr, Paint()..color = const Color(0xFF37474F));
+      canvas.drawRRect(scr.deflate(2.5), Paint()..color = const Color(0xFF80CBC4));
+      canvas.drawLine(p + const Offset(-11, -18), p + const Offset(4, -18), Paint()..color = const Color(0xFF00695C)..strokeWidth = 1.5);
+      canvas.drawLine(p + const Offset(-11, -14), p + const Offset(0, -14), Paint()..color = const Color(0xFF00695C)..strokeWidth = 1.5);
+      canvas.drawRRect(scr, _stroke(1.5));
+      final card = RRect.fromRectAndRadius(Rect.fromCenter(center: p + const Offset(15, -3), width: 8, height: 11), const Radius.circular(2));
+      canvas.drawRRect(card, Paint()..color = const Color(0xFF263238));
       if (cash > 0) {
         final n = min(10, (cash / 4).ceil());
         for (var i = 0; i < n; i++) {
-          final o = p + Offset(16 + ((i % 2) * 2 - 1) * 3.0, 10 - i * 3.0);
+          final o = p + Offset(16 + ((i % 2) * 2 - 1) * 3.0, 12 - i * 3.0);
           canvas.drawPath(
               _quad(o + const Offset(-10, 0), o + const Offset(0, -5), o + const Offset(10, 0), o + const Offset(0, 5)),
               Paint()..color = const Color(0xFF81C784));
+          canvas.drawPath(
+              _quad(o + const Offset(-10, 0), o + const Offset(0, -5), o + const Offset(10, 0), o + const Offset(0, 5)), _stroke(0.8));
         }
-        _text(canvas, p + Offset(16, -n * 3.0 - 6), '$cash', const Color(0xFF2E7D32), 13, outline: 1);
+        _text(canvas, p + Offset(16, -n * 3.0 - 4), '$cash', const Color(0xFF2E7D32), 13, outline: 1);
       }
     case 'plant' || 'flowers' || 'lamp' || 'chair' || 'table':
       final scale = switch (type) { 'flowers' => 1.6, 'lamp' => 0.7, 'table' => 0.9, _ => 1.0 };
@@ -1174,3 +1306,55 @@ Color weatherColor(Weather w) => switch (w) {
 
 /// 손님이 쓰는 캐릭터 시트: 단골은 정해진 얼굴, 그냥 손님은 손님 시트 중 하나.
 int customerSheet(Customer c) => c.regular != null ? c.look : customerChars[c.look % customerChars.length];
+
+/// 동네 지도 카드의 작은 장면: 그 동네 땅·가게·나무(야자수·네온·눈사람).
+class BranchThumb extends CustomPainter {
+  final String branch;
+  BranchThumb(this.branch);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final th0 = themeOf(branch);
+    final lk = _lookOf(branch);
+    canvas.drawRect(Offset.zero & size, Paint()..color = th0.sky);
+    canvas.translate(size.width / 2, size.height * 0.34);
+    canvas.scale(size.width / 190);
+    // 땅과 찻길
+    for (var y = -2; y < 4; y++) {
+      for (var x = -2; x < 4; x++) {
+        final d = max(max(-x, -y), max(x - 1, y - 1));
+        final col = d <= 0 ? ((x + y).isEven ? th0.floorA : th0.floorB) : (d == 1 ? lk.road : ((x + y).isEven ? lk.ground : lk.ground2));
+        canvas.drawPath(_diamond(x.toDouble(), y.toDouble(), 1, 1), Paint()..color = col);
+      }
+    }
+    // 가게: 뒤쪽 벽 두 면
+    const up = Offset(0, -wallH);
+    final a = corner(0, 0), b = corner(2, 0), cc = corner(0, 2);
+    canvas.drawPath(_quad(a, b, b + up, a + up), Paint()..color = th0.wallR);
+    canvas.drawPath(_quad(cc, a, a + up, cc + up), Paint()..color = th0.wallL);
+    canvas.drawPath(_quad(a, b, b + const Offset(0, -12), a + const Offset(0, -12)), Paint()..color = th0.band);
+    canvas.drawPath(_quad(cc, a, a + const Offset(0, -12), cc + const Offset(0, -12)), Paint()..color = th0.band);
+    canvas.drawPath(_quad(a, b, b + up, a + up), _stroke(2));
+    canvas.drawPath(_quad(cc, a, a + up, cc + up), _stroke(2));
+    drawItem(canvas, 'fridge', (0, 1), product: null);
+    drawItem(canvas, 'register', (1, 1));
+    // 동네다운 것
+    switch (branch) {
+      case 'beach':
+        _palm(canvas, iso(2.3, 0.4), 0.4);
+        _palm(canvas, iso(0.3, 2.5), 0.8);
+      case 'night':
+        _tbox(canvas, 2.0, -0.9, 0.9, 0.9, 60, const Color(0xFF7E57C2), const Color(0xFF5E35B1), const Color(0xFF9575CD));
+        _lamp(canvas, lk, iso(0.2, 2.4));
+      case 'snow':
+        _snowman(canvas, iso(2.2, 0.9), 1.1);
+        _tree(canvas, lk, iso(0.2, 2.5), 0.5);
+      default:
+        _tree(canvas, lk, iso(2.3, 0.3), 0.3);
+        _tree(canvas, lk, iso(0.2, 2.5), 0.7);
+    }
+  }
+
+  @override
+  bool shouldRepaint(BranchThumb old) => old.branch != branch;
+}

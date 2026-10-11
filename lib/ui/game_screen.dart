@@ -521,6 +521,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                       margin: const EdgeInsets.symmetric(horizontal: 24),
                       decoration: BoxDecoration(
+
+                        boxShadow: softShadow,
                         color: Colors.white.withValues(alpha: 0.95),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: inkColor, width: 2),
@@ -629,6 +631,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
           margin: const EdgeInsets.symmetric(horizontal: 14),
           padding: const EdgeInsets.fromLTRB(8, 8, 14, 8),
           decoration: BoxDecoration(
+
+            boxShadow: softShadow,
             color: const Color(0xFFFFFDE7),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(color: const Color(0xFFFFB300), width: 2.5),
@@ -656,6 +660,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
         margin: const EdgeInsets.symmetric(horizontal: 14),
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
+
+          boxShadow: softShadow,
           color: const Color(0xFFFCE4EC),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: const Color(0xFFEC407A), width: 2.5),
@@ -851,6 +857,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
           constraints: const BoxConstraints(maxWidth: 250),
           padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
           decoration: BoxDecoration(
+
+            boxShadow: softShadow,
             color: Colors.white.withValues(alpha: 0.92),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: inkColor.withValues(alpha: 0.6), width: 1.5),
@@ -1028,6 +1036,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
       margin: const EdgeInsets.only(top: 6),
       padding: const EdgeInsets.fromLTRB(10, 6, 8, 6),
       decoration: BoxDecoration(
+
+        boxShadow: softShadow,
         color: const Color(0xFFE3F2FD),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFF42A5F5), width: 2),
@@ -1111,6 +1121,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
       margin: const EdgeInsets.fromLTRB(28, 0, 28, 8),
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
       decoration: BoxDecoration(
+
+        boxShadow: softShadow,
         color: sp == null ? Colors.white.withValues(alpha: 0.92) : const Color(0xFFFFF8E1),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: sp == null ? inkColor.withValues(alpha: 0.5) : const Color(0xFFFFB300), width: 2),
@@ -1227,6 +1239,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
           constraints: const BoxConstraints(maxWidth: 230),
           padding: const EdgeInsets.fromLTRB(10, 5, 10, 7),
           decoration: BoxDecoration(
+
+            boxShadow: softShadow,
             color: Colors.white.withValues(alpha: 0.88),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: inkColor.withValues(alpha: 0.6), width: 1.5),
@@ -1284,6 +1298,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
       Container(
         padding: const EdgeInsets.fromLTRB(10, 4, 10, 6),
         decoration: BoxDecoration(
+
+          boxShadow: softShadow,
           color: Colors.white.withValues(alpha: 0.9),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: inkColor, width: 2),
