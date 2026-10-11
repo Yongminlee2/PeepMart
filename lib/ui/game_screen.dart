@@ -536,8 +536,11 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
               if (b == null && !_touched && world.phase != DayPhase.closed)
                 Align(
                   alignment: const Alignment(0, 0.9),
-                  child: Text(S.t(_useStick ? 'hint_move' : 'hint_tap'),
-                      style: const TextStyle(fontSize: 16, color: Colors.black45)),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.85), borderRadius: BorderRadius.circular(16), boxShadow: softShadow),
+                    child: Text(S.t(_useStick ? 'hint_move' : 'hint_tap'), style: const TextStyle(fontSize: 15, color: inkColor)),
+                  ),
                 ),
               if (b != null && b.ghostType != null && b.hover != null) Positioned(left: 0, right: 0, bottom: 14, child: _ghostButtons(b)),
               if (b != null && b.selected != null && b.ghostType == null)
@@ -869,7 +872,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                   size: 16, color: closing ? const Color(0xFF5C6BC0) : const Color(0xFFFFA000)),
               const SizedBox(width: 4),
               Flexible(child: Text(S.tn('day_n', {'n': game.day}), style: style.copyWith(fontSize: 14), maxLines: 1, overflow: TextOverflow.ellipsis)),
-              if (game.rank >= rankWeather) ...[
+              if (game.rank >= rankWeather && world.weather != Weather.sunny) ...[
                 const SizedBox(width: 4),
                 Icon(weatherIcon(world.weather), size: 15, color: weatherColor(world.weather)),
               ],
