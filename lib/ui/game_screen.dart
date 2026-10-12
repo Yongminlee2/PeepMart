@@ -752,6 +752,12 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
           }),
         if (i.t.kind == ItemKind.box && i.product != null)
           act(Icons.local_shipping_rounded, S.t('act_reorder'), () => _reorder(i)),
+        if (game.expiring(i))
+          act(Icons.local_offer_rounded, S.t(i.sticker ? 'sticker_off' : 'act_sticker'), () {
+            game.toggleSticker(i);
+            toast(S.t(i.sticker ? 'sticker_on' : 'sticker_removed'));
+            done();
+          }, color: i.sticker ? const Color(0xFFFFF59D) : Colors.white),
         if (i.t.kind == ItemKind.shelf)
           act(Icons.price_change_rounded, S.t('price_${i.price}'), () {
             game.cyclePrice(i);
@@ -1232,6 +1238,9 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
             if (r.quit != null)
               Text(S.t('day_quit'), style: style.copyWith(fontSize: 13, color: const Color(0xFFE53935))),
             if (r.aid > 0) row(S.t('day_aid'), Coins(r.aid, size: 14)),
+            if (r.wasted > 0)
+              Text(S.tn('day_wasted', {'n': r.wasted, 'v': r.wasteValue}),
+                  style: style.copyWith(fontSize: 13, color: const Color(0xFF8D6E63))),
             const Divider(),
             row(S.t('day_profit'), Coins(r.profit, size: 18)),
           ]),

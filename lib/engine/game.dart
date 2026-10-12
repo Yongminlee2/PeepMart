@@ -16,6 +16,8 @@ class Item {
   int price = defaultPrice; // 가격표 (priceLevels 의 번호)
   int units = boxSize; // 상자에 남은 물건
   double incoming = 0; // 주문한 상자가 도착하기까지 남은 초 (0 이면 주문 없음)
+  int age = 0; // 신선 상품 진열대: 밤을 넘긴 날 수 (비면 0)
+  bool sticker = false; // 반값 스티커
   Item(this.type, this.c, this.r, {this.rot = 0, this.product});
 
   ItemType get t => itemType(type);
@@ -286,6 +288,7 @@ class Game {
     if (managers.contains(p.kind)) v *= managerPrice;
     v *= priceLevels[shelf.price.clamp(0, priceLevels.length - 1)];
     if (inCombo(shelf)) v *= comboPrice;
+    if (shelf.sticker) v *= stickerPrice;
     return max(1, v.round());
   }
 
@@ -299,6 +302,37 @@ class Game {
     spentGoods += cost;
     box.incoming = restockDelay;
     return true;
+  }
+
+  /// 유통기한 임박: 내일 밤이면 버려질 신선 진열대 (반값 스티커를 붙일 수 있다).
+  bool expiring(Item s) => isFresh(s.product) && s.stock > 0 && s.age >= freshDays - 1;
+
+  bool toggleSticker(Item s) {
+    if (!expiring(s)) return false;
+    s.sticker = !s.sticker;
+    return true;
+  }
+
+  /// 밤이 지난다: 신선 진열대가 하루 늙고, 기한이 지나면 남은 걸 버린다. 버린 (개수, 도매가 합).
+  (int, int) ageShelves() {
+    var n = 0, value = 0;
+    for (final s in shelves) {
+      if (!isFresh(s.product) || s.stock == 0) {
+        s
+          ..age = 0
+          ..sticker = false;
+        continue;
+      }
+      if (++s.age >= freshDays) {
+        n += s.stock;
+        value += s.stock * wholesale(s.product!);
+        s
+          ..stock = 0
+          ..age = 0
+          ..sticker = false;
+      }
+    }
+    return (n, value);
   }
 
   /// 가격표를 다음 단계로 (싸게 → 보통 → 비싸게 → 프리미엄 → 싸게).
@@ -472,6 +506,8 @@ class Game {
         ..price = i.price
         ..units = i.units
         ..incoming = i.incoming
+        ..age = i.age
+        ..sticker = i.sticker
         ..broken = i.broken);
     } else {
       items.add(i);
@@ -529,6 +565,8 @@ class Game {
     if (i.t.kind == ItemKind.box && i.incoming > 0) return false; // 오는 중인 주문이 있으면 못 바꾼다
     i.product = product;
     i.stock = 0;
+    i.age = 0;
+    i.sticker = false;
     if (i.t.kind == ItemKind.box) i.units = 0;
     _changed();
     return true;
@@ -735,7 +773,7 @@ class Game {
         'items': [
           for (final i in items)
             // 오는 중인 주문은 저장할 때 도착한 것으로 친다
-            [i.type, i.c, i.r, i.rot, i.product ?? '', i.stock, i.cash, i.level, i.price, min(boxMax, i.units + (i.incoming > 0 ? boxSize : 0))]
+            [i.type, i.c, i.r, i.rot, i.product ?? '', i.stock, i.cash, i.level, i.price, min(boxMax, i.units + (i.incoming > 0 ? boxSize : 0)), i.age, i.sticker ? 1 : 0]
         ],
         'floors': [for (final e in floors.entries) [e.key.$1, e.key.$2, e.value]],
         'staff': {for (final e in staff.entries) e.key.name: e.value},
@@ -764,6 +802,8 @@ class Game {
             ..level = l.length > 7 ? l[7] as int : 1
             ..price = l.length > 8 ? l[8] as int : defaultPrice
             ..units = l.length > 9 ? l[9] as int : boxSize
+            ..age = l.length > 10 ? l[10] as int : 0
+            ..sticker = l.length > 11 && l[11] == 1
       ]);
     for (final l in (j['floors'] as List).cast<List>()) {
       floors[tile(l)] = l[2] as String;

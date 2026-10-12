@@ -39,9 +39,10 @@ class DayResult {
   final List<(String, int)> missing; // 손님이 찾았는데 가게에 없던 상품, 많이 찾은 순
   final Staff? quit; // 돈이 모자라 그만둔 알바
   final int aid; // 할머니가 채워 준 돈
+  final int wasted, wasteValue; // 유통기한이 지나 버린 개수와 그 도매가
   const DayResult(this.day, this.sales, this.target, this.served, this.upset, this.stars, this.bonus,
       this.taskReward, this.best, this.tasks,
-      {this.cost = 0, this.warPrize = 0, this.chest = 0, this.jackpot = false, this.goods = 0, this.wages = 0, this.missing = const [], this.quit, this.aid = 0});
+      {this.cost = 0, this.warPrize = 0, this.chest = 0, this.jackpot = false, this.goods = 0, this.wages = 0, this.missing = const [], this.quit, this.aid = 0, this.wasted = 0, this.wasteValue = 0});
 
   /// 오늘 남은 돈: 매출 + 보너스·상금 - 운영비 - 물건값 - 일당. (예전엔 물건값·일당을 빼지 않아 실제보다 크게 보였다)
   int get profit => sales + bonus + taskReward + (warPrize > 0 ? warPrize : 0) + chest - cost - goods - wages;
@@ -542,6 +543,7 @@ class World {
     for (final s in game.shelves) {
       s.broken = false;
     }
+    game.ageShelves();
     customers.clear();
     order = null;
     tips.clear();
@@ -589,8 +591,9 @@ class World {
     for (final s in game.shelves) {
       s.broken = false; // 밤사이 수리 기사가 고친다
     }
+    final (wasted, wasteValue) = game.ageShelves();
     result = DayResult(game.day, daySales, dayTarget, dayServed, dayUpset, stars, bonus, taskReward, best, done,
-        cost: cost, warPrize: warPrize, chest: chest, jackpot: jackpot, goods: game.spentGoods, wages: game.spentWages, quit: quit, aid: aid,
+        cost: cost, warPrize: warPrize, chest: chest, jackpot: jackpot, goods: game.spentGoods, wages: game.spentWages, quit: quit, aid: aid, wasted: wasted, wasteValue: wasteValue,
         missing: (dayMissing.entries.map((e) => (e.key, e.value)).toList()..sort((a, b) => b.$2.compareTo(a.$2))).take(3).toList());
     game.spentGoods = 0;
     game.spentWages = 0;
@@ -1169,6 +1172,11 @@ class World {
     while (wants.length < n) {
       wants.add(_rng.nextDouble() < carriedPull ? sale[_rng.nextInt(sale.length)] : pool[_rng.nextInt(pool.length)]);
     }
+    final cheap = {for (final s in game.shelves) if (s.sticker && s.stock > 0) s.product!}.toList()..sort();
+    if (cheap.isNotEmpty && _rng.nextDouble() < stickerPull) {
+      wants.insert(0, cheap[_rng.nextInt(cheap.length)]);
+      if (wants.length > n) wants.removeLast();
+    }
     final fav = game.favored.toList()..sort();
     if (fav.isNotEmpty && _rng.nextDouble() < favoredPull) {
       final f = fav[_rng.nextInt(fav.length)];
@@ -1284,6 +1292,11 @@ class World {
         }
         if (c.timer >= pickTime && s.stock > 0 && !s.broken) {
           s.stock--;
+          if (s.stock == 0) {
+            s
+              ..age = 0
+              ..sticker = false;
+          }
           c.carry.add(c.want);
           c.prices.add(game.salePrice(s, c.want));
           _nextWant(c);

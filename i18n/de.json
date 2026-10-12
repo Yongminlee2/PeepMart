@@ -468,5 +468,11 @@
   "day_wages": "Staff wages",
   "day_missing": "Wanted but not stocked",
   "day_quit": "Short on money, one staff member quit",
-  "day_aid": "Grandma's helping hand"
+  "day_aid": "Grandma's helping hand",
+  "act_sticker": "Half-price",
+  "sticker_off": "Remove sticker",
+  "sticker_on": "Half-price sticker on. Customers grab it first",
+  "sticker_removed": "Sticker removed",
+  "tag_expiring": "Exp.",
+  "day_wasted": "{n} expired items thrown out ({v} at wholesale)"
 }

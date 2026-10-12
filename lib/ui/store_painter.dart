@@ -214,7 +214,7 @@ class StorePainter extends CustomPainter {
           managed: i.t.shelf != null && game.managers.contains(i.t.shelf)));
       if (i.broken) add(i.c + 0.01, i.r + 0.01, () => _brokenMark(canvas, i));
       if (i.t.kind == ItemKind.box && i.product != null && b == null) add(i.c + 0.01, i.r + 0.01, () => _boxStock(canvas, i));
-      if (i.t.kind == ItemKind.shelf && (i.price != defaultPrice || game.inCombo(i))) {
+      if (i.t.kind == ItemKind.shelf && (i.price != defaultPrice || game.inCombo(i) || game.expiring(i))) {
         add(i.c + 0.01, i.r + 0.01, () => _shelfTags(canvas, i));
       }
     }
@@ -734,6 +734,14 @@ class StorePainter extends CustomPainter {
       canvas.drawRRect(r, Paint()..color = col);
       canvas.drawRRect(r, _stroke(1.2));
       _text(canvas, base, mark, Colors.white, 10);
+    }
+    if (game.expiring(i)) {
+      // 유통기한 임박: 노란 딱지, 반값 스티커를 붙였으면 '½'
+      final p = base + const Offset(-4, -26);
+      final r = RRect.fromRectAndRadius(Rect.fromCenter(center: p, width: i.sticker ? 20 : 26, height: 14), const Radius.circular(7));
+      canvas.drawRRect(r, Paint()..color = i.sticker ? const Color(0xFFFFEB3B) : const Color(0xFFFFA726));
+      canvas.drawRRect(r, _stroke(1.2));
+      _text(canvas, p, i.sticker ? '½' : S.t('tag_expiring'), const Color(0xFF5D4037), 9);
     }
     if (game.inCombo(i)) {
       final p = base + const Offset(-36, -4);

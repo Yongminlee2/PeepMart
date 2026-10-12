@@ -406,7 +406,7 @@ const festivalBonus = 2; // 축제 날 별 보너스 배수
 // ------------------------------------------------------------------ 돌발 사건
 
 /// 하루 동안 끼어드는 일(큰 편의점부터 도둑·길 잃은 아이, 슈퍼마켓부터 배달 주문).
-const incidentWindow = (20.0, 150.0); // 하루 중 이 사이(초)에 일어난다
+const incidentWindow = (15.0, 100.0); // 하루 중 이 사이(초)에 일어난다 (하루 2분: 마감 몰림 전까지)
 const thiefFine = 2; // 잡으면 훔친 값의 이만큼을 벌금으로
 const thiefSpeed = 1.25; // 도망칠 때 손님 걸음의 이만큼 (플레이어보다는 느리다)
 const catchRange = 1.1; // 이만큼 가까이 가면 잡는다/달랜다
@@ -527,7 +527,7 @@ const feverVisitors = 1.4;
 /// 100점에서 쓰레기·빈 진열대·고장마다 깎는다. 80점 이상 우수(상금), 50점 미만 불량(벌금).
 const inspectEvery = 7;
 const rankInspection = 1;
-const inspectWindow = (50.0, 110.0); // 이 사이(초)에 온다
+const inspectWindow = (35.0, 90.0); // 이 사이(초)에 온다
 const inspectStops = 3; // 둘러보는 곳 수
 const inspectTrash = 15, inspectEmpty = 10, inspectBroken = 20;
 const inspectGood = 80, inspectBad = 50;
@@ -606,6 +606,19 @@ int basketCap(int kinds) => min(basketMax, 3 + kinds ~/ 4);
 /// 손님은 첫 물건은 가게에 있는 것(밖에서 보고 들어왔다), 나머지는 동네에서 찾는 상품(지금 레벨에서 열린 것)도 섞어 고른다.
 /// 가게에 없는 상품은 못 팔고 지나간다 → 종류를 늘리고, 그러려면 진열대와 땅이 필요하다.
 const carriedPull = 0.6; // 둘째 물건부터: 이 확률로 가게에 있는 것, 아니면 동네에서 찾는 것
+
+// ------------------------------------------------------------------ 유통기한
+
+/// 신선 상품(김밥·도시락·우유·빵 등)은 진열대에서 밤을 넘길 때마다 하루 늙고, [freshDays] 가 되면 남은 걸 버린다.
+/// 진열대가 한 번 비면(다 팔리면) 날짜가 새로 시작한다. 하루 전(임박)엔 반값 스티커: 값 절반, 손님이 먼저 집는다.
+const freshDays = 2;
+const freshProducts = {
+  'gimbap', 'sandwich', 'bananamilk', 'milk', 'bento', 'sushi', //
+  'croissant', 'cake', 'muffin', 'cupcake', 'pie', 'xmascake',
+};
+bool isFresh(String? p) => freshProducts.contains(p);
+const stickerPrice = 0.5;
+const stickerPull = 0.5; // 손님이 반값 상품을 맨 먼저 집을 확률
 
 /// 처음 안내 중에는 손님을 이만큼만(안내가 끝나야 1일째 시계가 가서, 그동안 돈이 끝없이 쌓이던 것).
 const tutorialCustomers = 2;
