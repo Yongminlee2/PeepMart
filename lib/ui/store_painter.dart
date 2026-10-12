@@ -544,6 +544,13 @@ class StorePainter extends CustomPainter {
     for (var i = 0; i < w.carry.length; i++) {
       _food(canvas, w.carry[i], top + Offset(sin(i * 1.7) * 2, -i * 9.0), 15);
     }
+    if (w is StaffAgent && w.asleep) {
+      // 조는 알바: Zzz 가 올라가고, 깨우라는 말풍선
+      for (var k = 0; k < 3; k++) {
+        final t = (clock * 0.7 + k / 3) % 1.0;
+        _text(canvas, top + Offset(8 + t * 10, -8 - t * 22), 'z', Color.fromRGBO(92, 107, 192, 1 - t), 11 + t * 6, outline: 1 - t);
+      }
+    }
   }
 
   void _customer(Canvas canvas, Customer c) {
@@ -714,6 +721,10 @@ class StorePainter extends CustomPainter {
         _float(canvas, e, k, '!!', const Color(0xFFE53935));
       case FxKind.sad:
         _float(canvas, e, k, '...', const Color(0xFF90A4AE));
+      case FxKind.sleep:
+        _float(canvas, e, k, 'Zzz', const Color(0xFF5C6BC0));
+      case FxKind.wake:
+        _float(canvas, e, k, '!', const Color(0xFFFF9800), size: 24);
       case FxKind.cook:
         _float(canvas, e, k, '♨', const Color(0xFFFF7043), size: 22);
       case FxKind.missing:

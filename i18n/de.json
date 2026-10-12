@@ -502,5 +502,9 @@
   "i_atm": "ATM",
   "i_photo": "Photo booth",
   "i_service": "Service desk",
-  "service_hint": "Parcel and lottery customers come. Stand by the service desk to help them (staff can't)"
+  "service_hint": "Parcel and lottery customers come. Stand by the service desk to help them (staff can't)",
+  "trait_quick": "Quick",
+  "trait_sleepy": "Sleepy",
+  "trait_cheerful": "Cheerful",
+  "staff_doze": "A staff member dozed off! Walk over to wake them"
 }

@@ -154,6 +154,19 @@ const staffSpecs = {
   Staff.janitor: StaffSpec(200, 12, 6, 4),
 };
 
+/// 알바 성격: 뽑을 때 정해진다. 빠름(25% 빨리), 졸음(가끔 졸아서 점장이 가서 깨워야 한다), 싹싹함(계산원이면 손님 만족 +1).
+enum Trait { normal, quick, sleepy, cheerful }
+
+const traitOdds = [4, 2, 2, 2]; // 뽑힐 무게 (Trait 차례)
+const quickSpeed = 1.25;
+const dozeChance = 0.015; // 졸음 알바가 일하다 1초마다 조는 확률
+const wakeRange = 1.5;
+
+/// 알바 숙련도: 직원 종류마다 일한 만큼 쌓이고, 레벨마다 10% 빨라진다(최대 5).
+int staffLevel(int xp) => min(5, 1 + sqrt(xp / staffXpUnit).floor());
+const staffXpUnit = 40;
+double staffLevelSpeed(int level) => 1 + 0.1 * (level - 1);
+
 enum Upgrade { shoes, arms, autoOrder }
 
 /// 단계별 (값, 필요 레벨).

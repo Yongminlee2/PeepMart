@@ -185,6 +185,8 @@ class Game {
   final List<Item> items = [];
   final Map<Tile, String> floors = {}; // 칠한 바닥
   final Map<Staff, int> staff = {};
+  final Map<Staff, List<Trait>> traits = {}; // 뽑은 차례대로 알바 성격
+  final Map<Staff, int> staffXp = {}; // 직원 종류마다 일한 양
   final Set<ShelfKind> managers = {};
   final Set<Tile> trash = {};
   final List<int> recent = []; // 최근 손님 만족도 0~5
@@ -634,17 +636,43 @@ class Game {
     return level >= spec.level && count(s) < spec.max && money >= spec.hire;
   }
 
-  bool hire(Staff s) {
+  bool hire(Staff s, {Random? rng}) {
     if (!canHire(s)) return false;
     money -= staffSpecs[s]!.hire;
+    traitsOf(s).add(_rollTrait(rng ?? Random())); // 늘리기 전에: traitsOf 가 모자란 만큼 보통으로 채우므로
     staff[s] = count(s) + 1;
     return true;
   }
 
+  /// 맨 나중에 뽑은 알바부터 내보낸다.
   bool fire(Staff s) {
     if (count(s) == 0) return false;
     staff[s] = count(s) - 1;
+    final t = traitsOf(s);
+    if (t.isNotEmpty) t.removeLast();
     return true;
+  }
+
+  /// 이 종류 알바들의 성격(뽑은 차례). 예전 저장처럼 모자라면 보통으로 채운다.
+  List<Trait> traitsOf(Staff s) {
+    final t = traits.putIfAbsent(s, () => []);
+    while (t.length < count(s)) {
+      t.add(Trait.normal);
+    }
+    return t;
+  }
+
+  int staffLevelOf(Staff s) => staffLevel(staffXp[s] ?? 0);
+
+  void addStaffXp(Staff s, int n) => staffXp[s] = (staffXp[s] ?? 0) + n;
+
+  static Trait _rollTrait(Random r) {
+    var k = r.nextInt(traitOdds.reduce((a, b) => a + b));
+    for (var i = 0; i < traitOdds.length; i++) {
+      k -= traitOdds[i];
+      if (k < 0) return Trait.values[i];
+    }
+    return Trait.normal;
   }
 
   bool canHireManager(ManagerSpec m) => !managers.contains(m.kind) && level >= m.level && money >= m.price;
@@ -810,6 +838,8 @@ class Game {
         ],
         'floors': [for (final e in floors.entries) [e.key.$1, e.key.$2, e.value]],
         'staff': {for (final e in staff.entries) e.key.name: e.value},
+        'traits': {for (final e in traits.entries) e.key.name: [for (final t in e.value) t.name]},
+        'staffXp': {for (final e in staffXp.entries) e.key.name: e.value},
         'managers': [for (final m in managers) m.name],
         'trash': [for (final t in trash) [t.$1, t.$2]],
         'recent': recent,
@@ -845,6 +875,14 @@ class Game {
     }
     for (final e in (j['staff'] as Map).entries) {
       staff[Staff.values.byName(e.key as String)] = e.value as int;
+    }
+    for (final e in ((j['traits'] as Map?) ?? const {}).entries) {
+      traits[Staff.values.byName(e.key as String)] = [
+        for (final t in e.value as List) Trait.values.asNameMap()[t] ?? Trait.normal
+      ];
+    }
+    for (final e in ((j['staffXp'] as Map?) ?? const {}).entries) {
+      staffXp[Staff.values.byName(e.key as String)] = e.value as int;
     }
     managers.addAll([for (final m in j['managers'] as List) ShelfKind.values.byName(m as String)]);
     trash.addAll([for (final t in j['trash'] as List) tile(t as List)]);

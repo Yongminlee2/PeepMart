@@ -134,6 +134,9 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
       } else if (e.kind == FxKind.combo) {
         toast(S.tn('combo_made', {'name': S.t('combo_${e.product}'), 'n': ((comboPrice - 1) * 100).round()}));
         Sfx.play(FxKind.levelUp, clock);
+      } else if (e.kind == FxKind.sleep) {
+        toast(S.t('staff_doze'));
+        Sfx.cue('alarm', clock);
       } else if (e.kind == FxKind.tip) {
         Sfx.play(FxKind.cash, clock);
       } else if (e.kind == FxKind.stamp) {

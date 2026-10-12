@@ -502,5 +502,9 @@
   "i_atm": "ATM",
   "i_photo": "즉석 사진기",
   "i_service": "서비스 카운터",
-  "service_hint": "택배·복권 손님이 와요. 서비스 카운터 옆에 서 있으면 처리해요 (알바는 못 해요)"
+  "service_hint": "택배·복권 손님이 와요. 서비스 카운터 옆에 서 있으면 처리해요 (알바는 못 해요)",
+  "trait_quick": "빠름",
+  "trait_sleepy": "졸음",
+  "trait_cheerful": "싹싹함",
+  "staff_doze": "알바가 졸고 있어요! 가까이 가서 깨워 주세요"
 }

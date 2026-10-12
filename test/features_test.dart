@@ -178,4 +178,43 @@ void main() {
     run(w, 30);
     expect(w.customers.where((c) => c.kind == CustomerKind.service && c.state == CState.atShelf), isEmpty);
   });
+
+  test('알바 성장·성격: 뽑을 때 성격이 붙고, 일하면 숙련도가 오르고, 조는 알바는 점장이 깨운다', () {
+    final g = shop(6);
+    for (var i = 0; i < 3; i++) {
+      expect(g.hire(Staff.cashier), isTrue);
+    }
+    expect(g.traitsOf(Staff.cashier).length, 3);
+    g.fire(Staff.cashier);
+    expect(g.traitsOf(Staff.cashier).length, 2);
+    expect(staffLevel(0), 1);
+    expect(staffLevel(staffXpUnit * 4), 3);
+    // 저장 왕복
+    g.addStaffXp(Staff.cashier, 100);
+    final back = Game.fromJson(g.toJson());
+    expect(back.traitsOf(Staff.cashier), g.traitsOf(Staff.cashier));
+    expect(back.staffLevelOf(Staff.cashier), g.staffLevelOf(Staff.cashier));
+    // 졸음: 조는 동안 일 안 하고, 점장이 다가가면 깬다
+    g.traits[Staff.cashier] = [Trait.sleepy, Trait.sleepy];
+    final w = World(g, seed: 7)..openDay();
+    run(w, 1);
+    final s = w.staff.firstWhere((s) => s.kind == Staff.cashier)..asleep = true;
+    w.player
+      ..x = s.x
+      ..y = s.y;
+    run(w, 0.1);
+    expect(s.asleep, isFalse);
+    // 계산하면 숙련도가 쌓인다
+    final xp = g.staffXp[Staff.cashier] ?? 0;
+    for (var i = 0; i < 1200; i++) {
+      for (final sh in g.shelves) {
+        sh.stock = sh.capacity;
+      }
+      for (final a in w.staff) {
+        a.asleep = false;
+      }
+      w.tick(0.05);
+    }
+    expect(g.staffXp[Staff.cashier]!, greaterThan(xp));
+  });
 }

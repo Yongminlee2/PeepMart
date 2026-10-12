@@ -82,10 +82,12 @@ class StaffAgent extends Walker {
   Item? item; // 계산원: 맡은 계산대 / 진열원: 채울 진열대
   Tile? target; // 청소부: 치울 쓰레기
   double step = 0;
+  Trait trait = Trait.normal;
+  bool asleep = false; // 조는 중: 점장이 가까이 가면 깬다
   StaffAgent(this.kind, super.at);
 }
 
-enum FxKind { pick, place, scan, cash, pay, angry, sad, levelUp, litter, clean, goal, event, regular, day, incident, stamp, combo, tip, missing, cook }
+enum FxKind { pick, place, scan, cash, pay, angry, sad, levelUp, litter, clean, goal, event, regular, day, incident, stamp, combo, tip, missing, cook, sleep, wake }
 
 /// FxKind.day 의 amount.
 const dayLastCall = 0, dayClosing = 1, dayClosed = 2;
@@ -645,7 +647,7 @@ class World {
         ..sort((a, b) => staffSpecs[b]!.wage.compareTo(staffSpecs[a]!.wage));
       if (hired.isNotEmpty) {
         quit = hired.first;
-        game.staff[quit] = game.count(quit) - 1;
+        game.fire(quit);
       }
     }
     final aid = max(0, aidFloor - game.money);
@@ -1030,7 +1032,7 @@ class World {
 
   /// 계산대 맨 앞 손님 물건 하나 찍기. 계산원이 찍으면 돈이 바로 들어오고,
   /// 내가 찍었으면 계산대 옆에 쌓인다(주우러 가야 한다).
-  void _scan(Item reg, {required bool staffed}) {
+  void _scan(Item reg, {required bool staffed, StaffAgent? by}) {
     final q = queues[reg];
     if (q == null || q.isEmpty) return;
     final c = q.first;
@@ -1039,7 +1041,9 @@ class World {
     c.scanned++;
     lastScan[reg] = time;
     fx.add(Fx(FxKind.scan, c.x, c.y));
+    if (by != null) game.addStaffXp(Staff.cashier, 1);
     if (c.scanned < c.carry.length) return;
+    if (by?.trait == Trait.cheerful) c.bonus = max(c.bonus, 1); // 싹싹한 계산원
     final base = c.prices.fold(0, (s, p) => s + p);
     var paid = switch (c.kind) {
       CustomerKind.vip => base * 2,
@@ -1093,8 +1097,9 @@ class World {
     for (final k in Staff.values) {
       final want = game.count(k);
       final have = staff.where((s) => s.kind == k).toList();
+      final traits = game.traitsOf(k);
       for (var i = have.length; i < want; i++) {
-        staff.add(StaffAgent(k, game.entrances.first.tile));
+        staff.add(StaffAgent(k, game.entrances.first.tile)..trait = traits[i]);
       }
       for (var i = want; i < have.length; i++) {
         staff.remove(have[i]);
@@ -1102,8 +1107,24 @@ class World {
     }
   }
 
+  /// 이 알바의 빠르기 배율: 숙련도 × 성격.
+  double _staffPace(StaffAgent s) => staffLevelSpeed(game.staffLevelOf(s.kind)) * (s.trait == Trait.quick ? quickSpeed : 1);
+
   void _staffWork(StaffAgent s, double dt) {
-    _walk(s, dt, staffSpeed);
+    if (s.asleep) {
+      // 졸고 있다: 점장이 다가가면 깬다
+      if (player.distTo(s.tile) < wakeRange) {
+        s.asleep = false;
+        fx.add(Fx(FxKind.wake, s.x, s.y));
+      }
+      return;
+    }
+    if (s.trait == Trait.sleepy && phase == DayPhase.open && _clockRuns && _rng.nextDouble() < dozeChance * dt) {
+      s.asleep = true;
+      fx.add(Fx(FxKind.sleep, s.x, s.y));
+      return;
+    }
+    _walk(s, dt, staffSpeed * _staffPace(s));
     switch (s.kind) {
       case Staff.cashier:
         _cashierWork(s, dt);
@@ -1131,10 +1152,10 @@ class World {
       s
         ..dx = -d.$1.toDouble()
         ..dy = -d.$2.toDouble();
-      s.step += dt;
+      s.step += dt * _staffPace(s);
       if (s.step >= game.scanTime(s.item!, cashier: true)) {
         s.step = 0;
-        _scan(s.item!, staffed: true);
+        _scan(s.item!, staffed: true, by: s);
       }
     }
   }
@@ -1183,7 +1204,9 @@ class World {
       case StaffState.toShelf:
         if (s.arrived) s.state = StaffState.unloading;
       case StaffState.unloading:
-        if (_tick(s, dt) && !_carryWork(s, 0, pick: false)) {
+        final placed = _tick(s, dt) && _carryWork(s, 0, pick: false);
+        if (placed) game.addStaffXp(Staff.stocker, 1);
+        if (s.step == 0 && !placed) {
           s.carry.clear();
           s
             ..item = null
@@ -1212,6 +1235,7 @@ class World {
       _walkTo(s, best);
     }
     if (s.arrived && game.trash.remove(s.target)) {
+      game.addStaffXp(Staff.janitor, 2);
       fx.add(Fx(FxKind.clean, s.x, s.y));
       s
         ..target = null
@@ -1220,7 +1244,7 @@ class World {
   }
 
   bool _tick(StaffAgent s, double dt) {
-    s.step += dt;
+    s.step += dt * _staffPace(s);
     if (s.step < moveStep) return false;
     s.step = 0;
     return true;

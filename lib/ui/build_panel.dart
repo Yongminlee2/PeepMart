@@ -328,14 +328,19 @@ class _BuildPanelState extends State<BuildPanel> {
   Widget _staffRow(Staff s) {
     final spec = staffSpecs[s]!;
     final locked = game.level < spec.level;
+    final traits = game.traitsOf(s).where((t) => t != Trait.normal).map((t) => S.t('trait_${t.name}')).toList();
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(children: [
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('${S.t('staff_${s.name}')}  ×${game.count(s)}', style: const TextStyle(fontSize: 16, color: inkColor)),
+            Text('${S.t('staff_${s.name}')}  ×${game.count(s)}  Lv.${game.staffLevelOf(s)}',
+                style: const TextStyle(fontSize: 16, color: inkColor)),
             Text(locked ? S.tn('need_level', {'n': spec.level}) : S.tn('wage', {'n': spec.wage}),
                 style: const TextStyle(fontSize: 12, color: Colors.black45)),
+            if (traits.isNotEmpty)
+              Text(traits.join(' · '), maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 11, color: Color(0xFF7E57C2))),
           ]),
         ),
         IconButton(
