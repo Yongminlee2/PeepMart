@@ -58,6 +58,7 @@ const Map<String, String> kZh = {
   'combo_summer': '夏日套餐',
   'combo_sweets': '甜甜零食',
   'combo_winter': '冬日零食',
+  'cook_hint': 'Hot counter food must be cooked first. Stand still next to it to cook (staff can\'t)',
   'credits_art': '美术与音效',
   'credits_font': '字体',
   'credits_music': '背景音乐',

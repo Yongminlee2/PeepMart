@@ -84,7 +84,7 @@ class StaffAgent extends Walker {
   StaffAgent(this.kind, super.at);
 }
 
-enum FxKind { pick, place, scan, cash, pay, angry, sad, levelUp, litter, clean, goal, event, regular, day, incident, stamp, combo, tip, missing }
+enum FxKind { pick, place, scan, cash, pay, angry, sad, levelUp, litter, clean, goal, event, regular, day, incident, stamp, combo, tip, missing, cook }
 
 /// FxKind.day 의 amount.
 const dayLastCall = 0, dayClosing = 1, dayClosed = 2;
@@ -166,6 +166,8 @@ class World {
   int combo = 0; // 이어진 계산 수
   double sinceServe = 99, feverLeft = 0; // 마지막 계산 뒤 초, 남은 피버 타임
   DayResult? result; // 방금 끝난 하루. 화면이 보여 주고 null 로 지운다
+  Item? cooking; // 점장이 굽고 있는 온장 진열대
+  double cookT = 0; // 지금 굽는 판이 익기까지 지난 초
 
   World(this.game, {int? seed}) : _rng = Random(seed) {
     player = Walker(game.entrances.first.tile);
@@ -860,7 +862,7 @@ class World {
       _managerStep[k] = 0;
       Item? low;
       for (final s in game.shelves) {
-        if (s.t.shelf == k && s.stock < s.capacity && (low == null || s.stock < low.stock)) low = s;
+        if (s.t.shelf == k && s.stock + s.raw < s.capacity && (low == null || s.stock < low.stock)) low = s;
       }
       if (low != null && game.money >= wholesale(low.product!)) {
         game.money -= wholesale(low.product!);
@@ -926,6 +928,21 @@ class World {
     }
     final t = player.tile;
     if (game.trash.remove(t)) fx.add(Fx(FxKind.clean, t.$1.toDouble(), t.$2.toDouble()));
+    final hot = player.moving
+        ? null
+        : game.shelves.where((s) => s.raw > 0 && player.distTo(s.tile) <= reach + 0.25).firstOrNull;
+    if (hot != cooking) {
+      cooking = hot;
+      cookT = 0;
+    }
+    if (hot != null && (cookT += dt) >= cookTime) {
+      cookT = 0;
+      final n = min(hot.raw, cookBatch);
+      hot
+        ..raw -= n
+        ..stock += n;
+      fx.add(Fx(FxKind.cook, hot.c.toDouble(), hot.r.toDouble(), product: hot.product!));
+    }
   }
 
   bool get atAnyTill => game.registers.any((r) => player.distTo(r.till) < standRadius);
@@ -933,9 +950,13 @@ class World {
   /// 상품 상자 옆이면 하나 집고(pick), 그 상품 진열대 옆이면 하나 놓는다. 하나라도 옮겼으면 true.
   bool _carryWork(Walker w, int arms, {required bool pick}) {
     for (final s in game.shelves) {
-      if (w.carry.contains(s.product) && s.stock < s.capacity && w.distTo(s.tile) <= reach + 0.25) {
+      if (w.carry.contains(s.product) && s.stock + s.raw < s.capacity && w.distTo(s.tile) <= reach + 0.25) {
         w.carry.remove(s.product);
-        s.stock++;
+        if (s.t.shelf == ShelfKind.hot) {
+          s.raw++; // 익혀야 팔 수 있다
+        } else {
+          s.stock++;
+        }
         if (w == player) game.owner.advance(TutorialStep.fillShelf);
         fx.add(Fx(FxKind.place, w.x, w.y, tx: s.c.toDouble(), ty: s.r.toDouble(), product: s.product!));
         return true;
@@ -1076,8 +1097,8 @@ class World {
         Item? low;
         for (final sh in game.shelves) {
           if (taken.contains(sh) || !boxes.containsKey(sh.product)) continue;
-          final ratio = sh.stock / sh.capacity;
-          if (ratio < 0.5 && (low == null || ratio < low.stock / low.capacity)) low = sh;
+          final ratio = (sh.stock + sh.raw) / sh.capacity;
+          if (ratio < 0.5 && (low == null || ratio < (low.stock + low.raw) / low.capacity)) low = sh;
         }
         if (low == null) return;
         s

@@ -58,6 +58,7 @@ const Map<String, String> kVi = {
   'combo_summer': 'Combo mùa hè',
   'combo_sweets': 'Bánh kẹo ngọt',
   'combo_winter': 'Quà vặt mùa đông',
+  'cook_hint': 'Hot counter food must be cooked first. Stand still next to it to cook (staff can\'t)',
   'credits_art': 'Hình ảnh và âm thanh',
   'credits_font': 'Phông chữ',
   'credits_music': 'Nhạc nền',

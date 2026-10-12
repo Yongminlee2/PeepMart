@@ -100,4 +100,30 @@ void main() {
     expect(back.promo, Promo.onePlusOne);
     expect(back.promoProduct, 'soda');
   });
+
+  test('즉석 조리: 온장 진열대에 채운 건 날것이고, 점장이 옆에 서 있어야 익는다', () {
+    final g = shop(9);
+    expect(g.place('hotcounter', (4, 5), product: 'cupramen'), isTrue);
+    final hot = g.at((4, 5))!..stock = 0;
+    final w = World(g, seed: 5);
+    w.player
+      ..x = 4
+      ..y = 6
+      ..carry.addAll(['cupramen', 'cupramen', 'cupramen']);
+    run(w, 0.5);
+    expect(hot.raw, 3);
+    expect(hot.stock, 0);
+    run(w, cookTime + 0.2);
+    expect(hot.stock, cookBatch);
+    run(w, cookTime + 0.2);
+    expect(hot.raw, 0);
+    expect(hot.stock, 3);
+    // 멀리 있으면 안 익는다
+    hot.raw = 2;
+    w.player
+      ..x = 1
+      ..y = 6;
+    run(w, cookTime * 2);
+    expect(hot.raw, 2);
+  });
 }

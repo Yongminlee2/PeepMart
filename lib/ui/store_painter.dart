@@ -214,6 +214,7 @@ class StorePainter extends CustomPainter {
           level: i.level,
           managed: i.t.shelf != null && game.managers.contains(i.t.shelf)));
       if (i.broken) add(i.c + 0.01, i.r + 0.01, () => _brokenMark(canvas, i));
+      if (i.raw > 0) add(i.c + 0.01, i.r + 0.01, () => _rawMark(canvas, i));
       if (i.t.kind == ItemKind.box && i.product != null && b == null) add(i.c + 0.01, i.r + 0.01, () => _boxStock(canvas, i));
       if (i.t.kind == ItemKind.shelf && (i.price != defaultPrice || game.inCombo(i) || game.expiring(i))) {
         add(i.c + 0.01, i.r + 0.01, () => _shelfTags(canvas, i));
@@ -692,6 +693,8 @@ class StorePainter extends CustomPainter {
         _float(canvas, e, k, '!!', const Color(0xFFE53935));
       case FxKind.sad:
         _float(canvas, e, k, '...', const Color(0xFF90A4AE));
+      case FxKind.cook:
+        _float(canvas, e, k, '♨', const Color(0xFFFF7043), size: 22);
       case FxKind.missing:
         // 찾던 상품이 없다: 그 상품 아이콘에 빨간 X
         final p = iso(e.x, e.y) + Offset(0, -62 - k * 22);
@@ -795,6 +798,23 @@ class StorePainter extends CustomPainter {
     canvas.skew(0, 0.5); // 벽 기울기(2:1)에 맞춘다
     paintSign(canvas, game.rank, 84, 22);
     canvas.restore();
+  }
+
+  /// 온장 진열대의 날것: 프라이팬과 개수, 굽는 중이면 둥근 진행 막대.
+  void _rawMark(Canvas canvas, Item i) {
+    final p = iso(i.c + 0.0, i.r + 0.0) + Offset(0, -66 + sin(clock * 5) * 2);
+    final cooking = world.cooking == i;
+    canvas.drawCircle(p, 13, Paint()..color = cooking ? const Color(0xFFFFE0B2) : const Color(0xFFFF7043));
+    canvas.drawCircle(p, 13, _stroke(1.5));
+    if (cooking) {
+      canvas.drawArc(Rect.fromCircle(center: p, radius: 16), -pi / 2, 2 * pi * (world.cookT / cookTime).clamp(0.0, 1.0), false,
+          Paint()
+            ..color = const Color(0xFFE65100)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 3.5);
+    }
+    _text(canvas, p + const Offset(0, -1), '🍳', Colors.white, 12);
+    _text(canvas, p + const Offset(13, 9), '${i.raw}', const Color(0xFFE65100), 11, outline: 1);
   }
 
   /// 명절 장식: 뒷벽 두 면 위쪽에 삼각 깃발 줄.

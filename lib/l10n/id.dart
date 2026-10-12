@@ -58,6 +58,7 @@ const Map<String, String> kId = {
   'combo_summer': 'Paket musim panas',
   'combo_sweets': 'Camilan manis',
   'combo_winter': 'Camilan musim dingin',
+  'cook_hint': 'Hot counter food must be cooked first. Stand still next to it to cook (staff can\'t)',
   'credits_art': 'Gambar dan suara',
   'credits_font': 'Huruf',
   'credits_music': 'Musik',

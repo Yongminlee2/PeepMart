@@ -58,6 +58,7 @@ const Map<String, String> kRu = {
   'combo_summer': 'Летний набор',
   'combo_sweets': 'Сладкие снеки',
   'combo_winter': 'Зимние вкусняшки',
+  'cook_hint': 'Hot counter food must be cooked first. Stand still next to it to cook (staff can\'t)',
   'credits_art': 'Графика и звуки',
   'credits_font': 'Шрифт',
   'credits_music': 'Музыка',

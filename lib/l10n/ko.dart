@@ -58,6 +58,7 @@ const Map<String, String> kKo = {
   'combo_summer': '여름 세트',
   'combo_sweets': '달콤 과자',
   'combo_winter': '겨울 간식',
+  'cook_hint': '온장 코너 물건은 익혀야 팔려요. 옆에 멈춰 서 있으면 지글지글 익어요 (알바는 못 해요)',
   'credits_art': '그림·효과음',
   'credits_font': '글꼴',
   'credits_music': '배경음악',

@@ -58,6 +58,7 @@ const Map<String, String> kEn = {
   'combo_summer': 'Summer Set',
   'combo_sweets': 'Sweet Snacks',
   'combo_winter': 'Winter Treats',
+  'cook_hint': 'Hot counter food must be cooked first. Stand still next to it to cook (staff can\'t)',
   'credits_art': 'Art and sounds',
   'credits_font': 'Font',
   'credits_music': 'Music',

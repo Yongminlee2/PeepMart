@@ -488,6 +488,11 @@ const chapters = [
 
 /// 하루에 끼어드는 사건 수: 1 + 등급 (+0~1). 알바가 못 하는 일이라 가게가 커질수록 바빠진다.
 int incidentsPerDay(int rank, int extra) => rank + 2 + extra;
+/// 즉석 조리: 온장 진열대에 채운 건 날것이라 못 판다. 점장이 옆에 멈춰 서 있으면 [cookTime] 초마다 [cookBatch] 개씩 익는다.
+/// 알바는 날것을 채우기만 하고 굽지는 못한다(온장 매니저가 있으면 익혀서 채운다). 알바를 다 둬도 점장 일이 남게.
+const cookTime = 1.4;
+const cookBatch = 2;
+
 const breakableShelves = {ShelfKind.fridge, ShelfKind.freezer, ShelfKind.coffee, ShelfKind.hot}; // 고장 나는 전기 진열대
 const repairTime = 1.2; // 고장 난 진열대 옆에 멈춰 서 있으면 이만큼 뒤 고친다
 const grumpyPatience = 30.0; // 진상 손님이 참는 초

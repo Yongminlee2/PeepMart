@@ -58,6 +58,7 @@ const Map<String, String> kJa = {
   'combo_summer': '夏セット',
   'combo_sweets': 'あまあまお菓子',
   'combo_winter': '冬のおやつ',
+  'cook_hint': 'Hot counter food must be cooked first. Stand still next to it to cook (staff can\'t)',
   'credits_art': 'イラスト・効果音',
   'credits_font': 'フォント',
   'credits_music': 'BGM',

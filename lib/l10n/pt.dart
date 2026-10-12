@@ -58,6 +58,7 @@ const Map<String, String> kPt = {
   'combo_summer': 'Combo verão',
   'combo_sweets': 'Docinhos',
   'combo_winter': 'Delícias de inverno',
+  'cook_hint': 'Hot counter food must be cooked first. Stand still next to it to cook (staff can\'t)',
   'credits_art': 'Arte e sons',
   'credits_font': 'Fonte',
   'credits_music': 'Música',

@@ -58,6 +58,7 @@ const Map<String, String> kFr = {
   'combo_summer': 'Combo été',
   'combo_sweets': 'Friandises',
   'combo_winter': 'Douceurs d\'hiver',
+  'cook_hint': 'Hot counter food must be cooked first. Stand still next to it to cook (staff can\'t)',
   'credits_art': 'Images et sons',
   'credits_font': 'Police',
   'credits_music': 'Musique',

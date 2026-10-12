@@ -58,6 +58,7 @@ const Map<String, String> kDe = {
   'combo_summer': 'Sommer-Set',
   'combo_sweets': 'Süße Snacks',
   'combo_winter': 'Winter-Leckereien',
+  'cook_hint': 'Hot counter food must be cooked first. Stand still next to it to cook (staff can\'t)',
   'credits_art': 'Grafik und Sounds',
   'credits_font': 'Schrift',
   'credits_music': 'Musik',

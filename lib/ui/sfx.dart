@@ -50,6 +50,7 @@ class Sfx {
     FxKind.levelUp: 'unlock',
     FxKind.angry: 'angry',
     FxKind.clean: 'pick',
+    FxKind.cook: 'place',
   };
 
   /// 사건 소리: 경보(도둑·고장·진상·빈 상자), 좋음(잡음·고침·달램·우수), 나쁨(놓침·불량), 딩동(주문·도착·점검관), 피버, 상자.

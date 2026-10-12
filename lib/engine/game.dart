@@ -17,6 +17,7 @@ class Item {
   int units = boxSize; // 상자에 남은 물건
   double incoming = 0; // 주문한 상자가 도착하기까지 남은 초 (0 이면 주문 없음)
   int age = 0; // 신선 상품 진열대: 밤을 넘긴 날 수 (비면 0)
+  int raw = 0; // 온장 진열대: 아직 안 익힌 것 (팔 수 없다)
   bool sticker = false; // 반값 스티커
   Item(this.type, this.c, this.r, {this.rot = 0, this.product});
 
@@ -529,6 +530,7 @@ class Game {
         ..units = i.units
         ..incoming = i.incoming
         ..age = i.age
+        ..raw = i.raw
         ..sticker = i.sticker
         ..broken = i.broken);
     } else {
@@ -588,6 +590,7 @@ class Game {
     i.product = product;
     i.stock = 0;
     i.age = 0;
+    i.raw = 0;
     i.sticker = false;
     if (i.t.kind == ItemKind.box) i.units = 0;
     _changed();
@@ -803,7 +806,7 @@ class Game {
         'items': [
           for (final i in items)
             // 오는 중인 주문은 저장할 때 도착한 것으로 친다
-            [i.type, i.c, i.r, i.rot, i.product ?? '', i.stock, i.cash, i.level, i.price, min(boxMax, i.units + (i.incoming > 0 ? boxSize : 0)), i.age, i.sticker ? 1 : 0]
+            [i.type, i.c, i.r, i.rot, i.product ?? '', i.stock, i.cash, i.level, i.price, min(boxMax, i.units + (i.incoming > 0 ? boxSize : 0)), i.age, i.sticker ? 1 : 0, i.raw]
         ],
         'floors': [for (final e in floors.entries) [e.key.$1, e.key.$2, e.value]],
         'staff': {for (final e in staff.entries) e.key.name: e.value},
@@ -835,6 +838,7 @@ class Game {
             ..units = l.length > 9 ? l[9] as int : boxSize
             ..age = l.length > 10 ? l[10] as int : 0
             ..sticker = l.length > 11 && l[11] == 1
+            ..raw = l.length > 12 ? l[12] as int : 0
       ]);
     for (final l in (j['floors'] as List).cast<List>()) {
       floors[tile(l)] = l[2] as String;

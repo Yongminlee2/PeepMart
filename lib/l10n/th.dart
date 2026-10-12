@@ -58,6 +58,7 @@ const Map<String, String> kTh = {
   'combo_summer': 'เซ็ตหน้าร้อน',
   'combo_sweets': 'ขนมหวาน',
   'combo_winter': 'ของว่างหน้าหนาว',
+  'cook_hint': 'Hot counter food must be cooked first. Stand still next to it to cook (staff can\'t)',
   'credits_art': 'ภาพและเสียง',
   'credits_font': 'ฟอนต์',
   'credits_music': 'เพลง',

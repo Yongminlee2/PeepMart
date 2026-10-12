@@ -58,6 +58,7 @@ const Map<String, String> kIt = {
   'combo_summer': 'Combo estate',
   'combo_sweets': 'Dolcetti',
   'combo_winter': 'Golosità invernali',
+  'cook_hint': 'Hot counter food must be cooked first. Stand still next to it to cook (staff can\'t)',
   'credits_art': 'Grafica e suoni',
   'credits_font': 'Carattere',
   'credits_music': 'Musica',
