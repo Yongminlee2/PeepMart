@@ -531,7 +531,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                 Align(
                   // 위에 안내·단골 카드가 떠 있으면 그 아래로
                   alignment: Alignment(
-                      0, game.owner.tutorial != TutorialStep.done || (_regularNews != null && _regularLeft > 0) ? -0.2 : -0.62),
+                      0, game.owner.tutorial != TutorialStep.done || (_regularNews != null && _regularLeft > 0) ? -0.2 : -0.42),
                   child: IgnorePointer(
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -1404,7 +1404,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
             if (r.warPrize < 0) row(S.t('war_lost'), const Icon(Icons.close_rounded, size: 18, color: Color(0xFFE53935))),
             if (r.chest > 0) _Chest(r.chest, r.jackpot),
             if (r.weekRank > 0)
-              row(S.tn('week_done', {'n': r.weekRank}),
+              row(S.tn(r.weekPrize > 0 ? 'week_done' : 'week_done_none', {'n': r.weekRank}),
                   r.weekPrize > 0 ? Coins(r.weekPrize, size: 14) : const Icon(Icons.emoji_events_outlined, size: 18, color: Colors.black38)),
             if (r.goods > 0) row(S.t('day_goods'), Coins(-r.goods, size: 14)),
             if (r.wages > 0) row(S.t('day_wages'), Coins(-r.wages, size: 14)),
@@ -1467,7 +1467,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
             Center(child: Text(S.t('week_title'), style: const TextStyle(fontSize: 20, color: inkColor))),
             Center(
-              child: Text(S.tn('week_desc', {'d': weekLength - game.weekDone, 'p': (game.weekBase * weekPrizes[0] / 10).round() * 10}),
+              child: Text(S.tn('week_desc', {'d': weekLength - game.weekDone, 'p': game.weekPrizeFor(1)}),
                   textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, color: Colors.black54)),
             ),
             const SizedBox(height: 10),

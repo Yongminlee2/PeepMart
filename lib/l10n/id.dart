@@ -533,6 +533,7 @@ const Map<String, String> kId = {
   'weather_sunny': 'Cerah',
   'week_desc': 'Final ranking in {d} days. 1st place wins {p}; 2nd and 3rd also win',
   'week_done': 'Weekly town rank #{n}!',
+  'week_done_none': 'This week: #{n} in town · aim higher next week',
   'week_me': 'Peep Mart (me)',
   'week_rank': 'This week: #{n} · {d} days left',
   'week_start': 'New week! Compete on 7 days of sales',

@@ -188,8 +188,14 @@ class _BuildPanelState extends State<BuildPanel> {
                 onTap: () => _startPlacing('box', p.id),
               ),
           ]),
-        BuildTab.counters => _types([ItemKind.register, ItemKind.entrance]),
-        BuildTab.decor => _types([ItemKind.decor, ItemKind.seat, ItemKind.bin]),
+        BuildTab.counters => _row([
+            ...itemTypes.where((t) => t.kind == ItemKind.register || t.kind == ItemKind.entrance || t.id == 'service').map(_typeCard),
+          ]),
+        BuildTab.decor => _row([
+            ...itemTypes
+                .where((t) => (t.kind == ItemKind.decor && t.id != 'service') || t.kind == ItemKind.seat || t.kind == ItemKind.bin)
+                .map(_typeCard),
+          ]),
         BuildTab.floors => _row([
             ...itemTypes.where((t) => t.kind == ItemKind.floor).map(_typeCard),
             _card(
@@ -228,8 +234,6 @@ class _BuildPanelState extends State<BuildPanel> {
             children: [for (final u in Upgrade.values) _upgradeRow(u)],
           ),
       };
-
-  Widget _types(List<ItemKind> kinds) => _row([...itemTypes.where((t) => kinds.contains(t.kind)).map(_typeCard)]);
 
   Widget _typeCard(ItemType t) => _card(
         preview: ItemPreview(t.id),
@@ -336,7 +340,7 @@ class _BuildPanelState extends State<BuildPanel> {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('${S.t('staff_${s.name}')}  ×${game.count(s)}  Lv.${game.staffLevelOf(s)}',
                 style: const TextStyle(fontSize: 16, color: inkColor)),
-            Text(locked ? S.tn('need_level', {'n': spec.level}) : S.tn('wage', {'n': spec.wage}),
+            Text(locked ? S.tn('need_level', {'n': spec.level}) : S.tn('wage', {'n': (spec.wage * dayLength / wagePeriod).round()}),
                 style: const TextStyle(fontSize: 12, color: Colors.black45)),
             if (traits.isNotEmpty)
               Text(traits.join(' · '), maxLines: 1, overflow: TextOverflow.ellipsis,

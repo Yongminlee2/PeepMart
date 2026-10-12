@@ -352,8 +352,14 @@ class Game {
 
   /// 이번 주 동네 순위표 (이름 열쇠, 매출) 큰 순. 라이벌은 지난 날만큼만 쌓인다. [full] 이면 한 주를 다 친다.
   /// 내 가게 열쇠는 'me'.
+  /// 이번 주 라이벌 매출·상금을 정하는 내 하루 평균(첫 주 첫날엔 지금 평균).
+  double get weekBaseNow => weekBase > 0 ? weekBase : max(avgSales, 50.0);
+
+  /// [rank] 위 상금 (3위 밖이면 0).
+  int weekPrizeFor(int rank) => rank >= 1 && rank <= weekPrizes.length ? (weekBaseNow * weekPrizes[rank - 1] / 10).round() * 10 : 0;
+
   List<(String, int)> standings({bool full = false}) {
-    final base = weekBase > 0 ? weekBase : max(avgSales, 50.0);
+    final base = weekBaseNow;
     final done = full ? weekLength : weekDone;
     final out = <(String, int)>[
       for (var i = 0; i < rivalShops.length; i++)
@@ -372,7 +378,7 @@ class Game {
     if (weekBase <= 0) weekBase = max(sales.toDouble(), 50);
     if (day % weekLength != 0) return (0, 0);
     final rank = standings(full: true).indexWhere((e) => e.$1 == 'me') + 1;
-    final prize = rank <= weekPrizes.length ? (weekBase * weekPrizes[rank - 1] / 10).round() * 10 : 0;
+    final prize = weekPrizeFor(rank);
     money += prize;
     lastWeekRank = rank;
     weekSales = 0;
