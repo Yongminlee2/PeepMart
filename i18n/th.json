@@ -512,5 +512,14 @@
   "night_title": "Night shift",
   "night_result": "Night shift over!",
   "i_selfcheck": "Self-checkout",
-  "inc_selfError": "Self-checkout error! Go help the customer"
+  "inc_selfError": "Self-checkout error! Go help the customer",
+  "rival_0": "Mega Mart",
+  "rival_1": "Happy Super",
+  "rival_2": "Corner Shop",
+  "rival_3": "24h Mart",
+  "week_me": "Peep Mart (me)",
+  "week_rank": "This week: #{n} · {d} days left",
+  "week_title": "This week's town sales ranking",
+  "week_desc": "Final ranking in {d} days. 1st place wins {p}; 2nd and 3rd also win",
+  "week_done": "Weekly town rank #{n}!"
 }

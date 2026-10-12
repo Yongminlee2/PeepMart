@@ -279,4 +279,41 @@ void main() {
     run(w, 3);
     expect(w.staff.where((s) => s.item == self), isEmpty);
   });
+
+  test('동네 매출 순위: 7일마다 순위를 매기고, 1~3위는 상금, 순위표는 매출 순', () {
+    final g = shop(3);
+    final w = World(g, seed: 10);
+    for (var d = 1; d <= 7; d++) {
+      w.openDay();
+      w.daySales = 500; // 매일 같은 매출
+      close(w);
+      if (d < 7) {
+        expect(w.result!.weekRank, 0);
+        expect(g.weekSales, 500 * d);
+      }
+      w.result = null;
+    }
+    // 같은 만큼만 벌면 평소보다 30% 더 버는 메가마트를 못 이긴다
+    final last = g.lastWeekRank;
+    expect(last, greaterThan(1));
+    expect(g.weekSales, 0);
+    final st = g.standings();
+    expect(st.length, rivalShops.length + 1);
+    for (var i = 1; i < st.length; i++) {
+      expect(st[i - 1].$2, greaterThanOrEqualTo(st[i].$2));
+    }
+    // 한 주 동안 크게 벌면 1위
+    for (var d = 1; d <= 7; d++) {
+      w.openDay();
+      w.daySales = 5000;
+      close(w);
+      if (d == 7) {
+        expect(w.result!.weekRank, 1);
+        expect(w.result!.weekPrize, greaterThan(0));
+      }
+      w.result = null;
+    }
+    final back = Game.fromJson(g.toJson());
+    expect(back.lastWeekRank, 1);
+  });
 }

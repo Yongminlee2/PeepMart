@@ -512,5 +512,14 @@
   "night_title": "야간 영업",
   "night_result": "야간 영업 끝!",
   "i_selfcheck": "셀프 계산대",
-  "inc_selfError": "셀프 계산대 오류! 옆에 가서 도와주세요"
+  "inc_selfError": "셀프 계산대 오류! 옆에 가서 도와주세요",
+  "rival_0": "메가마트",
+  "rival_1": "행복슈퍼",
+  "rival_2": "골목상회",
+  "rival_3": "24시 편의점",
+  "week_me": "삐약마트(나)",
+  "week_rank": "이번 주 동네 {n}위 · {d}일 남음",
+  "week_title": "이번 주 동네 매출 순위",
+  "week_desc": "{d}일 뒤 순위가 정해져요. 1위 상금 {p}, 2·3위도 상금이 있어요",
+  "week_done": "주간 동네 순위 {n}위!"
 }

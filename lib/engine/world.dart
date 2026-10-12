@@ -41,12 +41,13 @@ class DayResult {
   final int aid; // 할머니가 채워 준 돈
   final int wasted, wasteValue; // 유통기한이 지나 버린 개수와 그 도매가
   final bool night; // 야간 영업 결과(목표·별·할 일 없음)
+  final int weekRank, weekPrize; // 7일째 끝이면 주간 동네 순위와 상금
   const DayResult(this.day, this.sales, this.target, this.served, this.upset, this.stars, this.bonus,
       this.taskReward, this.best, this.tasks,
-      {this.cost = 0, this.warPrize = 0, this.chest = 0, this.jackpot = false, this.goods = 0, this.wages = 0, this.missing = const [], this.quit, this.aid = 0, this.wasted = 0, this.wasteValue = 0, this.night = false});
+      {this.cost = 0, this.warPrize = 0, this.chest = 0, this.jackpot = false, this.goods = 0, this.wages = 0, this.missing = const [], this.quit, this.aid = 0, this.wasted = 0, this.wasteValue = 0, this.night = false, this.weekRank = 0, this.weekPrize = 0});
 
   /// 오늘 남은 돈: 매출 + 보너스·상금 - 운영비 - 물건값 - 일당. (예전엔 물건값·일당을 빼지 않아 실제보다 크게 보였다)
-  int get profit => sales + bonus + taskReward + (warPrize > 0 ? warPrize : 0) + chest - cost - goods - wages;
+  int get profit => sales + bonus + taskReward + (warPrize > 0 ? warPrize : 0) + chest + weekPrize + aid - cost - goods - wages;
 }
 
 class Customer extends Walker {
@@ -717,8 +718,10 @@ class World {
       s.broken = false; // 밤사이 수리 기사가 고친다
     }
     final (wasted, wasteValue) = game.ageShelves();
+    final (weekRank, weekPrize) = game.addWeekSales(daySales);
     result = DayResult(game.day, daySales, dayTarget, dayServed, dayUpset, stars, bonus, taskReward, best, done,
         cost: cost, warPrize: warPrize, chest: chest, jackpot: jackpot, goods: game.spentGoods, wages: game.spentWages, quit: quit, aid: aid, wasted: wasted, wasteValue: wasteValue,
+        weekRank: weekRank, weekPrize: weekPrize,
         missing: (dayMissing.entries.map((e) => (e.key, e.value)).toList()..sort((a, b) => b.$2.compareTo(a.$2))).take(3).toList());
     game.spentGoods = 0;
     game.spentWages = 0;

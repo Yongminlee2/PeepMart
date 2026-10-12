@@ -515,7 +515,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                     left: 8,
                     top: 58,
                     child: world.phase == DayPhase.closed
-                        ? _goalCard()
+                        ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_goalCard(), _rankChip()])
                         : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                             _dayCard(),
                             if (world.order != null) _orderCard(world.order!),
@@ -1403,6 +1403,9 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
             if (r.warPrize > 0) row(S.t('war_won'), Coins(r.warPrize, size: 14)),
             if (r.warPrize < 0) row(S.t('war_lost'), const Icon(Icons.close_rounded, size: 18, color: Color(0xFFE53935))),
             if (r.chest > 0) _Chest(r.chest, r.jackpot),
+            if (r.weekRank > 0)
+              row(S.tn('week_done', {'n': r.weekRank}),
+                  r.weekPrize > 0 ? Coins(r.weekPrize, size: 14) : const Icon(Icons.emoji_events_outlined, size: 18, color: Colors.black38)),
             if (r.goods > 0) row(S.t('day_goods'), Coins(-r.goods, size: 14)),
             if (r.wages > 0) row(S.t('day_wages'), Coins(-r.wages, size: 14)),
             row(S.t('day_cost'), Coins(-r.cost, size: 14)),
@@ -1424,6 +1427,79 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
       ),
     );
     world.result = null;
+  }
+
+  /// 이번 주 동네 순위: 누르면 순위표.
+  Widget _rankChip() {
+    final rank = game.weekRank;
+    final left = weekLength - game.weekDone;
+    return GestureDetector(
+      onTap: _showStandings,
+      child: Container(
+        margin: const EdgeInsets.only(top: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          boxShadow: softShadow,
+          color: const Color(0xFFFFF8E1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFFFB300), width: 1.5),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Icons.emoji_events_rounded, size: 16, color: Color(0xFFFFA000)),
+          const SizedBox(width: 4),
+          Text(S.tn('week_rank', {'n': rank, 'd': left}), style: const TextStyle(fontSize: 13, color: inkColor)),
+        ]),
+      ),
+    );
+  }
+
+  void _showStandings() {
+    final list = game.standings();
+    final top = list.first.$2 <= 0 ? 1 : list.first.$2;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: bg,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (c) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Center(child: Text(S.t('week_title'), style: const TextStyle(fontSize: 20, color: inkColor))),
+            Center(
+              child: Text(S.tn('week_desc', {'d': weekLength - game.weekDone, 'p': (game.weekBase * weekPrizes[0] / 10).round() * 10}),
+                  textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, color: Colors.black54)),
+            ),
+            const SizedBox(height: 10),
+            for (var i = 0; i < list.length; i++)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(children: [
+                  SizedBox(width: 28, child: Text('${i + 1}', style: const TextStyle(fontSize: 18, color: Color(0xFFFFA000)))),
+                  SizedBox(
+                    width: 104,
+                    child: Text(list[i].$1 == 'me' ? S.t('week_me') : S.t(list[i].$1),
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 15, color: list[i].$1 == 'me' ? const Color(0xFFE65100) : inkColor)),
+                  ),
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: (list[i].$2 / top).clamp(0.0, 1.0),
+                        minHeight: 10,
+                        backgroundColor: const Color(0xFFEEEEEE),
+                        color: list[i].$1 == 'me' ? const Color(0xFFFF7043) : const Color(0xFF90A4AE),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  SizedBox(width: 64, child: Align(alignment: Alignment.centerRight, child: Coins(list[i].$2, size: 13))),
+                ]),
+              ),
+          ]),
+        ),
+      ),
+    );
   }
 
   Widget _goalCard() {

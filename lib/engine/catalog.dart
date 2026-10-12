@@ -674,6 +674,12 @@ const branchRules = {
 };
 BranchRule ruleOf(String branch) => branchRules[branch] ?? const BranchRule();
 
+/// 동네 매출 순위: 7일마다 동네 가게 넷과 그 주 매출을 겨룬다. 라이벌 매출 = 주 시작 때 내 하루 평균 × 7 × 배율(주마다 조금씩 출렁).
+/// 1·2·3위면 내 하루 평균의 [weekPrizes] 배 상금. 1등을 하려면 평소보다 30% 넘게 벌어야 한다.
+const weekLength = 7;
+const rivalShops = [1.3, 1.1, 0.95, 0.75]; // rival_0 메가마트, rival_1 행복슈퍼, rival_2 골목상회, rival_3 24시 편의점
+const weekPrizes = [1.0, 0.5, 0.25];
+
 /// 목표를 다 이루면 끝없이 이어지는 목표: 그때부터 손님 [extraGoalStep] 명마다.
 const extraGoalStep = 500;
 int extraGoalReward(int i) => 2000 + 500 * i;

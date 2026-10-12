@@ -196,6 +196,9 @@ class Game {
   double avgShelves = 0; // 그 평균을 낼 때의 진열대 수(가게를 키우면 목표도 따라 오르게)
   int spentGoods = 0, spentWages = 0; // 지난 결산 뒤 쓴 물건값·일당 (결과 창의 순이익용, 저장 안 함)
   Weather weather = Weather.sunny; // 다음에 여는 날의 날씨 (닫을 때 정해 둔다)
+  int weekSales = 0; // 이번 주(7일) 낮 매출 합
+  double weekBase = 0; // 이번 주 라이벌 매출을 정한 내 하루 평균
+  int lastWeekRank = 0; // 지난주 순위 (0 = 아직 없음)
   Promo? promo; // 다음에 여는 날의 홍보
   String? promoProduct; // 1+1 행사 상품
 
@@ -341,6 +344,40 @@ class Game {
       }
     }
     return (n, value);
+  }
+
+  /// 이번 주 몇째 날까지 끝냈나 (0~6).
+  int get weekDone => (day - 1) % weekLength;
+  int get week => (day - 1) ~/ weekLength;
+
+  /// 이번 주 동네 순위표 (이름 열쇠, 매출) 큰 순. 라이벌은 지난 날만큼만 쌓인다. [full] 이면 한 주를 다 친다.
+  /// 내 가게 열쇠는 'me'.
+  List<(String, int)> standings({bool full = false}) {
+    final base = weekBase > 0 ? weekBase : max(avgSales, 50.0);
+    final done = full ? weekLength : weekDone;
+    final out = <(String, int)>[
+      for (var i = 0; i < rivalShops.length; i++)
+        ('rival_$i', (base * weekLength * rivalShops[i] * (0.94 + 0.12 * ((week * 7 + i * 13) % 10) / 10) * done / weekLength).round()),
+      ('me', weekSales),
+    ];
+    out.sort((a, b) => b.$2.compareTo(a.$2));
+    return out;
+  }
+
+  int get weekRank => standings().indexWhere((e) => e.$1 == 'me') + 1;
+
+  /// 하루가 끝났다: 주 매출에 더하고, 7일째면 순위를 매겨 상금을 준다. (순위, 상금), 주가 안 끝났으면 (0, 0).
+  (int, int) addWeekSales(int sales) {
+    weekSales += sales;
+    if (weekBase <= 0) weekBase = max(sales.toDouble(), 50);
+    if (day % weekLength != 0) return (0, 0);
+    final rank = standings(full: true).indexWhere((e) => e.$1 == 'me') + 1;
+    final prize = rank <= weekPrizes.length ? (weekBase * weekPrizes[rank - 1] / 10).round() * 10 : 0;
+    money += prize;
+    lastWeekRank = rank;
+    weekSales = 0;
+    weekBase = max(avgSales, 50);
+    return (rank, prize);
   }
 
   /// 전단지 값: 최근 하루 매출의 [flyerShare] (10 단위).
@@ -848,6 +885,7 @@ class Game {
         'avg': [avgSales, avgServed, avgShelves],
         'weather': weather.name,
         if (promo != null) 'promo': [promo!.name, promoProduct ?? ''],
+        'week': [weekSales, weekBase, lastWeekRank],
       };
 
   void _fromJson(Map<String, dynamic> j) {
@@ -894,6 +932,12 @@ class Game {
     avgServed = (avg?[1] as num?)?.toDouble() ?? 0;
     avgShelves = avg != null && avg.length > 2 ? (avg[2] as num).toDouble() : shelves.length.toDouble();
     weather = Weather.values.asNameMap()[j['weather']] ?? Weather.sunny;
+    final wk = j['week'] as List?;
+    if (wk != null) {
+      weekSales = wk[0] as int;
+      weekBase = (wk[1] as num).toDouble();
+      lastWeekRank = wk[2] as int;
+    }
     final pr = j['promo'] as List?;
     if (pr != null) {
       promo = Promo.values.asNameMap()[pr[0]];
