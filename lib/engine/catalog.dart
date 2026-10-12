@@ -115,6 +115,7 @@ const itemTypes = [
   ItemType('hotcounter', ItemKind.shelf, 550, 9, shelf: ShelfKind.hot),
   ItemType('box', ItemKind.box, 50, 1),
   ItemType('register', ItemKind.register, 250, 1),
+  ItemType('selfcheck', ItemKind.register, 700, 10), // 셀프 계산대: 손님이 알아서 찍는다, 가끔 오류
   ItemType('entrance', ItemKind.entrance, 125, 3, walkable: true),
   ItemType('plant', ItemKind.decor, 30, 1),
   ItemType('flowers', ItemKind.decor, 50, 3),
@@ -645,6 +646,11 @@ const machineBreak = 0.05;
 /// 서비스 카운터: 있으면 손님이 올 때 [serviceChance] 확률로 물건 대신 택배·복권 손님이 온다.
 /// 점장이 카운터 옆에 [serviceTime] 초 서 있으면 처리하고 수수료를 받는다(알바는 못 한다). [servicePatience] 초 넘게 기다리면 화내고 간다.
 const serviceChance = 0.12;
+
+/// 셀프 계산대: 계산원 없이 손님이 [selfScanTime] 초마다 하나씩 찍는다(계산원보다 느리다).
+/// 손님마다 [selfError] 확률로 오류가 나서 멈추고, 점장이 옆에 서서 풀어 줘야 한다.
+const selfScanTime = 0.8;
+const selfError = 0.15;
 const serviceTime = 1.8;
 const servicePatience = 30.0;
 const serviceFees = {'parcel': 9, 'lottery': 6};

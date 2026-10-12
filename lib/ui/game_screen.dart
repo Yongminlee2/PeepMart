@@ -154,7 +154,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
         }
         Sfx.cue(
             switch (k) {
-              Incident.thiefFlee || Incident.brokeDown || Incident.grumpyIn || Incident.boxEmpty || Incident.kidLost => 'alarm',
+              Incident.thiefFlee || Incident.brokeDown || Incident.grumpyIn || Incident.boxEmpty || Incident.kidLost ||
+                Incident.selfError => 'alarm',
               Incident.thiefCaught || Incident.kidFound || Incident.orderDone || Incident.repaired || Incident.grumpyCalmed ||
                 Incident.inspectGood => 'good',
               Incident.thiefEscaped || Incident.kidGone || Incident.orderLate || Incident.grumpyLeft || Incident.inspectBad => 'bad',

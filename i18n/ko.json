@@ -510,5 +510,7 @@
   "night_open": "야간 영업 (1분)",
   "night_start": "야간 영업 시작! 값을 {n}% 더 받지만 도둑을 조심하세요",
   "night_title": "야간 영업",
-  "night_result": "야간 영업 끝!"
+  "night_result": "야간 영업 끝!",
+  "i_selfcheck": "셀프 계산대",
+  "inc_selfError": "셀프 계산대 오류! 옆에 가서 도와주세요"
 }

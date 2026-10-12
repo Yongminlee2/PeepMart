@@ -39,6 +39,7 @@ double itemHeight(String type) => switch (type) {
       'plant' || 'lamp' || 'claw' => 60,
       'vending' || 'photo' => 72,
       'atm' || 'service' => 56,
+      'selfcheck' => 64,
       'freezer' || 'box' || 'bin' || 'chair' || 'table' || 'flowers' => 40,
       _ => 0,
     };
@@ -279,6 +280,7 @@ class StorePainter extends CustomPainter {
         if (q == null || q.isEmpty || !q.first.arrived || world.staffedAt(r) || world.player.distTo(r.till) < standRadius) {
           continue;
         }
+        if (r.type == 'selfcheck') continue; // 손님이 알아서 찍는다(오류는 🔧 표시)
         final till = iso(r.till.$1 + 0.0, r.till.$2 + 0.0);
         _arrow(canvas, till + Offset(0, -40 + sin(clock * 6) * 4));
       }
@@ -1264,6 +1266,21 @@ void drawItem(Canvas canvas, String type, Tile t,
       canvas.drawRect(glass, _stroke(1.5));
       canvas.drawRect(Rect.fromCenter(center: glass.topCenter + const Offset(0, -5), width: 44, height: 10), Paint()..color = const Color(0xFFEC407A));
       canvas.drawRect(Rect.fromCenter(center: glass.topCenter + const Offset(0, -5), width: 44, height: 10), _stroke(1.5));
+    case 'selfcheck':
+      // 셀프 계산대: 낮은 받침, 기둥 위 큰 화면, 바코드 빛
+      _nbox(canvas, c - 0.4, r - 0.4, 0.8, 0.8, 22, const Color(0xFFB2DFDB));
+      final top = feet + const Offset(0, -22);
+      canvas.drawLine(top, top + const Offset(0, -18), Paint()..color = const Color(0xFF455A64)..strokeWidth = 4);
+      final scr = RRect.fromRectAndRadius(Rect.fromCenter(center: top + const Offset(0, -30), width: 30, height: 22), const Radius.circular(4));
+      canvas.drawRRect(scr, Paint()..color = const Color(0xFF263238));
+      canvas.drawRRect(scr.deflate(3), Paint()..color = const Color(0xFF80DEEA));
+      canvas.drawRRect(scr, _stroke(1.5));
+      _text(canvas, top + const Offset(0, -30), 'SELF', const Color(0xFF00695C), 8);
+      final beam = 0.5 + 0.5 * sin(clock * 6);
+      canvas.drawLine(top + const Offset(-10, -2), top + const Offset(10, -2),
+          Paint()
+            ..color = Color.fromRGBO(244, 67, 54, 0.4 + 0.5 * beam)
+            ..strokeWidth = 2);
     case 'service':
       // 서비스 카운터: 하늘색 카운터, 위에 택배 상자, 옆에 복권 간판
       _nbox(canvas, c - 0.44, r - 0.4, 0.88, 0.8, 26, const Color(0xFF90CAF9));

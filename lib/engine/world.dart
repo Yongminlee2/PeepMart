@@ -68,6 +68,7 @@ class Customer extends Walker {
   bool fleeing = false; // 도둑: 물건을 들고 도망치는 중
   bool balked = false; // 이번 진열대 가격을 이미 봤다
   String? service; // 서비스 손님: 'parcel'(택배) 또는 'lottery'(복권)
+  bool selfChecked = false; // 셀프 계산대 오류 굴림을 이미 했다
   Customer(this.look, super.at, this.wants);
 
   double get patience => kind == CustomerKind.hurry ? 0.5 : 1.0;
@@ -99,7 +100,7 @@ enum Incident {
   thiefFlee, thiefCaught, thiefEscaped, kidLost, kidFound, kidGone, orderIn, orderDone, orderLate,
   brokeDown, repaired, grumpyIn, grumpyCalmed, grumpyLeft,
   fever, inspectIn, inspectGood, inspectOk, inspectBad,
-  boxEmpty, boxArrived, bulkIn, clawPlay
+  boxEmpty, boxArrived, bulkIn, clawPlay, selfError
 }
 
 /// 배달 주문: 진열대를 돌며 상품을 챙기고(진열대에서 빠진다) 입구까지 들고 가면 끝.
@@ -795,6 +796,7 @@ class World {
         fx.add(Fx(FxKind.incident, b.c.toDouble(), b.r.toDouble(), amount: Incident.boxArrived.index, product: b.product ?? ''));
       }
     }
+    _selfCheckouts();
     sinceServe += dt;
     if (sinceServe > comboWindow(game.spawnGap)) combo = 0;
     if (feverLeft > 0) feverLeft = max(0, feverLeft - dt);
@@ -1201,7 +1203,7 @@ class World {
   void _cashierWork(StaffAgent s, double dt) {
     if (s.item == null) {
       final taken = {for (final o in staff) if (o.kind == Staff.cashier) o.item};
-      final free = game.registers.where((r) => !taken.contains(r));
+      final free = game.registers.where((r) => !taken.contains(r) && r.type != 'selfcheck'); // 셀프 계산대엔 안 선다
       if (free.isEmpty) return;
       s
         ..item = free.first
@@ -1219,6 +1221,26 @@ class World {
         s.step = 0;
         _scan(s.item!, staffed: true, by: s);
       }
+    }
+  }
+
+  /// 셀프 계산대: 맨 앞 손님이 스스로 찍는다. 손님마다 한 번 오류 굴림(오류면 점장이 고칠 때까지 멈춤).
+  void _selfCheckouts() {
+    for (final r in game.registers) {
+      if (r.type != 'selfcheck' || r.broken) continue;
+      final q = queues[r];
+      if (q == null || q.isEmpty || !q.first.arrived) continue;
+      if (time - (lastScan[r] ?? -9) < selfScanTime / levelScan(r.level)) continue;
+      final c = q.first;
+      if (!c.selfChecked) {
+        c.selfChecked = true;
+        if (_rng.nextDouble() < selfError) {
+          r.broken = true;
+          fx.add(Fx(FxKind.incident, r.c.toDouble(), r.r.toDouble(), amount: Incident.selfError.index));
+          continue;
+        }
+      }
+      _scan(r, staffed: true);
     }
   }
 

@@ -253,4 +253,30 @@ void main() {
     low.result = null;
     expect(low.canOpenNight, isFalse);
   });
+
+  test('셀프 계산대: 계산원 없이 손님이 찍고, 오류가 나면 점장이 고쳐야 다시 돈다', () {
+    final g = shop(10);
+    // 원래 계산대를 팔 수 없으니 셀프 계산대를 하나 더 놓고, 원래 것은 줄이 안 생기게 막는다
+    expect(g.place('selfcheck', (4, 5)), isTrue);
+    final self = g.at((4, 5))!;
+    final w = World(g, seed: 9)..openDay();
+    var paidAtSelf = 0, errors = 0;
+    for (var i = 0; i < 3000; i++) {
+      for (final s in g.shelves) {
+        s.stock = s.capacity;
+      }
+      w.tick(0.05);
+      errors += w.fx.where((e) => e.kind == FxKind.incident && e.amount == Incident.selfError.index).length;
+      paidAtSelf += w.fx.where((e) => e.kind == FxKind.pay && e.x == 4 && e.y == 5).length;
+      if (self.broken && i % 400 == 399) self.broken = false; // 가끔 점장이 고쳐 준 셈
+      w.fx.clear();
+    }
+    expect(paidAtSelf, greaterThan(0));
+    expect(errors, greaterThan(0));
+    // 계산원은 셀프 계산대에 서지 않는다
+    g.hire(Staff.cashier);
+    g.hire(Staff.cashier);
+    run(w, 3);
+    expect(w.staff.where((s) => s.item == self), isEmpty);
+  });
 }
