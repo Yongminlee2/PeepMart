@@ -691,6 +691,13 @@ class StorePainter extends CustomPainter {
         _float(canvas, e, k, '!!', const Color(0xFFE53935));
       case FxKind.sad:
         _float(canvas, e, k, '...', const Color(0xFF90A4AE));
+      case FxKind.missing:
+        // 찾던 상품이 없다: 그 상품 아이콘에 빨간 X
+        final p = iso(e.x, e.y) + Offset(0, -62 - k * 22);
+        canvas.saveLayer(null, Paint()..color = Color.fromRGBO(0, 0, 0, 1 - k * k));
+        _food(canvas, e.product, p, 16);
+        _text(canvas, p + const Offset(9, 7), '✕', const Color(0xFFE53935), 15, outline: 1);
+        canvas.restore();
       case FxKind.litter:
         _float(canvas, e, k, '!', const Color(0xFF8D6E63));
       case FxKind.clean:

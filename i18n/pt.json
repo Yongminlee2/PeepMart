@@ -275,7 +275,7 @@
   "task_calm": "No máximo {n} clientes decepcionados",
   "btn_nice": "Oba!",
   "help_day_t": "Um dia na loja",
-  "help_day_b": "Abra as portas e os clientes vêm por 3 minutos. 30 segundos antes de fechar chega uma multidão, e quando o tempo acaba você atende só os últimos clientes e fecha. A meta fica um pouco acima da sua média recente, então um dia comum vale uma estrela; faça melhor para ganhar duas ou três, e quanto mais estrelas, maior o bônus. Cumpra as duas tarefas para ganhar um prêmio também. No fim do dia, você paga o aluguel do terreno e a manutenção das prateleiras. Enquanto a loja está fechada não há clientes, então construa e decore com calma.",
+  "help_day_b": "Abra as portas e os clientes vêm por 2 minutos. 20 segundos antes de fechar chega uma multidão, e quando o tempo acaba você atende só os últimos clientes e fecha. A meta fica um pouco acima da sua média recente, então um dia comum vale uma estrela; faça melhor para ganhar duas ou três, e quanto mais estrelas, maior o bônus. Cumpra as duas tarefas para ganhar um prêmio também. No fim do dia, você paga o aluguel do terreno e a manutenção das prateleiras. Enquanto a loja está fechada não há clientes, então construa e decore com calma.",
   "rank_0": "Vendinha",
   "rank_1": "Minimercado",
   "rank_2": "Minimercado grande",
@@ -465,5 +465,8 @@
   "land_hint2": "Tap a glowing plot to buy it (next: {n}) · Your land brings +{b}% customers",
   "town_forsale": "For sale",
   "day_goods": "Stock (wholesale)",
-  "day_wages": "Staff wages"
+  "day_wages": "Staff wages",
+  "day_missing": "Wanted but not stocked",
+  "day_quit": "Short on money, one staff member quit",
+  "day_aid": "Grandma's helping hand"
 }

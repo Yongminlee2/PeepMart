@@ -258,6 +258,9 @@ class Game {
   /// 진열대에 올라 있는 상품들 (손님이 사러 올 수 있는 것).
   Set<String> get onSale => {for (final s in shelves) s.product!};
 
+  /// 동네 손님이 찾는 상품: 지금 레벨에서 열린 것 전부.
+  List<String> get demand => [for (final p in products) if (unlockedProduct(p)) p.id];
+
   int count(Staff s) => staff[s] ?? 0;
   int step(Upgrade u) => upgrades[u] ?? 0;
   int get arms => startArms + 2 * step(Upgrade.arms);
@@ -613,7 +616,7 @@ class Game {
     final avg = sale.map((p) => productById(p).price).reduce((a, b) => a + b) / sale.length;
     // 마감 전 몰림까지 치면 손님이 15% 더 오고, 한 사람이 평균 두 개쯤 산다
     final visitors = dayLength / spawnGap * 1.15;
-    return (visitors, visitors * avg * (basketMin + basketMax) / 2);
+    return (visitors, visitors * avg * (basketMin + basketCap(sale.length)) / 2);
   }
 
   /// 다음에 여는 날의 날씨. 동네 편의점 전에는 늘 맑음.
@@ -640,7 +643,7 @@ class Game {
       }.intersection(onSale);
 
   /// 하루 운영비: 임대료 + 진열대 관리비.
-  int get dailyCost => (plots.length * rentPerPlot * (1 + rentPerRank * rank)).round() + shelves.length * upkeepPerShelf;
+  int get dailyCost => ((plots.length - 1) * rentPerPlot * (1 + rentPerRank * rank)).round() + shelves.length * upkeepPerShelf;
 
   /// 해 본 날이 있는가. 있으면 목표·할 일을 최근 평균으로 정한다.
   /// (가게 크기로 어림하면 계산대·알바가 모자란 큰 가게에서 목표가 터무니없이 높아진다.)

@@ -275,7 +275,7 @@
   "task_calm": "Al massimo {n} clienti delusi",
   "btn_nice": "Evviva!",
   "help_day_t": "Una giornata al negozio",
-  "help_day_b": "Apri le porte e i clienti arrivano per 3 minuti. 30 secondi prima della chiusura c'è la ressa, e quando il tempo scade servi gli ultimi clienti e chiudi. L'obiettivo è un po' sopra la tua media recente, quindi una giornata normale vale una stella; fai di meglio per due o tre, e più stelle significano un bonus più grande. Completa i due compiti per un premio in più. A fine giornata paghi l'affitto del terreno e la manutenzione degli scaffali. Mentre il negozio è chiuso non ci sono clienti, quindi costruisci e decora con calma.",
+  "help_day_b": "Apri le porte e i clienti arrivano per 2 minuti. 20 secondi prima della chiusura c'è la ressa, e quando il tempo scade servi gli ultimi clienti e chiudi. L'obiettivo è un po' sopra la tua media recente, quindi una giornata normale vale una stella; fai di meglio per due o tre, e più stelle significano un bonus più grande. Completa i due compiti per un premio in più. A fine giornata paghi l'affitto del terreno e la manutenzione degli scaffali. Mentre il negozio è chiuso non ci sono clienti, quindi costruisci e decora con calma.",
   "rank_0": "Bottega",
   "rank_1": "Minimarket",
   "rank_2": "Grande minimarket",
@@ -465,5 +465,8 @@
   "land_hint2": "Tap a glowing plot to buy it (next: {n}) · Your land brings +{b}% customers",
   "town_forsale": "For sale",
   "day_goods": "Stock (wholesale)",
-  "day_wages": "Staff wages"
+  "day_wages": "Staff wages",
+  "day_missing": "Wanted but not stocked",
+  "day_quit": "Short on money, one staff member quit",
+  "day_aid": "Grandma's helping hand"
 }

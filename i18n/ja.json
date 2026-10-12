@@ -275,7 +275,7 @@
   "task_calm": "がっかりしたお客さん{n}人以下",
   "btn_nice": "やったね",
   "help_day_t": "1日の営業",
-  "help_day_b": "お店を開けると3分間お客さんが来ます。閉店30秒前にはお客さんが押し寄せ、時間になったら残りのお客さんだけ対応して閉店します。目標は最近の平均より少し高めなので、いつも通りなら星1つ。もっとがんばれば星2つ、3つで、星が多いほどボーナスも大きくなります。おしごとを2つこなすと賞金ももらえます。1日の終わりには、土地の広さに応じた家賃と棚の管理費がかかります。閉店中はお客さんが来ないので、ゆっくり建てたり飾ったりしよう。",
+  "help_day_b": "お店を開けると2分間お客さんが来ます。閉店20秒前にはお客さんが押し寄せ、時間になったら残りのお客さんだけ対応して閉店します。目標は最近の平均より少し高めなので、いつも通りなら星1つ。もっとがんばれば星2つ、3つで、星が多いほどボーナスも大きくなります。おしごとを2つこなすと賞金ももらえます。1日の終わりには、土地の広さに応じた家賃と棚の管理費がかかります。閉店中はお客さんが来ないので、ゆっくり建てたり飾ったりしよう。",
   "rank_0": "小さなお店",
   "rank_1": "町のコンビニ",
   "rank_2": "大きなコンビニ",
@@ -465,5 +465,8 @@
   "land_hint2": "Tap a glowing plot to buy it (next: {n}) · Your land brings +{b}% customers",
   "town_forsale": "For sale",
   "day_goods": "Stock (wholesale)",
-  "day_wages": "Staff wages"
+  "day_wages": "Staff wages",
+  "day_missing": "Wanted but not stocked",
+  "day_quit": "Short on money, one staff member quit",
+  "day_aid": "Grandma's helping hand"
 }

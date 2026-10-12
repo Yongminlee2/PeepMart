@@ -275,7 +275,7 @@
   "task_calm": "Höchstens {n} enttäuschte Kunden",
   "btn_nice": "Super!",
   "help_day_t": "Ein Tag im Laden",
-  "help_day_b": "Öffne die Türen, dann kommen 3 Minuten lang Kunden. 30 Sekunden vor Ladenschluss gibt es einen Ansturm, und wenn die Zeit um ist, bedienst du nur noch die letzten Kunden und schließt. Das Ziel liegt etwas über deinem Durchschnitt der letzten Tage, ein ganz normaler Tag bringt also einen Stern; mach es besser für zwei oder drei, und je mehr Sterne, desto größer der Bonus. Schaffst du die zwei Aufgaben, gibt es noch eine Belohnung. Am Ende des Tages zahlst du Miete für dein Grundstück und Unterhalt für deine Regale. Solange der Laden zu ist, kommen keine Kunden, also bau und dekoriere in Ruhe.",
+  "help_day_b": "Öffne die Türen, dann kommen 2 Minuten lang Kunden. 20 Sekunden vor Ladenschluss gibt es einen Ansturm, und wenn die Zeit um ist, bedienst du nur noch die letzten Kunden und schließt. Das Ziel liegt etwas über deinem Durchschnitt der letzten Tage, ein ganz normaler Tag bringt also einen Stern; mach es besser für zwei oder drei, und je mehr Sterne, desto größer der Bonus. Schaffst du die zwei Aufgaben, gibt es noch eine Belohnung. Am Ende des Tages zahlst du Miete für dein Grundstück und Unterhalt für deine Regale. Solange der Laden zu ist, kommen keine Kunden, also bau und dekoriere in Ruhe.",
   "rank_0": "Kiosk",
   "rank_1": "Minimarkt",
   "rank_2": "Großer Minimarkt",
@@ -465,5 +465,8 @@
   "land_hint2": "Tap a glowing plot to buy it (next: {n}) · Your land brings +{b}% customers",
   "town_forsale": "For sale",
   "day_goods": "Stock (wholesale)",
-  "day_wages": "Staff wages"
+  "day_wages": "Staff wages",
+  "day_missing": "Wanted but not stocked",
+  "day_quit": "Short on money, one staff member quit",
+  "day_aid": "Grandma's helping hand"
 }

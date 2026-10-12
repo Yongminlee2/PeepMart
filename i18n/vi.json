@@ -275,7 +275,7 @@
   "task_calm": "Tối đa {n} khách thất vọng",
   "btn_nice": "Tuyệt!",
   "help_day_t": "Một ngày bán hàng",
-  "help_day_b": "Mở cửa là khách đến trong 3 phút. 30 giây trước giờ đóng cửa khách sẽ ùa tới, và khi hết giờ thì chỉ phục vụ nốt khách còn lại rồi đóng cửa. Mục tiêu cao hơn mức trung bình gần đây một chút, nên bán như thường ngày là được một sao. Làm tốt hơn sẽ được hai, ba sao, và càng nhiều sao thì thưởng càng lớn. Hoàn thành hai việc hôm nay còn có tiền thưởng. Cuối ngày sẽ trả tiền thuê đất theo diện tích và phí bảo trì kệ. Khi đóng cửa thì không có khách, cứ thong thả xây dựng và trang trí nhé.",
+  "help_day_b": "Mở cửa là khách đến trong 2 phút. 20 giây trước giờ đóng cửa khách sẽ ùa tới, và khi hết giờ thì chỉ phục vụ nốt khách còn lại rồi đóng cửa. Mục tiêu cao hơn mức trung bình gần đây một chút, nên bán như thường ngày là được một sao. Làm tốt hơn sẽ được hai, ba sao, và càng nhiều sao thì thưởng càng lớn. Hoàn thành hai việc hôm nay còn có tiền thưởng. Cuối ngày sẽ trả tiền thuê đất theo diện tích và phí bảo trì kệ. Khi đóng cửa thì không có khách, cứ thong thả xây dựng và trang trí nhé.",
   "rank_0": "Tiệm tạp hóa",
   "rank_1": "Cửa hàng tiện lợi",
   "rank_2": "Tiện lợi cỡ lớn",
@@ -465,5 +465,8 @@
   "land_hint2": "Tap a glowing plot to buy it (next: {n}) · Your land brings +{b}% customers",
   "town_forsale": "For sale",
   "day_goods": "Stock (wholesale)",
-  "day_wages": "Staff wages"
+  "day_wages": "Staff wages",
+  "day_missing": "Wanted but not stocked",
+  "day_quit": "Short on money, one staff member quit",
+  "day_aid": "Grandma's helping hand"
 }

@@ -275,7 +275,7 @@
   "task_calm": "Maksimal {n} pelanggan kecewa",
   "btn_nice": "Mantap!",
   "help_day_t": "Sehari di toko",
-  "help_day_b": "Begitu toko dibuka, pelanggan datang selama 3 menit. 30 detik sebelum tutup, pelanggan membludak, dan saat waktunya habis, kamu hanya melayani pelanggan yang tersisa lalu tutup. Targetnya sedikit di atas rata-rata terakhirmu, jadi hari biasa dapat satu bintang; lebih baik lagi dapat dua atau tiga, dan makin banyak bintang, makin besar bonusnya. Selesaikan dua tugas untuk dapat hadiah juga. Di akhir hari, kamu membayar sewa sesuai luas lahan dan biaya perawatan rak. Selama toko tutup tidak ada pelanggan, jadi bangun dan hias dengan santai.",
+  "help_day_b": "Begitu toko dibuka, pelanggan datang selama 2 menit. 20 detik sebelum tutup, pelanggan membludak, dan saat waktunya habis, kamu hanya melayani pelanggan yang tersisa lalu tutup. Targetnya sedikit di atas rata-rata terakhirmu, jadi hari biasa dapat satu bintang; lebih baik lagi dapat dua atau tiga, dan makin banyak bintang, makin besar bonusnya. Selesaikan dua tugas untuk dapat hadiah juga. Di akhir hari, kamu membayar sewa sesuai luas lahan dan biaya perawatan rak. Selama toko tutup tidak ada pelanggan, jadi bangun dan hias dengan santai.",
   "rank_0": "Warung",
   "rank_1": "Minimarket",
   "rank_2": "Minimarket besar",
@@ -465,5 +465,8 @@
   "land_hint2": "Tap a glowing plot to buy it (next: {n}) · Your land brings +{b}% customers",
   "town_forsale": "For sale",
   "day_goods": "Stock (wholesale)",
-  "day_wages": "Staff wages"
+  "day_wages": "Staff wages",
+  "day_missing": "Wanted but not stocked",
+  "day_quit": "Short on money, one staff member quit",
+  "day_aid": "Grandma's helping hand"
 }

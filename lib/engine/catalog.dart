@@ -176,7 +176,7 @@ const pickTime = 0.5;
 const sitTime = 5.0;
 const startRating = 3.0;
 const startMoney = 150;
-const wagePeriod = 60.0; // 이만큼마다 일당을 낸다
+const wagePeriod = 40.0; // 이만큼마다 일당을 낸다
 const litterChance = 0.2; // 휴지통이 멀면 이 확률로 쓰레기를 버린다
 const binRange = 5; // 이 칸 수 안에 휴지통이 있으면 안 버린다
 const sellRefund = 0.5;
@@ -194,28 +194,28 @@ class Goal {
 }
 
 const goals = [
-  Goal(GoalKind.shelves, 3, 50),
-  Goal(GoalKind.served, 10, 60),
-  Goal(GoalKind.cashiers, 1, 80),
-  Goal(GoalKind.registers, 2, 100),
-  Goal(GoalKind.level, 5, 150),
-  Goal(GoalKind.plots, 2, 200),
-  Goal(GoalKind.decor, 5, 150),
-  Goal(GoalKind.stockers, 1, 200),
-  Goal(GoalKind.products, 8, 300),
-  Goal(GoalKind.rating, 45, 300),
-  Goal(GoalKind.seats, 4, 300),
-  Goal(GoalKind.level, 10, 500),
-  Goal(GoalKind.plots, 4, 800),
-  Goal(GoalKind.janitors, 1, 400),
-  Goal(GoalKind.served, 500, 1000),
-  Goal(GoalKind.products, 15, 1500),
-  Goal(GoalKind.level, 15, 1500),
-  Goal(GoalKind.plots, 8, 3000),
-  Goal(GoalKind.products, 25, 4000),
-  Goal(GoalKind.level, 20, 5000),
-  Goal(GoalKind.plots, plotCols * plotRows, 20000),
-  Goal(GoalKind.level, maxLevel, 30000),
+  Goal(GoalKind.shelves, 3, 30),
+  Goal(GoalKind.served, 10, 30),
+  Goal(GoalKind.cashiers, 1, 40),
+  Goal(GoalKind.registers, 2, 50),
+  Goal(GoalKind.level, 5, 75),
+  Goal(GoalKind.plots, 2, 100),
+  Goal(GoalKind.decor, 5, 75),
+  Goal(GoalKind.stockers, 1, 100),
+  Goal(GoalKind.products, 8, 150),
+  Goal(GoalKind.rating, 45, 150),
+  Goal(GoalKind.seats, 4, 150),
+  Goal(GoalKind.level, 10, 250),
+  Goal(GoalKind.plots, 4, 400),
+  Goal(GoalKind.janitors, 1, 200),
+  Goal(GoalKind.served, 500, 500),
+  Goal(GoalKind.products, 15, 750),
+  Goal(GoalKind.level, 15, 750),
+  Goal(GoalKind.plots, 8, 1500),
+  Goal(GoalKind.products, 25, 2000),
+  Goal(GoalKind.level, 20, 2500),
+  Goal(GoalKind.plots, plotCols * plotRows, 10000),
+  Goal(GoalKind.level, maxLevel, 15000),
 ];
 
 // ------------------------------------------------------------------ 손님 종류·행사
@@ -232,7 +232,7 @@ enum EventKind { rush, vip }
 
 const eventLevel = 3;
 const eventGap = (120.0, 240.0); // 다음 행사까지 (최소, 최대) 초
-const rushTime = 40.0; // 손님 몰림이 이어지는 초
+const rushTime = 30.0; // 손님 몰림이 이어지는 초
 const rushFactor = 2.5; // 그동안 손님이 이만큼 자주 온다
 const vipVisitors = 3; // VIP 방문 행사 때 연달아 오는 VIP 수
 
@@ -321,7 +321,7 @@ Regular regularById(String id) => regulars.firstWhere((r) => r.id == id);
 const maxHearts = 5;
 const regularChance = 0.12; // 손님이 올 때 단골일 확률
 const regularCooldown = 45.0; // 같은 단골이 다시 오기까지 초
-int heartReward(int heart) => 80 * heart * heart;
+int heartReward(int heart) => 40 * heart * heart;
 
 // ------------------------------------------------------------------ 처음 안내
 
@@ -331,15 +331,15 @@ enum TutorialStep { pickBox, fillShelf, checkout, collect, build, done }
 
 /// 하루: 문을 열고 [dayLength] 초 동안 손님을 받는다. 시간이 다 되면 새 손님은 안 오고,
 /// 남은 손님이 다 나가면 닫고 결과(별·보너스·할 일)를 보여 준다. 닫힌 동안은 느긋하게 짓는다.
-const dayLength = 180.0;
-const lastCall = 30.0; // 마감 전 이만큼은 손님이 더 몰린다
+const dayLength = 120.0;
+const lastCall = 20.0; // 마감 전 이만큼은 손님이 더 몰린다
 const lastCallFactor = 1.5;
 const dayTargetShare = 1.0; // 첫날 목표 = 진열대가 늘 차 있을 때 벌 돈의 이만큼(× 처음 며칠 낮춤)
 const dayTargetGrowth = 1.15; // 둘째 날부터 목표 = 최근 하루 평균의 1.15배 (평소만큼이면 별 하나, 더 잘해야 둘·셋)
 const dayAverageWeight = 0.4; // 오늘이 평균에 얼마나 들어가나
 const dayStars = [0.7, 1.0, 1.3]; // 목표의 이만큼 벌면 별 1·2·3개
-const dayBonus = [0.0, 0.1, 0.2, 0.3]; // 별 개수별 보너스 (그날 번 돈 대비)
-const dayTaskReward = 0.15; // 할 일 하나 = 목표의 이만큼
+const dayBonus = [0.0, 0.05, 0.1, 0.15]; // 별 개수별 보너스 (그날 번 돈 대비)
+const dayTaskReward = 0.08; // 할 일 하나 = 목표의 이만큼
 const calmLimit = 2; // "실망한 손님 n명 이하"
 
 enum DayTaskKind { sell, serve, calm }
@@ -410,10 +410,10 @@ const incidentWindow = (20.0, 150.0); // 하루 중 이 사이(초)에 일어난
 const thiefFine = 2; // 잡으면 훔친 값의 이만큼을 벌금으로
 const thiefSpeed = 1.25; // 도망칠 때 손님 걸음의 이만큼 (플레이어보다는 느리다)
 const catchRange = 1.1; // 이만큼 가까이 가면 잡는다/달랜다
-const lostPatience = 45.0; // 길 잃은 아이가 기다리는 초
+const lostPatience = 35.0; // 길 잃은 아이가 기다리는 초
 const lostReward = 0.1; // 아이를 찾아 주면 오늘 목표의 이만큼
 const kidScale = 0.72;
-const orderTime = 75.0; // 배달 주문 제한 시간
+const orderTime = 60.0; // 배달 주문 제한 시간
 const orderPay = 2; // 배달은 값의 이만큼을 받는다
 
 // ------------------------------------------------------------------ 도감
@@ -460,7 +460,10 @@ const grumpyPatience = 30.0; // 진상 손님이 참는 초
 const grumpyAngerRate = 2; // 못 달래면 실망 손님으로 이만큼 센다
 double patienceFactor(int rank) => 1 - 0.07 * rank; // 등급이 오를수록 손님이 덜 참는다
 // 하루 운영비: 땅 한 필지 임대료 × (1 + 0.3 × 등급) + 진열대마다 관리비
-const rentPerPlot = 24;
+const rentPerPlot = 24; // 첫 필지는 할머니 땅이라 임대료가 없다
+
+/// 빚 막기: 하루 끝에 돈이 모자라면 알바 한 명이 그만두고, 그래도 [aidFloor] 아래면 할머니가 그만큼 채워 준다.
+const aidFloor = 60;
 const rentPerRank = 0.3;
 const upkeepPerShelf = 6;
 
@@ -545,7 +548,7 @@ int reorderCost(String product) => wholesale(product) * boxSize;
 
 /// 단체 대량 주문(슈퍼마켓부터): 두 상품을 합쳐 [bulkCount] 개, [bulkTime] 초, 값의 [bulkPay] 배.
 const bulkCount = (8, 12);
-const bulkTime = 120.0;
+const bulkTime = 80.0;
 const bulkPay = 2.5;
 
 /// 메가마트 가격 전쟁 날(삐약동, 이야기 '길 건너 메가마트' 뒤 결말 전까지 [priceWarEvery] 일마다):
@@ -554,10 +557,10 @@ const bulkPay = 2.5;
 const priceWarEvery = 6;
 const priceWarBalk = [0.0, 0.10, 0.25, 0.30];
 const priceWarVisitors = 0.85;
-const priceWarPrize = 0.5;
+const priceWarPrize = 0.3;
 
 /// 보물 상자: 별 둘 이상인 날 결과 창에서 연다. 상금은 오늘 목표 대비.
-/// 별 둘: 20~40%, 별 셋: 40~80%, 별 셋이면 [chestJackpot] 확률로 대박(목표의 3배).
+/// 별 둘: 10~20%, 별 셋: 20~40%, 별 셋이면 [chestJackpot] 확률로 대박(목표의 1.5배).
 const chestJackpot = 0.05;
 
 /// 인형뽑기: 나가는 손님이 [clawRange] 칸 안에 있으면 [clawChance] 확률로 한 판([clawPlay] 원).
@@ -596,7 +599,13 @@ const plotVisitorsMax = 12;
 double plotBonus(int plots) => plotVisitors * min(plots - 1, plotVisitorsMax);
 
 /// 손님 한 명이 담는 개수: 보통 2~4개(같은 상품을 여러 개 사기도 한다). 진열대가 금방 빈다.
-const basketMin = 2, basketMax = 4;
+/// 한 손님이 사려는 개수: 1개부터, 파는 종류가 많을수록 많이 산다(한곳에서 다 사는 재미). 1~3개에서 4종마다 하나씩, 최대 6개.
+const basketMin = 1, basketMax = 6;
+int basketCap(int kinds) => min(basketMax, 3 + kinds ~/ 4);
+
+/// 손님은 첫 물건은 가게에 있는 것(밖에서 보고 들어왔다), 나머지는 동네에서 찾는 상품(지금 레벨에서 열린 것)도 섞어 고른다.
+/// 가게에 없는 상품은 못 팔고 지나간다 → 종류를 늘리고, 그러려면 진열대와 땅이 필요하다.
+const carriedPull = 0.6; // 둘째 물건부터: 이 확률로 가게에 있는 것, 아니면 동네에서 찾는 것
 
 /// 처음 안내 중에는 손님을 이만큼만(안내가 끝나야 1일째 시계가 가서, 그동안 돈이 끝없이 쌓이던 것).
 const tutorialCustomers = 2;

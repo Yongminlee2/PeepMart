@@ -275,7 +275,7 @@
   "task_calm": "Pas plus de {n} clients déçus",
   "btn_nice": "Super !",
   "help_day_t": "Une journée à la boutique",
-  "help_day_b": "Ouvre les portes et les clients viennent pendant 3 minutes. 30 secondes avant la fermeture, c'est le rush, et quand le temps est écoulé, tu sers les derniers clients puis tu fermes. L'objectif est un peu au-dessus de ta moyenne récente : une journée ordinaire rapporte une étoile ; fais mieux pour en avoir deux ou trois, et plus il y a d'étoiles, plus le bonus est gros. Termine les deux tâches pour une récompense en plus. À la fin de la journée, tu paies le loyer de ton terrain et l'entretien de tes rayons. Quand la boutique est fermée, il n'y a pas de clients, alors construis et décore tranquillement.",
+  "help_day_b": "Ouvre les portes et les clients viennent pendant 2 minutes. 20 secondes avant la fermeture, c'est le rush, et quand le temps est écoulé, tu sers les derniers clients puis tu fermes. L'objectif est un peu au-dessus de ta moyenne récente : une journée ordinaire rapporte une étoile ; fais mieux pour en avoir deux ou trois, et plus il y a d'étoiles, plus le bonus est gros. Termine les deux tâches pour une récompense en plus. À la fin de la journée, tu paies le loyer de ton terrain et l'entretien de tes rayons. Quand la boutique est fermée, il n'y a pas de clients, alors construis et décore tranquillement.",
   "rank_0": "Épicerie",
   "rank_1": "Supérette",
   "rank_2": "Grande supérette",
@@ -465,5 +465,8 @@
   "land_hint2": "Tap a glowing plot to buy it (next: {n}) · Your land brings +{b}% customers",
   "town_forsale": "For sale",
   "day_goods": "Stock (wholesale)",
-  "day_wages": "Staff wages"
+  "day_wages": "Staff wages",
+  "day_missing": "Wanted but not stocked",
+  "day_quit": "Short on money, one staff member quit",
+  "day_aid": "Grandma's helping hand"
 }

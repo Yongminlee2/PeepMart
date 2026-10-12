@@ -36,9 +36,12 @@ class DayResult {
   final int warPrize; // 가격 전쟁에서 이긴 보너스 (가격 전쟁 날이 아니면 0, 졌으면 -1)
   final int chest; // 보물 상자 상금 (상자가 없으면 0). 결과 창에서 열면 보여 준다(돈은 이미 들어왔다)
   final bool jackpot;
+  final List<(String, int)> missing; // 손님이 찾았는데 가게에 없던 상품, 많이 찾은 순
+  final Staff? quit; // 돈이 모자라 그만둔 알바
+  final int aid; // 할머니가 채워 준 돈
   const DayResult(this.day, this.sales, this.target, this.served, this.upset, this.stars, this.bonus,
       this.taskReward, this.best, this.tasks,
-      {this.cost = 0, this.warPrize = 0, this.chest = 0, this.jackpot = false, this.goods = 0, this.wages = 0});
+      {this.cost = 0, this.warPrize = 0, this.chest = 0, this.jackpot = false, this.goods = 0, this.wages = 0, this.missing = const [], this.quit, this.aid = 0});
 
   /// 오늘 남은 돈: 매출 + 보너스·상금 - 운영비 - 물건값 - 일당. (예전엔 물건값·일당을 빼지 않아 실제보다 크게 보였다)
   int get profit => sales + bonus + taskReward + (warPrize > 0 ? warPrize : 0) + chest - cost - goods - wages;
@@ -80,7 +83,7 @@ class StaffAgent extends Walker {
   StaffAgent(this.kind, super.at);
 }
 
-enum FxKind { pick, place, scan, cash, pay, angry, sad, levelUp, litter, clean, goal, event, regular, day, incident, stamp, combo, tip }
+enum FxKind { pick, place, scan, cash, pay, angry, sad, levelUp, litter, clean, goal, event, regular, day, incident, stamp, combo, tip, missing }
 
 /// FxKind.day 의 amount.
 const dayLastCall = 0, dayClosing = 1, dayClosed = 2;
@@ -145,6 +148,7 @@ class World {
   DayPhase phase = DayPhase.closed;
   double dayTime = 0;
   int daySales = 0, dayServed = 0, dayUpset = 0, dayTarget = 0;
+  final Map<String, int> dayMissing = {}; // 오늘 손님이 찾았는데 가게에 없던 상품
   final Map<String, int> daySold = {};
   List<DayTask> tasks = [];
   Weather weather = Weather.sunny; // 오늘(연 날) 날씨
@@ -174,6 +178,7 @@ class World {
     phase = DayPhase.open;
     dayTime = 0;
     daySales = dayServed = dayUpset = 0;
+    dayMissing.clear();
     daySold.clear();
     result = null;
     weather = game.todayWeather;
@@ -565,15 +570,28 @@ class World {
     var chest = 0, jackpot = false;
     if (stars >= 2) {
       jackpot = stars == 3 && _rng.nextDouble() < chestJackpot;
-      final share = jackpot ? 3.0 : (stars == 3 ? 0.4 + _rng.nextDouble() * 0.4 : 0.2 + _rng.nextDouble() * 0.2);
+      final share = jackpot ? 1.5 : (stars == 3 ? 0.2 + _rng.nextDouble() * 0.2 : 0.1 + _rng.nextDouble() * 0.1);
       chest = max(10, (dayTarget * share).round());
     }
     game.money += bonus + taskReward - cost + (warPrize > 0 ? warPrize : 0) + chest;
+    // 빚 막기: 모자라면 일당 비싼 알바부터 한 명 그만두고, 그래도 바닥이면 할머니 용돈
+    Staff? quit;
+    if (game.money < 0) {
+      final hired = Staff.values.where((k) => game.count(k) > 0).toList()
+        ..sort((a, b) => staffSpecs[b]!.wage.compareTo(staffSpecs[a]!.wage));
+      if (hired.isNotEmpty) {
+        quit = hired.first;
+        game.staff[quit] = game.count(quit) - 1;
+      }
+    }
+    final aid = max(0, aidFloor - game.money);
+    game.money += aid;
     for (final s in game.shelves) {
       s.broken = false; // 밤사이 수리 기사가 고친다
     }
     result = DayResult(game.day, daySales, dayTarget, dayServed, dayUpset, stars, bonus, taskReward, best, done,
-        cost: cost, warPrize: warPrize, chest: chest, jackpot: jackpot, goods: game.spentGoods, wages: game.spentWages);
+        cost: cost, warPrize: warPrize, chest: chest, jackpot: jackpot, goods: game.spentGoods, wages: game.spentWages, quit: quit, aid: aid,
+        missing: (dayMissing.entries.map((e) => (e.key, e.value)).toList()..sort((a, b) => b.$2.compareTo(a.$2))).take(3).toList());
     game.spentGoods = 0;
     game.spentWages = 0;
     game.day++;
@@ -1143,9 +1161,14 @@ class World {
     final vip = _vipQueue > 0 ||
         (game.rating >= vipMinRating &&
             _rng.nextDouble() < vipChance * (game.rank >= rankVip ? 2 : 1) * ruleOf(game.branch).vip);
-    final n = vip ? basketMax + 1 : basketMin + _rng.nextInt(basketMax - basketMin + 1);
-    // 여러 상품을 고르되, 종류가 모자라면 같은 상품을 더 산다
-    final wants = [for (var i = 0; i < n; i++) sale[i < sale.length ? i : _rng.nextInt(sale.length)]];
+    final cap = basketCap(sale.length);
+    final n = vip ? cap + 1 : basketMin + _rng.nextInt(cap - basketMin + 1);
+    // 첫 물건은 대개 가게에 있는 것, 나머지는 동네에서 찾는 것 아무거나(없으면 못 판다)
+    final pool = game.demand;
+    final wants = [sale.first];
+    while (wants.length < n) {
+      wants.add(_rng.nextDouble() < carriedPull ? sale[_rng.nextInt(sale.length)] : pool[_rng.nextInt(pool.length)]);
+    }
     final fav = game.favored.toList()..sort();
     if (fav.isNotEmpty && _rng.nextDouble() < favoredPull) {
       final f = fav[_rng.nextInt(fav.length)];
@@ -1177,7 +1200,9 @@ class World {
     // 같은 상품 진열대가 여럿이면 제일 많이 남은 곳으로 간다.
     final options = game.shelves.where((s) => s.product == c.want).toList();
     if (options.isEmpty) {
-      c.missed++;
+      // 가게에 없는 상품: 화내진 않지만 못 판 것으로 센다(결과 창에 '찾았는데 없던 상품')
+      dayMissing[c.want] = (dayMissing[c.want] ?? 0) + 1;
+      fx.add(Fx(FxKind.missing, c.x, c.y, product: c.want));
       _nextWant(c);
       return;
     }
@@ -1330,7 +1355,7 @@ class World {
         _fx(Incident.thiefFlee);
       }
     } else if (c.carry.isEmpty) {
-      _rate(1);
+      _rate(c.missed > 0 ? 1 : 3); // 찾던 게 없었을 뿐이면 별점은 그대로(못 판 돈이 벌)
       _leave(c, rated: true);
     } else {
       _toRegister(c);

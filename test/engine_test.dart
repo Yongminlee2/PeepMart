@@ -184,7 +184,7 @@ void main() {
     });
 
     test('누르면 걸어가서 그 일을 한다: 상자 → 들기, 진열대 → 채우기, 계산대 → 계산 자리', () {
-      final g = Game();
+      final g = Game()..owner.tutorial = TutorialStep.done; // 안내 손님이 채운 걸 사 가지 않게
       final fridge = first(g, 'fridge')..stock = 0;
       final w = World(g, seed: 20);
       final box = g.items.firstWhere((i) => i.type == 'box' && i.product == 'soda');
@@ -1092,7 +1092,7 @@ void main() {
     });
 
     test('운영비: 땅이 넓고 등급이 높을수록 크다', () {
-      final g = Game();
+      final g = Game()..plots.add((1, 0));
       final small = g.dailyCost;
       g.level = 20;
       expect(g.dailyCost, greaterThan(small));
@@ -1372,7 +1372,7 @@ void main() {
           ..dayTarget = 100
           ..daySales = win ? 110 : 50;
         close(w);
-        expect(w.result!.warPrize, win ? 50 : -1);
+        expect(w.result!.warPrize, win ? (100 * priceWarPrize).round() : -1);
       }
     });
 
@@ -1512,5 +1512,17 @@ void main() {
       run(w, repairTime + 0.2);
       expect(fridge.broken, isFalse);
     });
+  });
+
+  test('손님은 동네 상품을 찾는다: 없는 건 못 팔고 세고, 종류가 많을수록 많이 산다', () {
+    final g = Game()
+      ..level = 5
+      ..owner.tutorial = TutorialStep.done;
+    final w = World(g, seed: 3)..openDay();
+    run(w, 60);
+    expect(w.dayMissing, isNotEmpty);
+    expect(w.dayMissing.keys.toSet().intersection(g.onSale), isEmpty);
+    expect(g.demand.toSet().containsAll(w.dayMissing.keys), isTrue);
+    expect(basketCap(12), greaterThan(basketCap(2)));
   });
 }

@@ -1205,6 +1205,15 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
             row(S.t('day_target'), Text('${r.target}', style: style)),
             row(S.t('day_served'), Text('${r.served}', style: style)),
             row(S.t('day_upset'), Text('${r.upset}', style: style)),
+            if (r.missing.isNotEmpty)
+              row(
+                  S.t('day_missing'),
+                  Row(mainAxisSize: MainAxisSize.min, children: [
+                    for (final (p, n) in r.missing) ...[
+                      SizedBox(width: 22, height: 22, child: CustomPaint(painter: FoodPreview(p))),
+                      Text('$n ', style: style.copyWith(fontSize: 13, color: const Color(0xFFE53935))),
+                    ],
+                  ])),
             const Divider(),
             Align(alignment: Alignment.centerLeft, child: Text(S.t('day_tasks'), style: style.copyWith(fontSize: 13, color: Colors.black54))),
             for (final (t, ok) in r.tasks)
@@ -1220,6 +1229,9 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
             if (r.goods > 0) row(S.t('day_goods'), Coins(-r.goods, size: 14)),
             if (r.wages > 0) row(S.t('day_wages'), Coins(-r.wages, size: 14)),
             row(S.t('day_cost'), Coins(-r.cost, size: 14)),
+            if (r.quit != null)
+              Text(S.t('day_quit'), style: style.copyWith(fontSize: 13, color: const Color(0xFFE53935))),
+            if (r.aid > 0) row(S.t('day_aid'), Coins(r.aid, size: 14)),
             const Divider(),
             row(S.t('day_profit'), Coins(r.profit, size: 18)),
           ]),

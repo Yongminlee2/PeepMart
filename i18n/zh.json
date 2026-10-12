@@ -275,7 +275,7 @@
   "task_calm": "失望的客人不超过{n}位",
   "btn_nice": "太棒了",
   "help_day_t": "一天的营业",
-  "help_day_b": "开门后3分钟内会有客人上门。打烊前30秒客人会蜂拥而至，时间一到就只接待剩下的客人，然后关门。目标比最近的平均水平稍高一点，所以和平时一样就是一颗星。做得更好能拿两颗、三颗，星星越多奖励越多。完成两项今日任务还有奖金。一天结束时要支付按土地面积计算的租金和货架维护费。关门期间没有客人，可以慢慢建造和装饰。",
+  "help_day_b": "开门后2分钟内会有客人上门。打烊前20秒客人会蜂拥而至，时间一到就只接待剩下的客人，然后关门。目标比最近的平均水平稍高一点，所以和平时一样就是一颗星。做得更好能拿两颗、三颗，星星越多奖励越多。完成两项今日任务还有奖金。一天结束时要支付按土地面积计算的租金和货架维护费。关门期间没有客人，可以慢慢建造和装饰。",
   "rank_0": "小卖部",
   "rank_1": "社区便利店",
   "rank_2": "大型便利店",
@@ -465,5 +465,8 @@
   "land_hint2": "Tap a glowing plot to buy it (next: {n}) · Your land brings +{b}% customers",
   "town_forsale": "For sale",
   "day_goods": "Stock (wholesale)",
-  "day_wages": "Staff wages"
+  "day_wages": "Staff wages",
+  "day_missing": "Wanted but not stocked",
+  "day_quit": "Short on money, one staff member quit",
+  "day_aid": "Grandma's helping hand"
 }
