@@ -66,6 +66,7 @@ class Customer extends Walker {
   String? regular; // 단골이면 그 이름
   bool fleeing = false; // 도둑: 물건을 들고 도망치는 중
   bool balked = false; // 이번 진열대 가격을 이미 봤다
+  String? service; // 서비스 손님: 'parcel'(택배) 또는 'lottery'(복권)
   Customer(this.look, super.at, this.wants);
 
   double get patience => kind == CustomerKind.hurry ? 0.5 : 1.0;
@@ -435,6 +436,55 @@ class World {
     }
   }
 
+  /// 서비스 손님: 카운터 앞에서 기다리고, 점장이 옆에 서 있으면 처리된다(한 번에 한 사람, 먼저 온 순서).
+  void _updateService(Customer c, double dt) {
+    if (c.react > 0) c.react -= dt;
+    _walk(c, dt, customerSpeed);
+    final desk = game.items.where((i) => i.type == 'service').firstOrNull;
+    switch (c.state) {
+      case CState.toShelf:
+        if (desk == null) {
+          _leave(c, rated: true);
+        } else if (c.arrived) {
+          c
+            ..state = CState.atShelf
+            ..timer = 0
+            ..waited = 0;
+        }
+      case CState.atShelf:
+        c.timer += dt;
+        final first = customers.where((o) => o.kind == CustomerKind.service && o.state == CState.atShelf).firstOrNull;
+        final served = desk != null && first == c && !player.moving && player.distTo(desk.tile) < 1.6;
+        if (served && (c.waited += dt) >= serviceTime) {
+          final fee = serviceFees[c.service]!;
+          game.money += fee;
+          daySales += fee;
+          dayServed++;
+          game.served++;
+          for (var i = 0, ups = game.addXp(fee); i < ups; i++) {
+            fx.add(Fx(FxKind.levelUp, player.x, player.y, amount: game.level));
+          }
+          fx.add(Fx(FxKind.pay, desk.c.toDouble(), desk.r.toDouble(), amount: fee));
+          _rate(5);
+          c
+            ..happy = true
+            ..react = 0.7;
+          _leave(c, rated: true);
+        } else if (desk == null || c.timer > servicePatience * patienceFactor(game.rank)) {
+          _rate(0);
+          fx.add(Fx(FxKind.angry, c.x, c.y));
+          c
+            ..happy = false
+            ..react = 0.8;
+          _leave(c, rated: true);
+        }
+      case CState.leaving:
+        if (c.arrived) c.state = CState.gone;
+      default:
+        break;
+    }
+  }
+
   /// 지금 위생 점수: 100점에서 쓰레기·빈 진열대·고장마다 뺀다.
   int get inspectionScore => max(
       0,
@@ -762,6 +812,8 @@ class World {
       // 가던 진열대·계산대·의자가 없어졌거나 바뀌었으면 다시 고른다
       if (c.kind == CustomerKind.lost || c.kind == CustomerKind.grumpy || c.kind == CustomerKind.inspector) {
         // 아이·진상 손님·점검관은 진열대와 상관없다
+      } else if (c.kind == CustomerKind.service) {
+        // 서비스 손님: 카운터가 없어졌으면 스스로 나간다(_updateService)
       } else if (c.state == CState.toShelf || c.state == CState.atShelf) {
         if (c.shelf == null || !items.contains(c.shelf) || c.shelf!.product != c.want) _toShelf(c);
       } else if (c.state == CState.toQueue && !regs.contains(c.register)) {
@@ -992,7 +1044,8 @@ class World {
     var paid = switch (c.kind) {
       CustomerKind.vip => base * 2,
       CustomerKind.hurry => (base * 1.5).round(),
-      CustomerKind.normal || CustomerKind.thief || CustomerKind.lost || CustomerKind.grumpy || CustomerKind.inspector => base,
+      CustomerKind.normal || CustomerKind.thief || CustomerKind.lost || CustomerKind.grumpy || CustomerKind.inspector ||
+        CustomerKind.service => base,
     };
     if (feverLeft > 0) paid = (paid * feverPay).round();
     // 콤보: 계산을 이어 가면 쌓이고, 다 차면 피버 타임
@@ -1197,6 +1250,16 @@ class World {
         return;
       }
     }
+    // 서비스 카운터가 있으면 가끔 택배·복권 손님
+    final desk = game.items.where((i) => i.type == 'service').firstOrNull;
+    if (desk != null && _rng.nextDouble() < serviceChance) {
+      final c = Customer(_rng.nextInt(1024), door, [])
+        ..kind = CustomerKind.service
+        ..service = _rng.nextBool() ? 'parcel' : 'lottery';
+      customers.add(c);
+      _walkTo(c, _access(desk.tile));
+      return;
+    }
     final vip = _vipQueue > 0 ||
         (game.rating >= vipMinRating &&
             _rng.nextDouble() < vipChance * (game.rank >= rankVip ? 2 : 1) * ruleOf(game.branch).vip);
@@ -1307,6 +1370,10 @@ class World {
     }
     if (c.kind == CustomerKind.inspector) {
       _updateInspector(c, dt);
+      return;
+    }
+    if (c.kind == CustomerKind.service) {
+      _updateService(c, dt);
       return;
     }
     if (c.react > 0) {

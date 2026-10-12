@@ -125,6 +125,7 @@ const itemTypes = [
   ItemType('table', ItemKind.decor, 90, 7),
   ItemType('claw', ItemKind.decor, 360, 6), // 인형뽑기: 지나가는 손님이 가끔 하고 간다
   ItemType('vending', ItemKind.decor, 400, 4), // 수익 기계들: 손님이 쓰면 돈, 가끔 고장
+  ItemType('service', ItemKind.decor, 450, 6), // 서비스 카운터: 택배·복권 손님(점장이 처리)
   ItemType('atm', ItemKind.decor, 900, 8),
   ItemType('photo', ItemKind.decor, 1500, 12),
   ItemType('floor-pink', ItemKind.floor, 2, 1, walkable: true),
@@ -231,7 +232,7 @@ const goals = [
 // ------------------------------------------------------------------ 손님 종류·행사
 
 /// 보통 / 급한 손님(참을성 절반, 팁 50%) / VIP(여러 개 사고 두 배로 낸다, 별점 4 이상일 때만).
-enum CustomerKind { normal, hurry, vip, thief, lost, grumpy, inspector }
+enum CustomerKind { normal, hurry, vip, thief, lost, grumpy, inspector, service }
 
 const hurryChance = 0.15;
 const vipChance = 0.05;
@@ -619,6 +620,13 @@ const machineSpecs = {
   'photo': (0.1, 14),
 };
 const machineBreak = 0.05;
+
+/// 서비스 카운터: 있으면 손님이 올 때 [serviceChance] 확률로 물건 대신 택배·복권 손님이 온다.
+/// 점장이 카운터 옆에 [serviceTime] 초 서 있으면 처리하고 수수료를 받는다(알바는 못 한다). [servicePatience] 초 넘게 기다리면 화내고 간다.
+const serviceChance = 0.12;
+const serviceTime = 1.8;
+const servicePatience = 30.0;
+const serviceFees = {'parcel': 9, 'lottery': 6};
 
 // ------------------------------------------------------------------ 자동 발주·동네 규칙·끝없는 목표
 

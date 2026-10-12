@@ -38,7 +38,7 @@ double itemHeight(String type) => switch (type) {
       'rack' || 'register' || 'bakerycase' || 'coffeemachine' || 'hotcounter' || 'fruitstand' => 56,
       'plant' || 'lamp' || 'claw' => 60,
       'vending' || 'photo' => 72,
-      'atm' => 56,
+      'atm' || 'service' => 56,
       'freezer' || 'box' || 'bin' || 'chair' || 'table' || 'flowers' => 40,
       _ => 0,
     };
@@ -265,6 +265,13 @@ class StorePainter extends CustomPainter {
     // 놓을 자리 미리보기
     if (b != null && b.ghostType != null && b.hover != null) _ghost(canvas, b);
 
+    // 서비스 손님이 기다리는데 점장이 없으면 카운터를 가리킨다
+    if (b == null && world.customers.any((c) => c.kind == CustomerKind.service && c.state == CState.atShelf)) {
+      for (final d in game.items.where((i) => i.type == 'service')) {
+        if (world.player.distTo(d.tile) < 1.6) continue;
+        _arrow(canvas, iso(d.c + 0.0, d.r + 0.0) + Offset(0, -70 + sin(clock * 6) * 4));
+      }
+    }
     // 계산 기다리는 손님이 있는데 아무도 없는 계산대는 계산 자리를 가리킨다
     if (b == null) {
       for (final r in game.registers) {
@@ -620,7 +627,19 @@ class StorePainter extends CustomPainter {
       canvas.drawPath(drop, _stroke(1.2));
     }
     final head = iso(c.x, c.y) + const Offset(0, -52);
-    if (c.state == CState.atShelf && c.timer >= pickTime && c.wants.isNotEmpty) {
+    if (c.kind == CustomerKind.service && c.state == CState.atShelf) {
+      final worry = (c.timer / servicePatience).clamp(0.0, 1.0);
+      final r = RRect.fromRectAndRadius(Rect.fromCenter(center: head, width: 30, height: 26), const Radius.circular(10));
+      canvas.drawRRect(r, Paint()..color = Color.lerp(Colors.white, const Color(0xFFFFCDD2), worry)!);
+      canvas.drawRRect(r, _stroke(2));
+      _text(canvas, head, c.service == 'parcel' ? '📦' : '🎫', const Color(0xFF5D4037), 15);
+      if (c.waited > 0) {
+        canvas.drawLine(head + const Offset(-12, 17), head + Offset(-12 + 24 * (c.waited / serviceTime).clamp(0.0, 1.0), 17),
+            Paint()
+              ..color = const Color(0xFF43A047)
+              ..strokeWidth = 3);
+      }
+    } else if (c.state == CState.atShelf && c.timer >= pickTime && c.wants.isNotEmpty) {
       final worry = (c.timer / shelfPatience).clamp(0.0, 1.0);
       _wantBubble(canvas, head, c.want, Color.lerp(Colors.white, const Color(0xFFFFCDD2), worry)!);
     } else if (c.state == CState.toQueue && c.waited > queuePatience * c.patience * 0.5 && c.scanned == 0) {
@@ -1226,6 +1245,17 @@ void drawItem(Canvas canvas, String type, Tile t,
       canvas.drawRect(glass, _stroke(1.5));
       canvas.drawRect(Rect.fromCenter(center: glass.topCenter + const Offset(0, -5), width: 44, height: 10), Paint()..color = const Color(0xFFEC407A));
       canvas.drawRect(Rect.fromCenter(center: glass.topCenter + const Offset(0, -5), width: 44, height: 10), _stroke(1.5));
+    case 'service':
+      // 서비스 카운터: 하늘색 카운터, 위에 택배 상자, 옆에 복권 간판
+      _nbox(canvas, c - 0.44, r - 0.4, 0.88, 0.8, 26, const Color(0xFF90CAF9));
+      final top = feet + const Offset(0, -26);
+      canvas.drawRect(Rect.fromCenter(center: top + const Offset(-8, -6), width: 16, height: 11), Paint()..color = const Color(0xFFD7A86E));
+      canvas.drawRect(Rect.fromCenter(center: top + const Offset(-8, -6), width: 16, height: 11), _stroke(1.2));
+      canvas.drawLine(top + const Offset(-8, -11), top + const Offset(-8, -1), Paint()..color = const Color(0xFF8D6E63)..strokeWidth = 2);
+      final sign = RRect.fromRectAndRadius(Rect.fromCenter(center: top + const Offset(12, -16), width: 18, height: 14), const Radius.circular(3));
+      canvas.drawRRect(sign, Paint()..color = const Color(0xFFFFEB3B));
+      canvas.drawRRect(sign, _stroke(1.2));
+      _text(canvas, top + const Offset(12, -16), '₩', const Color(0xFFE65100), 10);
     case 'vending':
       // 자판기: 빨간 몸통, 앞면 유리 칸에 캔 세 줄, 동전 구멍
       const h = 62.0;

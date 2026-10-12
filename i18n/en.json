@@ -500,5 +500,7 @@
   "cook_hint": "Hot counter food must be cooked first. Stand still next to it to cook (staff can't)",
   "i_vending": "Vending machine",
   "i_atm": "ATM",
-  "i_photo": "Photo booth"
+  "i_photo": "Photo booth",
+  "i_service": "Service desk",
+  "service_hint": "Parcel and lottery customers come. Stand by the service desk to help them (staff can't)"
 }

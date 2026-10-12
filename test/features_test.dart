@@ -152,4 +152,30 @@ void main() {
     run(w, repairTime + 0.3);
     expect(m.broken, isFalse);
   });
+
+  test('서비스 카운터: 택배·복권 손님이 오고, 점장이 옆에 서 있으면 처리해 수수료를 받는다', () {
+    final g = shop(6);
+    expect(g.place('service', (4, 5)), isTrue);
+    final w = World(g, seed: 6)..openDay();
+    // 점장은 카운터 옆에 서 있는다
+    w.player
+      ..x = 4
+      ..y = 6;
+    var fees = 0, seen = false;
+    for (var i = 0; i < 2400; i++) {
+      for (final s in g.shelves) {
+        s.stock = s.capacity;
+      }
+      w.tick(0.05);
+      seen |= w.customers.any((c) => c.kind == CustomerKind.service);
+      fees += w.fx.where((e) => e.kind == FxKind.pay && e.x == 4 && e.y == 5).length;
+      w.fx.clear();
+    }
+    expect(seen, isTrue);
+    expect(fees, greaterThan(0));
+    // 카운터를 팔면 기다리던 서비스 손님은 그냥 간다(멈추지 않는다)
+    g.sell(g.at((4, 5))!);
+    run(w, 30);
+    expect(w.customers.where((c) => c.kind == CustomerKind.service && c.state == CState.atShelf), isEmpty);
+  });
 }
