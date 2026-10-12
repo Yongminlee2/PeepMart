@@ -822,7 +822,7 @@ class World {
       _updateCustomer(c, dt);
     }
     customers.removeWhere((c) => c.state == CState.gone);
-    if (phase != DayPhase.closed) _wageIn -= dt;
+    if (phase == DayPhase.open) _wageIn -= dt; // 일당은 문 연 동안만(마감 뒤 남은 손님이 빠지는 동안은 안 셈)
     if (_wageIn <= 0) {
       _wageIn = wagePeriod;
       game.money -= game.wages;

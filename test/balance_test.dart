@@ -46,6 +46,22 @@ class Bot {
       w.walkPlayerTo(rich.first.tile);
       return;
     }
+    // 조는 알바 깨우기, 셀프 계산대·기계 고치기, 온장 코너 굽기, 서비스 손님: 점장만 할 수 있는 일
+    final asleep = w.staff.where((s) => s.asleep).firstOrNull;
+    if (asleep != null) {
+      w.walkPlayerTo(asleep.tile);
+      return;
+    }
+    final broken = g.items.where((i) => i.broken).firstOrNull;
+    if (broken != null) {
+      if (w.player.distTo(broken.tile) >= 1.5) w.walkPlayerTo(broken.tile);
+      return;
+    }
+    final hot = g.shelves.where((s) => s.raw > 0 && s.stock * 2 < s.capacity).firstOrNull;
+    if (hot != null) {
+      if (w.player.distTo(hot.tile) > reach) w.walkPlayerTo(hot.tile);
+      return;
+    }
     for (final s in g.shelves) {
       if (w.player.carry.contains(s.product) && s.stock < s.capacity) {
         w.walkPlayerTo(s.tile);
@@ -156,10 +172,10 @@ void main() {
       final r = w.result;
       if (r != null) {
         stars.add(r.stars);
-        if (r.day <= 15) {
+        if (r.day <= 25) {
           days.writeln('${r.day.toString().padLeft(3)}일 ${(t / 60).toStringAsFixed(1).padLeft(5)}분  레벨 ${g.level.toString().padLeft(2)}  '
               '매출 ${r.sales.toString().padLeft(5)} / 목표 ${r.target.toString().padLeft(5)}  별 ${r.stars}  손님 ${r.served.toString().padLeft(3)}  '
-              '실망 ${r.upset.toString().padLeft(2)}  운영비 ${r.cost.toString().padLeft(4)}  순이익 ${r.profit.toString().padLeft(5)}  '
+              '실망 ${r.upset.toString().padLeft(2)}  운영비 ${r.cost.toString().padLeft(4)}  물건 ${r.goods.toString().padLeft(4)}  일당 ${r.wages.toString().padLeft(4)}  폐기 ${r.wasted.toString().padLeft(3)}  순이익 ${r.profit.toString().padLeft(5)}  '
               '돈 ${g.money.toString().padLeft(6)}  진열대 ${g.shelves.length}  알바 ${g.count(Staff.cashier)}/${g.count(Staff.stocker)}');
         }
         w.result = null;
