@@ -70,7 +70,7 @@ const Map<String, String> kKo = {
   'day_closing': '마감! 남은 손님만 받아요',
   'day_closing_short': '마감 중',
   'day_cost': '임대료·관리비',
-  'day_goods': '물건값(도매)',
+  'day_goods': '물건값·홍보비',
   'day_last_call': '곧 마감! 손님이 몰려와요',
   'day_missing': '찾았는데 없던 상품',
   'day_n': '{n}일째',
@@ -535,6 +535,7 @@ const Map<String, String> kKo = {
   'week_done': '주간 동네 순위 {n}위!',
   'week_me': '삐약마트(나)',
   'week_rank': '이번 주 동네 {n}위 · {d}일 남음',
+  'week_start': '새 주 시작! 7일 매출로 동네 순위를 겨뤄요',
   'week_title': '이번 주 동네 매출 순위',
   'welcome_back': '자리를 비운 사이 알바가 {n}만큼 벌어 두었어요!',
 };

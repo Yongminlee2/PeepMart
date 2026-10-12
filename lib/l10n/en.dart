@@ -70,7 +70,7 @@ const Map<String, String> kEn = {
   'day_closing': 'Closing time! Serving the last customers',
   'day_closing_short': 'Closing',
   'day_cost': 'Rent & upkeep',
-  'day_goods': 'Stock (wholesale)',
+  'day_goods': 'Stock & promo costs',
   'day_last_call': 'Last call! Here comes the rush',
   'day_missing': 'Wanted but not stocked',
   'day_n': 'Day {n}',
@@ -535,6 +535,7 @@ const Map<String, String> kEn = {
   'week_done': 'Weekly town rank #{n}!',
   'week_me': 'Peep Mart (me)',
   'week_rank': 'This week: #{n} · {d} days left',
+  'week_start': 'New week! Compete on 7 days of sales',
   'week_title': 'This week\'s town sales ranking',
   'welcome_back': 'While you were away, your staff earned {n}!',
 };

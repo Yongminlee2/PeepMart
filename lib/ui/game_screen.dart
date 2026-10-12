@@ -1447,7 +1447,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           const Icon(Icons.emoji_events_rounded, size: 16, color: Color(0xFFFFA000)),
           const SizedBox(width: 4),
-          Text(S.tn('week_rank', {'n': rank, 'd': left}), style: const TextStyle(fontSize: 13, color: inkColor)),
+          Text(game.weekDone == 0 ? S.t('week_start') : S.tn('week_rank', {'n': rank, 'd': left}),
+              style: const TextStyle(fontSize: 13, color: inkColor)),
         ]),
       ),
     );

@@ -388,6 +388,7 @@ class Game {
     if (promo != null) return false;
     if (p == Promo.flyer) {
       if (money < flyerCost) return false;
+      spentGoods += flyerCost; // 결과 창 물건값에 함께
       money -= flyerCost;
     } else if (product == null || !onSale.contains(product)) {
       return false;

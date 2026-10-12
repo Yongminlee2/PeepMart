@@ -535,6 +535,7 @@ const Map<String, String> kRu = {
   'week_done': 'Weekly town rank #{n}!',
   'week_me': 'Peep Mart (me)',
   'week_rank': 'This week: #{n} · {d} days left',
+  'week_start': 'New week! Compete on 7 days of sales',
   'week_title': 'This week\'s town sales ranking',
   'welcome_back': 'Пока вас не было, сотрудники заработали {n}!',
 };

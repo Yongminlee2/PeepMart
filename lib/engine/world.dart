@@ -244,7 +244,10 @@ class World {
   }
 
   void _closeNight() {
-    result = DayResult(game.day - 1, daySales, 0, dayServed, dayUpset, 0, 0, 0, false, const [], night: true);
+    result = DayResult(game.day - 1, daySales, 0, dayServed, dayUpset, 0, 0, 0, false, const [],
+        night: true, goods: game.spentGoods, wages: game.spentWages);
+    game.spentGoods = 0;
+    game.spentWages = 0;
     night = false;
     order = null;
     tips.clear();
@@ -619,6 +622,14 @@ class World {
     return true;
   }
 
+  /// 진열대에서 하나 뺀다. 비면 신선 상품 날짜와 반값 스티커가 새로 시작한다.
+  void _take(Item s) {
+    if (--s.stock > 0) return;
+    s
+      ..age = 0
+      ..sticker = false;
+  }
+
   /// 배달 중: 멈춰 선 자리 옆 진열대에서 남은 상품을 챙긴다.
   void _pickForOrder(Order o) {
     if (!o.started || o.carrying || player.moving) return;
@@ -626,7 +637,7 @@ class World {
       final p = s.product!;
       if (s.stock <= 0 || !o.toPick.contains(p) || player.distTo(s.tile) > 1.6) continue;
       while (s.stock > 0 && o.toPick.remove(p)) {
-        s.stock--;
+        _take(s);
         fx.add(Fx(FxKind.pick, s.c.toDouble(), s.r.toDouble(), tx: player.x, ty: player.y, product: p));
       }
     }
@@ -659,6 +670,7 @@ class World {
     }
     game.money -= game.dailyCost;
     game.recordDay(daySales, dayServed);
+    game.addWeekSales(daySales); // 7일째에 나가도 순위는 매긴다(안 그러면 다음 주가 두 주치로 겨룬다)
     game.day++;
     game.weather = _pickWeather();
     for (final s in game.items) {
@@ -702,6 +714,7 @@ class World {
       chest = max(10, (dayTarget * share).round());
     }
     game.money += bonus + taskReward - cost + (warPrize > 0 ? warPrize : 0) + chest;
+    final (weekRank, weekPrize) = game.addWeekSales(daySales); // 상금이 들어온 뒤에 빚을 본다
     // 빚 막기: 모자라면 일당 비싼 알바부터 한 명 그만두고, 그래도 바닥이면 할머니 용돈
     Staff? quit;
     if (game.money < 0) {
@@ -718,7 +731,6 @@ class World {
       s.broken = false; // 밤사이 수리 기사가 고친다
     }
     final (wasted, wasteValue) = game.ageShelves();
-    final (weekRank, weekPrize) = game.addWeekSales(daySales);
     result = DayResult(game.day, daySales, dayTarget, dayServed, dayUpset, stars, bonus, taskReward, best, done,
         cost: cost, warPrize: warPrize, chest: chest, jackpot: jackpot, goods: game.spentGoods, wages: game.spentWages, quit: quit, aid: aid, wasted: wasted, wasteValue: wasteValue,
         weekRank: weekRank, weekPrize: weekPrize,
@@ -1341,7 +1353,12 @@ class World {
 
   void _spawn() {
     final doors = game.entrances.toList();
-    final sale = game.onSale.toList()..shuffle(_rng);
+    bool inSeason(String p) {
+      final h = productById(p).holiday;
+      return h == null || h == holiday?.name;
+    }
+
+    final sale = game.onSale.where(inSeason).toList()..shuffle(_rng);
     if (doors.isEmpty || sale.isEmpty) return;
     final door = doors[_rng.nextInt(doors.length)].tile;
     // 단골: 이 지점에 올 수 있고, 지금 가게에 없고, 한동안 안 왔던 사람
@@ -1377,7 +1394,7 @@ class World {
     final cap = basketCap(sale.length);
     final n = vip ? cap + 1 : basketMin + _rng.nextInt(cap - basketMin + 1);
     // 첫 물건은 대개 가게에 있는 것, 나머지는 동네에서 찾는 것 아무거나(없으면 못 판다)
-    final pool = game.demand;
+    final pool = game.demand.where(inSeason).toList();
     final wants = [sale.first];
     while (wants.length < n) {
       wants.add(_rng.nextDouble() < carriedPull ? sale[_rng.nextInt(sale.length)] : pool[_rng.nextInt(pool.length)]);
@@ -1397,7 +1414,7 @@ class World {
       wants.insert(0, cheap[_rng.nextInt(cheap.length)]);
       if (wants.length > n) wants.removeLast();
     }
-    final fav = game.favored.toList()..sort();
+    final fav = night ? <String>[] : (game.favored.where(inSeason).toList()..sort()); // 밤엔 game.day 가 이미 내일
     if (fav.isNotEmpty && _rng.nextDouble() < favoredPull) {
       final f = fav[_rng.nextInt(fav.length)];
       wants
@@ -1515,17 +1532,12 @@ class World {
           if (s.price == 0) c.bonus = max(c.bonus, 1); // 싸게 샀다
         }
         if (c.timer >= pickTime && s.stock > 0 && !s.broken) {
-          s.stock--;
-          if (s.stock == 0) {
-            s
-              ..age = 0
-              ..sticker = false;
-          }
+          c.prices.add(game.salePrice(s, c.want)); // 값은 빼기 전에(마지막 반값 상품도 반값)
+          _take(s);
           c.carry.add(c.want);
-          c.prices.add(game.salePrice(s, c.want));
           if (promo == Promo.onePlusOne && c.want == promoProduct && s.stock > 0) {
             // 1+1: 하나 더 가져간다(값은 안 받는다)
-            s.stock--;
+            _take(s);
             c.carry.add(c.want);
             c.prices.add(0);
           }
@@ -1598,7 +1610,7 @@ class World {
         _fx(Incident.thiefFlee);
       }
     } else if (c.carry.isEmpty) {
-      _rate(c.missed > 0 ? 1 : 3); // 찾던 게 없었을 뿐이면 별점은 그대로(못 판 돈이 벌)
+      if (c.missed > 0) _rate(1); // 찾던 게 없었을 뿐이면 별점은 그대로(못 판 돈이 벌)
       _leave(c, rated: true);
     } else {
       _toRegister(c);

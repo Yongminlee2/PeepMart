@@ -464,7 +464,7 @@
   "land_bonus": "Customers +{n}%",
   "land_hint2": "Tap a glowing plot to buy it (next: {n}) · Your land brings +{b}% customers",
   "town_forsale": "For sale",
-  "day_goods": "Stock (wholesale)",
+  "day_goods": "Stock & promo costs",
   "day_wages": "Staff wages",
   "day_missing": "Wanted but not stocked",
   "day_quit": "Short on money, one staff member quit",
@@ -535,5 +535,6 @@
   "help_night_t": "Night shift",
   "help_night_b": "From Big Store, after the day ends you can run a 1-minute night shift once a day. Fewer customers, but prices are 40% higher. Thieves and grumpy customers come often. No target or stars.",
   "help_week_t": "Town sales ranking",
-  "help_week_b": "Every 7 days you compete on weekly sales with Mega Mart, Happy Super, Corner Shop and 24h Mart. 1st–3rd place win prizes. Beating Mega Mart takes 30% more than usual, so make good use of holidays and promotions. Tap the ranking chip at the top left while closed to see the table."
+  "help_week_b": "Every 7 days you compete on weekly sales with Mega Mart, Happy Super, Corner Shop and 24h Mart. 1st–3rd place win prizes. Beating Mega Mart takes 30% more than usual, so make good use of holidays and promotions. Tap the ranking chip at the top left while closed to see the table.",
+  "week_start": "New week! Compete on 7 days of sales"
 }

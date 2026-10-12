@@ -316,4 +316,58 @@ void main() {
     final back = Game.fromJson(g.toJson());
     expect(back.lastWeekRank, 1);
   });
+
+  test('검토에서 나온 것: 7일째에 나가도 순위 정산, 1+1 로 비워도 날짜 새로, 한정 상품은 그날만, 야간 일당은 그 결과에', () {
+    // 7일째 장사 중에 나가면(abandonDay) 그 주 순위를 매긴다
+    final g = shop(3)..day = 7;
+    final w = World(g, seed: 13)..openDay();
+    w.daySales = 300;
+    w.abandonDay();
+    expect(g.day, 8);
+    expect(g.weekSales, 0);
+    expect(g.lastWeekRank, greaterThan(0));
+    // 1+1 로 진열대가 비면 날짜·스티커가 새로
+    final g2 = shop(3)..owner.tutorial = TutorialStep.done;
+    final fr = first(g2, 'fridge');
+    g2.setProduct(fr, 'gimbap');
+    fr
+      ..stock = 2
+      ..age = 1
+      ..sticker = true;
+    g2.setPromo(Promo.onePlusOne, product: 'gimbap');
+    final w2 = World(g2, seed: 14)..openDay();
+    for (var i = 0; i < 1200 && fr.stock > 0; i++) {
+      w2.tick(0.05);
+    }
+    expect(fr.stock, 0);
+    expect(fr.age, 0);
+    expect(fr.sticker, isFalse);
+    // 명절이 아닌 날엔 진열해 둔 한정 상품도 안 팔린다
+    final g3 = shop(12)..day = 5;
+    final rack = first(g3, 'rack');
+    g3.setProduct(rack, 'lollipop');
+    rack.stock = 8;
+    final w3 = World(g3, seed: 15)..openDay();
+    var bought = false;
+    for (var i = 0; i < 1200; i++) {
+      w3.tick(0.05);
+      bought |= w3.customers.any((c) => c.kind != CustomerKind.thief && c.carry.contains('lollipop'));
+    }
+    expect(bought, isFalse); // (도둑은 아무거나 훔친다)
+    // 야간 영업의 일당은 그 밤 결과에 나오고 다음 날로 안 넘어간다
+    final g4 = shop(10);
+    g4.hire(Staff.cashier);
+    final w4 = World(g4, seed: 16)..openDay();
+    close(w4);
+    w4.result = null;
+    w4.openNight();
+    run(w4, nightLength + 1);
+    for (var i = 0; i < 400 && w4.result == null; i++) {
+      w4.customers.clear();
+      w4.tick(0.05);
+    }
+    expect(w4.result!.night, isTrue);
+    expect(w4.result!.wages, greaterThan(0));
+    expect(g4.spentWages, 0);
+  });
 }
