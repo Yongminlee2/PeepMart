@@ -72,4 +72,32 @@ void main() {
     run(w, 60);
     expect(w.dayMissing.keys, contains(holidayProduct(h).id));
   });
+
+  test('홍보: 전단지는 돈을 내고 내일 하루만, 1+1 은 하나 사면 하나 더 가져간다', () {
+    final g = shop(3)..avgSales = 400;
+    final money = g.money;
+    expect(g.setPromo(Promo.flyer), isTrue);
+    expect(g.money, money - g.flyerCost);
+    expect(g.setPromo(Promo.flyer), isFalse); // 하루에 하나
+    final w = World(g, seed: 4)..openDay();
+    expect(w.promo, Promo.flyer);
+    expect(g.promo, isNull);
+    close(w);
+    expect(w.promo, isNull);
+    // 1+1: 진열된 상품만
+    expect(g.setPromo(Promo.onePlusOne, product: 'gimbap'), isFalse);
+    expect(g.setPromo(Promo.onePlusOne, product: 'donut'), isTrue);
+    final rack = first(g, 'rack')..stock = 8;
+    w.result = null;
+    w.openDay();
+    run(w, 40); // 계산할 사람이 없으니 손님은 물건을 든 채 줄을 선다
+    expect(rack.stock, lessThan(7));
+    expect(w.customers.any((c) => c.carry.where((p) => p == 'donut').length >= 2), isTrue);
+    // 저장했다 불러와도 남는다
+    g.promo = null;
+    g.setPromo(Promo.onePlusOne, product: 'soda');
+    final back = Game.fromJson(g.toJson());
+    expect(back.promo, Promo.onePlusOne);
+    expect(back.promoProduct, 'soda');
+  });
 }

@@ -193,6 +193,8 @@ class Game {
   double avgShelves = 0; // 그 평균을 낼 때의 진열대 수(가게를 키우면 목표도 따라 오르게)
   int spentGoods = 0, spentWages = 0; // 지난 결산 뒤 쓴 물건값·일당 (결과 창의 순이익용, 저장 안 함)
   Weather weather = Weather.sunny; // 다음에 여는 날의 날씨 (닫을 때 정해 둔다)
+  Promo? promo; // 다음에 여는 날의 홍보
+  String? promoProduct; // 1+1 행사 상품
 
   /// 바뀔 때마다 1씩 오른다. [World] 가 길을 다시 찾을지 보는 데 쓴다.
   int layoutVersion = 0;
@@ -336,6 +338,23 @@ class Game {
       }
     }
     return (n, value);
+  }
+
+  /// 전단지 값: 최근 하루 매출의 [flyerShare] (10 단위).
+  int get flyerCost => max(flyerMin, (avgSales * flyerShare / 10).round() * 10);
+
+  /// 다음 날 홍보를 정한다. 전단지는 돈을 내고, 1+1 은 진열된 상품이어야 한다.
+  bool setPromo(Promo p, {String? product}) {
+    if (promo != null) return false;
+    if (p == Promo.flyer) {
+      if (money < flyerCost) return false;
+      money -= flyerCost;
+    } else if (product == null || !onSale.contains(product)) {
+      return false;
+    }
+    promo = p;
+    promoProduct = p == Promo.onePlusOne ? product : null;
+    return true;
   }
 
   /// 가격표를 다음 단계로 (싸게 → 보통 → 비싸게 → 프리미엄 → 싸게).
@@ -795,6 +814,7 @@ class Game {
         'best': bestSales,
         'avg': [avgSales, avgServed, avgShelves],
         'weather': weather.name,
+        if (promo != null) 'promo': [promo!.name, promoProduct ?? ''],
       };
 
   void _fromJson(Map<String, dynamic> j) {
@@ -832,6 +852,11 @@ class Game {
     avgServed = (avg?[1] as num?)?.toDouble() ?? 0;
     avgShelves = avg != null && avg.length > 2 ? (avg[2] as num).toDouble() : shelves.length.toDouble();
     weather = Weather.values.asNameMap()[j['weather']] ?? Weather.sunny;
+    final pr = j['promo'] as List?;
+    if (pr != null) {
+      promo = Promo.values.asNameMap()[pr[0]];
+      promoProduct = (pr[1] as String).isEmpty ? null : pr[1] as String;
+    }
     _reindex();
   }
 }

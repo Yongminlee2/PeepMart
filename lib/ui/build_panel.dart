@@ -400,8 +400,9 @@ class _BuildPanelState extends State<BuildPanel> {
 }
 
 /// 진열대·상자에 넣을 상품 고르기. 잠긴 상품은 열리는 레벨을 알려 준다.
-void showProductPicker(BuildContext context, Game game, ItemType t, void Function(String) done, void Function(String) toast) {
-  final options = products.where((p) => t.kind == ItemKind.box || p.kind == t.shelf).toList();
+void showProductPicker(BuildContext context, Game game, ItemType t, void Function(String) done, void Function(String) toast,
+    {Set<String>? only}) {
+  final options = products.where((p) => (t.kind == ItemKind.box || p.kind == t.shelf) && (only == null || only.contains(p.id))).toList();
   showModalBottomSheet<void>(
     context: context,
     backgroundColor: bg,

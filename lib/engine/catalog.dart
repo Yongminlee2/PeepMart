@@ -413,6 +413,16 @@ const holidayGoods = {
 };
 Product holidayProduct(Holiday h) => products.firstWhere((p) => p.holiday == h.name);
 
+/// 홍보(문 닫힌 동안 다음 날 것을 고른다): 전단지는 손님 [flyerVisitors] 배(값 = 최근 하루 매출의 [flyerShare]),
+/// 1+1 행사는 고른 상품을 사면 하나 더 준다(물건이 두 배로 나간다) — 손님이 그 상품을 찾아오고 조금 더 온다.
+enum Promo { flyer, onePlusOne }
+
+const flyerVisitors = 1.35;
+const flyerShare = 0.25;
+const flyerMin = 80;
+const onePlusOneVisitors = 1.15;
+const onePlusOnePull = 0.5;
+
 /// 특별한 날(큰 편의점부터 5일마다): 소풍날 → 시험 기간 → (대형마트부터) 동네 축제 차례로.
 enum SpecialDay { picnic, exam, festival }
 

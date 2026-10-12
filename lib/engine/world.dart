@@ -156,6 +156,8 @@ class World {
   SpecialDay? special; // 오늘이 특별한 날이면
   bool priceWar = false; // 오늘이 메가마트 가격 전쟁 날이면
   Holiday? holiday; // 오늘이 명절이면
+  Promo? promo; // 오늘의 홍보
+  String? promoProduct; // 오늘의 1+1 상품
   Order? order; // 들어온 배달 주문
   Customer? chase; // 쫓고 있는 도둑
   double _chaseStep = 0, _repairStill = 0;
@@ -187,6 +189,11 @@ class World {
     special = game.todaySpecial;
     priceWar = game.priceWarDay;
     holiday = game.todayHoliday;
+    promo = game.promo;
+    promoProduct = game.promoProduct;
+    game
+      ..promo = null
+      ..promoProduct = null;
     dayTarget = game.dayTarget;
     if (holiday != null) dayTarget = (dayTarget * holidayVisitors / 10).round() * 10;
     if (special == SpecialDay.festival) dayTarget = (dayTarget * festivalVisitors / 10).round() * 10;
@@ -606,6 +613,8 @@ class World {
     tips.clear(); // 못 주운 팁은 사라진다
     phase = DayPhase.closed;
     holiday = null;
+    promo = null;
+    promoProduct = null;
     fx.add(Fx(FxKind.day, player.x, player.y, amount: dayClosed));
   }
 
@@ -626,6 +635,7 @@ class World {
       (feverLeft > 0 ? feverVisitors : 1.0) *
       (priceWar ? priceWarVisitors : 1.0) *
       (holiday != null ? holidayVisitors : 1.0) *
+      (promo == Promo.flyer ? flyerVisitors : (promo == Promo.onePlusOne ? onePlusOneVisitors : 1.0)) *
       ruleOf(game.branch).visitors;
 
   void _rate(int satisfaction) {
@@ -1177,6 +1187,11 @@ class World {
     while (wants.length < n) {
       wants.add(_rng.nextDouble() < carriedPull ? sale[_rng.nextInt(sale.length)] : pool[_rng.nextInt(pool.length)]);
     }
+    final pp = promoProduct;
+    if (promo == Promo.onePlusOne && pp != null && _rng.nextDouble() < onePlusOnePull) {
+      wants.insert(0, pp);
+      if (wants.length > n) wants.removeLast();
+    }
     final h = holiday;
     if (h != null && _rng.nextDouble() < holidayPull) {
       wants.insert(0, holidayProduct(h).id); // 없으면 '찾았는데 없던 상품'으로 남는다
@@ -1309,6 +1324,12 @@ class World {
           }
           c.carry.add(c.want);
           c.prices.add(game.salePrice(s, c.want));
+          if (promo == Promo.onePlusOne && c.want == promoProduct && s.stock > 0) {
+            // 1+1: 하나 더 가져간다(값은 안 받는다)
+            s.stock--;
+            c.carry.add(c.want);
+            c.prices.add(0);
+          }
           _nextWant(c);
         } else if (c.timer > shelfPatience * c.patience * patienceFactor(game.rank) * ruleOf(game.branch).patience) {
           c

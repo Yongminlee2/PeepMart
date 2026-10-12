@@ -486,5 +486,15 @@
   "p_pear": "배 선물",
   "p_pumpkin": "단호박",
   "p_xmascake": "크리스마스 케이크",
-  "limited_tag": "한정"
+  "limited_tag": "한정",
+  "promo_btn": "홍보하기 (내일)",
+  "promo_title": "내일 무슨 홍보를 할까요?",
+  "promo_flyer": "전단지 돌리기",
+  "promo_flyer_d": "내일 손님이 {n}% 더 와요",
+  "promo_1p1": "1+1 행사",
+  "promo_1p1_d": "고른 상품을 사면 하나 더 줘요. 그 상품을 찾는 손님이 몰려요(물건은 두 배로 나가요)",
+  "promo_free": "물건값만",
+  "promo_flyer_set": "내일 전단지 홍보 준비 완료",
+  "promo_1p1_set": "내일 {item} 1+1 행사",
+  "promo_need_shelf": "진열대에 있는 상품만 고를 수 있어요"
 }

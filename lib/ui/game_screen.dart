@@ -886,6 +886,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
               ],
               if (world.special != null) const Icon(Icons.celebration_rounded, size: 15, color: Color(0xFFE65100)),
               if (world.holiday != null) const Icon(Icons.redeem_rounded, size: 15, color: Color(0xFFD81B60)),
+              if (world.promo != null) const Icon(Icons.campaign_rounded, size: 15, color: Color(0xFFE65100)),
               if (world.priceWar) const Icon(Icons.local_offer_rounded, size: 15, color: Color(0xFFC62828)),
               const SizedBox(width: 8),
               if (closing)
@@ -1096,6 +1097,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
   /// 닫힌 동안: 다음 날 예보와 문 열기.
   Widget _openButton() => Column(mainAxisSize: MainAxisSize.min, children: [
         if (game.rank >= rankWeather) _forecast(),
+        _promoButton(),
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 40),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -1118,6 +1120,86 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
           ),
         ),
       ]);
+
+  /// 홍보: 정했으면 무엇인지, 아니면 고르는 단추.
+  Widget _promoButton() {
+    final p = game.promo;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: p == null ? const Color(0xFFFFF3E0) : const Color(0xFFE8F5E9),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: const BorderSide(color: inkColor, width: 2)),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: p == null ? _choosePromo : null,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(p == null ? Icons.campaign_rounded : Icons.check_circle_rounded, color: const Color(0xFFE65100), size: 20),
+              const SizedBox(width: 6),
+              Text(
+                  p == null
+                      ? S.t('promo_btn')
+                      : p == Promo.flyer
+                          ? S.t('promo_flyer_set')
+                          : S.tn('promo_1p1_set', {'item': S.t('p_${game.promoProduct}')}),
+                  style: const TextStyle(fontSize: 14, color: inkColor)),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _choosePromo() async {
+    final cost = game.flyerCost;
+    final choice = await showModalBottomSheet<Promo>(
+      context: context,
+      backgroundColor: bg,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (c) {
+        Widget card(Promo p, IconData icon, String title, String desc, Widget price) => Card(
+              color: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: inkColor, width: 1.5)),
+              child: ListTile(
+                leading: Icon(icon, color: const Color(0xFFE65100), size: 32),
+                title: Text(title, style: const TextStyle(fontSize: 17, color: inkColor)),
+                subtitle: Text(desc, style: const TextStyle(fontSize: 13, color: Colors.black54)),
+                trailing: price,
+                onTap: () => Navigator.pop(c, p),
+              ),
+            );
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Text(S.t('promo_title'), style: const TextStyle(fontSize: 20, color: inkColor)),
+              const SizedBox(height: 8),
+              card(Promo.flyer, Icons.campaign_rounded, S.t('promo_flyer'),
+                  S.tn('promo_flyer_d', {'n': ((flyerVisitors - 1) * 100).round()}), Coins(cost, size: 15)),
+              card(Promo.onePlusOne, Icons.exposure_plus_1_rounded, S.t('promo_1p1'), S.t('promo_1p1_d'),
+                  Text(S.t('promo_free'), style: const TextStyle(fontSize: 13, color: Color(0xFF2E7D32)))),
+            ]),
+          ),
+        );
+      },
+    );
+    if (choice == null || !mounted) return;
+    if (choice == Promo.flyer) {
+      if (!game.setPromo(Promo.flyer)) toast(S.t('no_money'));
+    } else {
+      final sale = game.onSale.toList()..sort();
+      if (sale.isEmpty) return;
+      // 진열된 상품 중에서 고른다
+      final kind = itemTypes.firstWhere((t) => t.kind == ItemKind.box);
+      if (!mounted) return;
+      showProductPicker(context, game, kind, (p) {
+        if (!game.setPromo(Promo.onePlusOne, product: p)) toast(S.t('promo_need_shelf'));
+        setState(() {});
+      }, toast, only: sale.toSet());
+    }
+    setState(() {});
+  }
 
   /// 다음 날 예보: 날씨·특별한 날, 잘 팔릴 상품.
   Widget _forecast() {
