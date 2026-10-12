@@ -521,5 +521,19 @@
   "week_rank": "This week: #{n} · {d} days left",
   "week_title": "This week's town sales ranking",
   "week_desc": "Final ranking in {d} days. 1st place wins {p}; 2nd and 3rd also win",
-  "week_done": "Weekly town rank #{n}!"
+  "week_done": "Weekly town rank #{n}!",
+  "help_fresh_t": "Expiry and half-price stickers",
+  "help_fresh_b": "Fresh items like gimbap, sandwiches, milk, lunch boxes and bread age one day every night on the shelf, and leftovers are thrown out on the second night. When a shelf sells out, its date resets. Shelves about to expire get an 'Exp.' tag: tap one in build mode to add a half-price sticker so customers grab it first.",
+  "help_holiday_t": "Holidays and limited items",
+  "help_holiday_b": "From Neighborhood Store, a holiday comes every 8 days: Lunar New Year, Children's Day, Halloween, Pepero Day and Christmas. 30% more customers come, looking for that day's limited item. Check the forecast and set up a shelf and box the day before.",
+  "help_promo_t": "Promotions",
+  "help_promo_b": "While closed, tap 'Promote tomorrow' to pick one promotion. Flyers cost money and bring 35% more customers. Buy 1 Get 1 gives a free extra of the chosen item, which draws a crowd but uses stock twice as fast.",
+  "help_cook_t": "Cooking",
+  "help_cook_b": "Food put in the hot counter (cup ramen, hot dogs, skewers...) is raw and can't be sold yet. Stand still next to it and it cooks. Staff can fill it but can't cook (a hot counter manager can).",
+  "help_machines_t": "Machines and service desk",
+  "help_machines_b": "Vending machines, ATMs and photo booths earn money when leaving customers use them; fix them when they break. A service desk brings parcel and lottery customers, served only when you stand next to it. Self-checkouts let customers scan by themselves, but you must help when they error. Staff level up as they work and have traits (Quick, Sleepy, Cheerful); walk over to wake dozing staff.",
+  "help_night_t": "Night shift",
+  "help_night_b": "From Big Store, after the day ends you can run a 1-minute night shift once a day. Fewer customers, but prices are 40% higher. Thieves and grumpy customers come often. No target or stars.",
+  "help_week_t": "Town sales ranking",
+  "help_week_b": "Every 7 days you compete on weekly sales with Mega Mart, Happy Super, Corner Shop and 24h Mart. 1st–3rd place win prizes. Beating Mega Mart takes 30% more than usual, so make good use of holidays and promotions. Tap the ranking chip at the top left while closed to see the table."
 }

@@ -676,7 +676,8 @@ class Game {
   bool hire(Staff s, {Random? rng}) {
     if (!canHire(s)) return false;
     money -= staffSpecs[s]!.hire;
-    traitsOf(s).add(_rollTrait(rng ?? Random())); // 늘리기 전에: traitsOf 가 모자란 만큼 보통으로 채우므로
+    // 성격은 가게 상태로 정한다(같은 상황이면 같은 알바: 시험이 흔들리지 않게). 늘리기 전에 넣는다: traitsOf 가 모자란 만큼 보통으로 채우므로
+    traitsOf(s).add(_rollTrait(rng ?? Random(day * 97 + count(s) * 13 + s.index * 7 + served)));
     staff[s] = count(s) + 1;
     return true;
   }
