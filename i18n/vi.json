@@ -474,5 +474,17 @@
   "sticker_on": "Half-price sticker on. Customers grab it first",
   "sticker_removed": "Sticker removed",
   "tag_expiring": "Exp.",
-  "day_wasted": "{n} expired items thrown out ({v} at wholesale)"
+  "day_wasted": "{n} expired items thrown out ({v} at wholesale)",
+  "hol_newyear": "Lunar New Year",
+  "hol_childrens": "Children's Day",
+  "hol_halloween": "Halloween",
+  "hol_pepero": "Pepero Day",
+  "hol_christmas": "Christmas",
+  "hol_d": "More customers come looking for the limited {item}. Set up a shelf and box ahead of time",
+  "p_lollipop": "Lollipop",
+  "p_pepero": "Pepero",
+  "p_pear": "Pear gift",
+  "p_pumpkin": "Pumpkin",
+  "p_xmascake": "Christmas cake",
+  "limited_tag": "Limited"
 }

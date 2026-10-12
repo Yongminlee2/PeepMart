@@ -407,7 +407,8 @@ void showProductPicker(BuildContext context, Game game, ItemType t, void Functio
     backgroundColor: bg,
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
     builder: (c) => SafeArea(
-      child: Padding(
+      // 상품이 많아지면 시트보다 길어진다: 넘치면 굴려서 본다
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(12),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Text(S.tn('pick_product', {'item': S.t('i_${t.id}')}), style: const TextStyle(fontSize: 20, color: inkColor)),
@@ -440,6 +441,9 @@ void showProductPicker(BuildContext context, Game game, ItemType t, void Functio
                         const Positioned(right: -10, bottom: -2, child: Icon(Icons.lock_rounded, size: 18, color: Colors.black54)),
                     ]),
                     Text(S.t('p_${p.id}'), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, color: inkColor)),
+                    if (p.holiday != null)
+                      Text('${S.t('limited_tag')} · ${S.t('hol_${p.holiday}')}',
+                          maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 10, color: Color(0xFFD81B60))),
                     game.unlockedProduct(p)
                         ? Coins(p.price, size: 12)
                         : Text(S.tn('level_n', {'n': p.level}), style: const TextStyle(fontSize: 12, color: Colors.black45)),

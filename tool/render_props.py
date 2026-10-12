@@ -27,6 +27,8 @@ FOOD = {
     "popsicle": "popsicle", "pie": "pie",
     "gimbap": "maki-vegetable", "bananamilk": "carton-small", "cupramen": "bowl-broth",
     "tteokkochi": "skewer", "hoppang": "dim-sum",
+    # 명절 한정 상품
+    "pepero": "candy-bar", "xmascake": "cake-birthday", "pear": "pear", "pumpkin": "pumpkin", "lollipop": "lollypop",
 }
 FR_FOOD, ORTHO_FOOD, FOOD_FIT = 96, 1.25, 0.8
 FOOD_FIT_EXTRA = {"sandwich": 1.9, "pizza": 1.3, "chocolate": 1.2, "cookie-chocolate": 1.2, "cookie": 1.3}  # 납작해서 작아 보이는 것

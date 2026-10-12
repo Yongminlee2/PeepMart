@@ -151,6 +151,7 @@ class StorePainter extends CustomPainter {
     _traffic(canvas, seen, behind: true);
     canvas.drawPicture(_wallPicture(game));
     _rankSign(canvas);
+    if (world.holiday != null) _bunting(canvas, world.holiday!);
 
     final b = build;
     if (b != null && b.land) _plotsForSale(canvas);
@@ -794,6 +795,39 @@ class StorePainter extends CustomPainter {
     canvas.skew(0, 0.5); // 벽 기울기(2:1)에 맞춘다
     paintSign(canvas, game.rank, 84, 22);
     canvas.restore();
+  }
+
+  /// 명절 장식: 뒷벽 두 면 위쪽에 삼각 깃발 줄.
+  void _bunting(Canvas canvas, Holiday h) {
+    final cols = switch (h) {
+      Holiday.newyear => const [Color(0xFFE53935), Color(0xFFFFD54F), Color(0xFF1E88E5)],
+      Holiday.childrens => const [Color(0xFF81D4FA), Color(0xFFFFF176), Color(0xFFA5D6A7), Color(0xFFF48FB1)],
+      Holiday.halloween => const [Color(0xFFFF9800), Color(0xFF4A148C), Color(0xFF212121)],
+      Holiday.pepero => const [Color(0xFF8D6E63), Color(0xFFF8BBD0), Color(0xFFFFFFFF)],
+      Holiday.christmas => const [Color(0xFFC62828), Color(0xFF2E7D32), Color(0xFFFFFFFF)],
+    };
+    const up = Offset(0, -wallH * 0.86);
+    for (final (a, b) in [(corner(0.2, 0), corner(plotSize - 0.2, 0)), (corner(0, 0.2), corner(0, plotSize - 0.2))]) {
+      const n = 14;
+      Offset at(double k) => Offset.lerp(a, b, k)! + up + Offset(0, sin(k * pi) * 10);
+      final line = Path()..moveTo(at(0).dx, at(0).dy);
+      for (var i = 1; i <= 20; i++) {
+        final q = at(i / 20);
+        line.lineTo(q.dx, q.dy);
+      }
+      canvas.drawPath(line, _stroke(1.2));
+      for (var i = 0; i < n; i++) {
+        final p0 = at((i + 0.15) / n), p1 = at((i + 0.85) / n);
+        final tip = Offset.lerp(p0, p1, 0.5)! + Offset(0, 11 + sin(clock * 3 + i) * 1.5);
+        final flag = Path()
+          ..moveTo(p0.dx, p0.dy)
+          ..lineTo(p1.dx, p1.dy)
+          ..lineTo(tip.dx, tip.dy)
+          ..close();
+        canvas.drawPath(flag, Paint()..color = cols[i % cols.length]);
+        canvas.drawPath(flag, _stroke(0.8));
+      }
+    }
   }
 
   void _arrow(Canvas canvas, Offset p) {

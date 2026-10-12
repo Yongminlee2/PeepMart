@@ -155,6 +155,7 @@ class World {
   Weather weather = Weather.sunny; // 오늘(연 날) 날씨
   SpecialDay? special; // 오늘이 특별한 날이면
   bool priceWar = false; // 오늘이 메가마트 가격 전쟁 날이면
+  Holiday? holiday; // 오늘이 명절이면
   Order? order; // 들어온 배달 주문
   Customer? chase; // 쫓고 있는 도둑
   double _chaseStep = 0, _repairStill = 0;
@@ -185,7 +186,9 @@ class World {
     weather = game.todayWeather;
     special = game.todaySpecial;
     priceWar = game.priceWarDay;
+    holiday = game.todayHoliday;
     dayTarget = game.dayTarget;
+    if (holiday != null) dayTarget = (dayTarget * holidayVisitors / 10).round() * 10;
     if (special == SpecialDay.festival) dayTarget = (dayTarget * festivalVisitors / 10).round() * 10;
     tasks = _makeTasks();
     _spawnIn = 1;
@@ -602,6 +605,7 @@ class World {
     order = null;
     tips.clear(); // 못 주운 팁은 사라진다
     phase = DayPhase.closed;
+    holiday = null;
     fx.add(Fx(FxKind.day, player.x, player.y, amount: dayClosed));
   }
 
@@ -621,6 +625,7 @@ class World {
       (special == SpecialDay.festival ? festivalVisitors : 1.0) *
       (feverLeft > 0 ? feverVisitors : 1.0) *
       (priceWar ? priceWarVisitors : 1.0) *
+      (holiday != null ? holidayVisitors : 1.0) *
       ruleOf(game.branch).visitors;
 
   void _rate(int satisfaction) {
@@ -1171,6 +1176,11 @@ class World {
     final wants = [sale.first];
     while (wants.length < n) {
       wants.add(_rng.nextDouble() < carriedPull ? sale[_rng.nextInt(sale.length)] : pool[_rng.nextInt(pool.length)]);
+    }
+    final h = holiday;
+    if (h != null && _rng.nextDouble() < holidayPull) {
+      wants.insert(0, holidayProduct(h).id); // 없으면 '찾았는데 없던 상품'으로 남는다
+      if (wants.length > n) wants.removeLast();
     }
     final cheap = {for (final s in game.shelves) if (s.sticker && s.stock > 0) s.product!}.toList()..sort();
     if (cheap.isNotEmpty && _rng.nextDouble() < stickerPull) {

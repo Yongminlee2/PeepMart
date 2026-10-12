@@ -474,5 +474,17 @@
   "sticker_on": "반값 스티커를 붙였어요. 손님이 먼저 집어 가요",
   "sticker_removed": "스티커를 뗐어요",
   "tag_expiring": "임박",
-  "day_wasted": "유통기한이 지나 {n}개를 버렸어요 (도매가 {v}어치)"
+  "day_wasted": "유통기한이 지나 {n}개를 버렸어요 (도매가 {v}어치)",
+  "hol_newyear": "설날",
+  "hol_childrens": "어린이날",
+  "hol_halloween": "할로윈",
+  "hol_pepero": "빼빼로데이",
+  "hol_christmas": "크리스마스",
+  "hol_d": "손님이 몰려오고 한정 상품 {item}을(를) 찾아요. 진열대와 상자를 미리 준비해 두세요",
+  "p_lollipop": "막대사탕",
+  "p_pepero": "빼빼로",
+  "p_pear": "배 선물",
+  "p_pumpkin": "단호박",
+  "p_xmascake": "크리스마스 케이크",
+  "limited_tag": "한정"
 }

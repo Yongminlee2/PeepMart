@@ -34,7 +34,8 @@ class Product {
   final ShelfKind kind;
   final int price; // 손님이 내는 값 (= 얻는 경험치)
   final int level; // 이 가게 레벨부터 들여올 수 있다
-  const Product(this.id, this.kind, this.price, this.level);
+  final String? holiday; // 명절 한정 상품이면 그 명절 이름: 그날에만 손님이 찾는다
+  const Product(this.id, this.kind, this.price, this.level, [this.holiday]);
 
   /// 카페처럼 앉아서 먹고 가는 상품인가.
   bool get eatIn => kind == ShelfKind.bakery || kind == ShelfKind.coffee || kind == ShelfKind.hot;
@@ -76,6 +77,12 @@ const products = [
   Product('grapes', ShelfKind.fruit, 8, 18),
   Product('popsicle', ShelfKind.freezer, 6, 19),
   Product('pie', ShelfKind.bakery, 11, 20),
+  // 명절 한정: 그날에만 손님이 찾으니 전날 미리 진열해 둔다
+  Product('lollipop', ShelfKind.rack, 5, 5, 'childrens'),
+  Product('pepero', ShelfKind.rack, 6, 5, 'pepero'),
+  Product('pear', ShelfKind.fruit, 12, 6, 'newyear'),
+  Product('pumpkin', ShelfKind.fruit, 10, 8, 'halloween'),
+  Product('xmascake', ShelfKind.bakery, 20, 10, 'christmas'),
 ];
 
 Product productById(String id) => products.firstWhere((p) => p.id == id);
@@ -388,6 +395,23 @@ List<int> weatherOdds(String branch) => switch (branch) {
 /// 손님이 날씨·특별한 날 상품을 맨 먼저 집을 확률 (진열돼 있을 때).
 const favoredPull = 0.5;
 const rainVisitors = 0.9; // 비 오는 날은 손님이 조금 덜 온다
+
+/// 명절(동네 편의점부터 [holidayEvery] 일마다, 차례로): 손님이 [holidayVisitors] 배, 명절 상품이 잘 팔리고
+/// 그날만 나오는 한정 상품을 찾는다. 가게 안에 명절 장식이 걸린다.
+enum Holiday { newyear, childrens, halloween, pepero, christmas }
+
+const rankHoliday = 1;
+const holidayEvery = 8; // 4·12·20·28…일째
+const holidayVisitors = 1.3;
+const holidayPull = 0.5; // 손님이 한정 상품을 맨 먼저 찾을 확률
+const holidayGoods = {
+  Holiday.newyear: ['pear', 'fruit', 'tteokkochi', 'gimbap'],
+  Holiday.childrens: ['lollipop', 'icecream', 'bananamilk', 'donut'],
+  Holiday.halloween: ['pumpkin', 'chocolate', 'cookie', 'pie'],
+  Holiday.pepero: ['pepero', 'chocolate', 'cookie'],
+  Holiday.christmas: ['xmascake', 'cake', 'cupcake', 'strawberry'],
+};
+Product holidayProduct(Holiday h) => products.firstWhere((p) => p.holiday == h.name);
 
 /// 특별한 날(큰 편의점부터 5일마다): 소풍날 → 시험 기간 → (대형마트부터) 동네 축제 차례로.
 enum SpecialDay { picnic, exam, festival }

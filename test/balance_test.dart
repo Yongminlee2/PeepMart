@@ -102,7 +102,7 @@ class Bot {
     // 새 상품: 진열대 + 상자
     final sale = g.onSale;
     for (final p in products) {
-      if (!g.unlockedProduct(p) || sale.contains(p.id)) continue;
+      if (!g.unlockedProduct(p) || sale.contains(p.id) || p.holiday != null) continue; // 명절 한정은 건너뛴다
       final shelf = itemTypes.firstWhere((t) => t.shelf == p.kind);
       if (!g.unlockedItem(shelf) || g.money < shelf.price + itemType('box').price + 30) break;
       if (_place(shelf.id, product: p.id)) _place('box', product: p.id);

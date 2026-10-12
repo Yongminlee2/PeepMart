@@ -885,6 +885,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                 Icon(weatherIcon(world.weather), size: 15, color: weatherColor(world.weather)),
               ],
               if (world.special != null) const Icon(Icons.celebration_rounded, size: 15, color: Color(0xFFE65100)),
+              if (world.holiday != null) const Icon(Icons.redeem_rounded, size: 15, color: Color(0xFFD81B60)),
               if (world.priceWar) const Icon(Icons.local_offer_rounded, size: 15, color: Color(0xFFC62828)),
               const SizedBox(width: 8),
               if (closing)
@@ -1122,7 +1123,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
   Widget _forecast() {
     final w = game.todayWeather;
     final sp = game.todaySpecial;
-    final goods = {...weatherGoods[w]!, ...?specialGoods[sp]}
+    final hol = game.todayHoliday;
+    final goods = {...weatherGoods[w]!, ...?specialGoods[sp], ...?holidayGoods[hol]}
         .where((p) => productById(p).level <= game.level)
         .take(5)
         .map((p) => S.t('p_$p'))
@@ -1134,7 +1136,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
       decoration: BoxDecoration(
 
         boxShadow: softShadow,
-        color: sp == null ? Colors.white.withValues(alpha: 0.92) : const Color(0xFFFFF8E1),
+        color: hol != null ? const Color(0xFFFCE4EC) : (sp == null ? Colors.white.withValues(alpha: 0.92) : const Color(0xFFFFF8E1)),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: sp == null ? inkColor.withValues(alpha: 0.5) : const Color(0xFFFFB300), width: 2),
       ),
@@ -1151,6 +1153,16 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
         if (game.inspectionDay) ...[
           const SizedBox(height: 4),
           Text(S.t('inspect_forecast'), textAlign: TextAlign.center, style: style.copyWith(color: const Color(0xFF1565C0), fontSize: 13)),
+        ],
+        if (hol != null) ...[
+          const SizedBox(height: 4),
+          Row(mainAxisSize: MainAxisSize.min, children: [
+            SizedBox(width: 26, height: 26, child: CustomPaint(painter: FoodPreview(holidayProduct(hol).id))),
+            const SizedBox(width: 4),
+            Flexible(child: Text('${S.t('hol_${hol.name}')}!', style: style.copyWith(color: const Color(0xFFD81B60), fontSize: 16))),
+          ]),
+          Text(S.tn('hol_d', {'item': S.t('p_${holidayProduct(hol).id}')}),
+              textAlign: TextAlign.center, style: style.copyWith(fontSize: 13)),
         ],
         if (sp != null) ...[
           const SizedBox(height: 4),

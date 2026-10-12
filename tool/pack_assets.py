@@ -16,6 +16,7 @@ from PIL import Image, ImageEnhance
 RECOLOR = {
     "food-bananamilk.png": ((200, 245), 32, 1.9, 10),   # 분홍 → 노랑
     "food-hoppang.png": ((5, 30), 24, 0.35, 35),        # 주황 찐빵 → 하얀 호빵
+    "food-pear.png": ((50, 120), 34, 0.85, 15),          # 초록 서양배 → 누런 한국 배
 }
 
 

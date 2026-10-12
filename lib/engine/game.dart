@@ -260,8 +260,11 @@ class Game {
   /// 진열대에 올라 있는 상품들 (손님이 사러 올 수 있는 것).
   Set<String> get onSale => {for (final s in shelves) s.product!};
 
-  /// 동네 손님이 찾는 상품: 지금 레벨에서 열린 것 전부.
-  List<String> get demand => [for (final p in products) if (unlockedProduct(p)) p.id];
+  /// 동네 손님이 찾는 상품: 지금 레벨에서 열린 것 전부(명절 한정 상품은 그 명절에만).
+  List<String> get demand {
+    final h = todayHoliday?.name;
+    return [for (final p in products) if (unlockedProduct(p) && (p.holiday == null || p.holiday == h)) p.id];
+  }
 
   int count(Staff s) => staff[s] ?? 0;
   int step(Upgrade u) => upgrades[u] ?? 0;
@@ -674,10 +677,18 @@ class Game {
     return kinds[(day ~/ specialEvery - 1) % kinds.length];
   }
 
-  /// 오늘 잘 팔리는 상품(날씨 + 특별한 날) 중 지금 진열된 것.
+  /// 다음에 여는 날이 명절이면 그 명절(한정 상품을 들여올 수 있는 레벨이어야).
+  Holiday? get todayHoliday {
+    if (rank < rankHoliday || day % holidayEvery != holidayEvery ~/ 2) return null;
+    final h = Holiday.values[(day ~/ holidayEvery) % Holiday.values.length];
+    return level >= holidayProduct(h).level ? h : null;
+  }
+
+  /// 오늘 잘 팔리는 상품(날씨 + 특별한 날 + 명절) 중 지금 진열된 것.
   Set<String> get favored => {
         ...weatherGoods[todayWeather]!,
         ...?specialGoods[todaySpecial],
+        ...?holidayGoods[todayHoliday],
       }.intersection(onSale);
 
   /// 하루 운영비: 임대료 + 진열대 관리비.
