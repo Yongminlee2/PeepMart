@@ -338,12 +338,12 @@ class _BuildPanelState extends State<BuildPanel> {
       child: Row(children: [
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('${S.t('staff_${s.name}')}  ×${game.count(s)}  Lv.${game.staffLevelOf(s)}',
+            Text('${S.t('staff_${s.name}')}  x${game.count(s)}  Lv.${game.staffLevelOf(s)}',
                 style: const TextStyle(fontSize: 16, color: inkColor)),
             Text(locked ? S.tn('need_level', {'n': spec.level}) : S.tn('wage', {'n': (spec.wage * dayLength / wagePeriod).round()}),
                 style: const TextStyle(fontSize: 12, color: Colors.black45)),
             if (traits.isNotEmpty)
-              Text(traits.join(' · '), maxLines: 1, overflow: TextOverflow.ellipsis,
+              Text(traits.join(', '), maxLines: 1, overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontSize: 11, color: Color(0xFF7E57C2))),
           ]),
         ),
@@ -403,7 +403,7 @@ class _BuildPanelState extends State<BuildPanel> {
   void _pickProduct(ItemType t, void Function(String) done) => showProductPicker(context, game, t, done, widget.toast);
 
   String _name(String type, String? product, [int level = 1]) {
-    final base = product == null ? S.t('i_$type') : '${S.t('i_$type')} · ${S.t('p_$product')}';
+    final base = product == null ? S.t('i_$type') : '${S.t('i_$type')} - ${S.t('p_$product')}';
     return level > 1 ? '$base  Lv.$level' : base;
   }
 }
@@ -452,7 +452,7 @@ void showProductPicker(BuildContext context, Game game, ItemType t, void Functio
                     ]),
                     Text(S.t('p_${p.id}'), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, color: inkColor)),
                     if (p.holiday != null)
-                      Text('${S.t('limited_tag')} · ${S.t('hol_${p.holiday}')}',
+                      Text('${S.t('limited_tag')} ${S.t('hol_${p.holiday}')}',
                           maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 10, color: Color(0xFFD81B60))),
                     game.unlockedProduct(p)
                         ? Coins(p.price, size: 12)

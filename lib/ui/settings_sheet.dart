@@ -73,9 +73,9 @@ class _SettingsSheet extends StatelessWidget {
               Text(S.t('credits_title'), textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, color: inkColor)),
               const SizedBox(height: 6),
               Text(
-                '${S.t('credits_art')}: Kenney (kenney.nl) · Quaternius (quaternius.com) · CC0\n'
-                '${S.t('credits_music')}: "Happy Clappy Loop" OwlishMedia · CC0\n'
-                '${S.t('credits_font')}: Jua · SIL OFL',
+                '${S.t('credits_art')}: Kenney (kenney.nl), Quaternius (quaternius.com), CC0\n'
+                '${S.t('credits_music')}: "Happy Clappy Loop" OwlishMedia, CC0\n'
+                '${S.t('credits_font')}: Jua, SIL OFL',
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 13, color: Colors.black45, height: 1.6),
               ),

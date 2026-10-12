@@ -186,7 +186,7 @@ class StorePainter extends CustomPainter {
         canvas.drawOval(Rect.fromCenter(center: q, width: 14, height: 7), _stroke(1));
       }
       final glint = (clock * 2 + t.$2) % 2.0;
-      if (glint < 0.3) _text(canvas, p + const Offset(6, -14), '✦', Colors.white, 10, outline: 1);
+      if (glint < 0.3) _text(canvas, p + const Offset(6, -14), '*', Colors.white, 10, outline: 1);
     }
     if (dest != null && world.player.path.isNotEmpty) {
       final p = iso(dest!.$1 + 0.0, dest!.$2 + 0.0);
@@ -700,7 +700,7 @@ class StorePainter extends CustomPainter {
           ..color = Colors.white
           ..style = PaintingStyle.stroke
           ..strokeWidth = 2.5);
-    _text(canvas, h, '✥', Colors.white, 16);
+    _text(canvas, h, '+', Colors.white, 16);
     if (itemType(type).rotates) {
       final d = rotations[b.rot];
       final till = (t.$1 + d.$1, t.$2 + d.$2), front = (t.$1 - d.$1, t.$2 - d.$2);
@@ -736,13 +736,13 @@ class StorePainter extends CustomPainter {
       case FxKind.wake:
         _float(canvas, e, k, '!', const Color(0xFFFF9800), size: 24);
       case FxKind.cook:
-        _float(canvas, e, k, '♨', const Color(0xFFFF7043), size: 22);
+        _float(canvas, e, k, '~', const Color(0xFFFF7043), size: 22);
       case FxKind.missing:
         // 찾던 상품이 없다: 그 상품 아이콘에 빨간 X
         final p = iso(e.x, e.y) + Offset(0, -62 - k * 22);
         canvas.saveLayer(null, Paint()..color = Color.fromRGBO(0, 0, 0, 1 - k * k));
         _food(canvas, e.product, p, 16);
-        _text(canvas, p + const Offset(9, 7), '✕', const Color(0xFFE53935), 15, outline: 1);
+        _text(canvas, p + const Offset(9, 7), 'X', const Color(0xFFE53935), 15, outline: 1);
         canvas.restore();
       case FxKind.litter:
         _float(canvas, e, k, '!', const Color(0xFF8D6E63));
@@ -753,7 +753,7 @@ class StorePainter extends CustomPainter {
             e.product == 'new' ? const Color(0xFFFF4081) : const Color(0xFF43A047),
             size: e.product == 'new' ? 18 : 24);
       case FxKind.stamp:
-        _float(canvas, e, k, '✔ +${e.amount}', const Color(0xFF7E57C2), size: 20);
+        _float(canvas, e, k, '★ +${e.amount}', const Color(0xFF7E57C2), size: 20);
       case FxKind.event || FxKind.day || FxKind.incident || FxKind.combo:
         break; // 화면 위 알림으로 보여 준다
       case FxKind.regular:
@@ -772,9 +772,9 @@ class StorePainter extends CustomPainter {
     final base = iso(i.c + 0.0, i.r + 0.0) + const Offset(18, -8);
     if (i.price != defaultPrice) {
       final (col, mark) = switch (i.price) {
-        0 => (const Color(0xFF43A047), '↓'),
-        2 => (const Color(0xFFFF9800), '↑'),
-        _ => (const Color(0xFFE53935), '↑↑'),
+        0 => (const Color(0xFF43A047), '-'),
+        2 => (const Color(0xFFFF9800), '+'),
+        _ => (const Color(0xFFE53935), '++'),
       };
       final r = RRect.fromRectAndRadius(Rect.fromCenter(center: base, width: 20, height: 13), const Radius.circular(4));
       canvas.drawRRect(r, Paint()..color = col);
@@ -784,10 +784,10 @@ class StorePainter extends CustomPainter {
     if (game.expiring(i)) {
       // 유통기한 임박: 노란 딱지, 반값 스티커를 붙였으면 '½'
       final p = base + const Offset(-4, -26);
-      final r = RRect.fromRectAndRadius(Rect.fromCenter(center: p, width: i.sticker ? 20 : 26, height: 14), const Radius.circular(7));
+      final r = RRect.fromRectAndRadius(Rect.fromCenter(center: p, width: i.sticker ? 26 : 26, height: 14), const Radius.circular(7));
       canvas.drawRRect(r, Paint()..color = i.sticker ? const Color(0xFFFFEB3B) : const Color(0xFFFFA726));
       canvas.drawRRect(r, _stroke(1.2));
-      _text(canvas, p, i.sticker ? '½' : S.t('tag_expiring'), const Color(0xFF5D4037), 9);
+      _text(canvas, p, i.sticker ? '50%' : S.t('tag_expiring'), const Color(0xFF5D4037), 9);
     }
     if (game.inCombo(i)) {
       final p = base + const Offset(-36, -4);
@@ -1291,7 +1291,7 @@ void drawItem(Canvas canvas, String type, Tile t,
       final sign = RRect.fromRectAndRadius(Rect.fromCenter(center: top + const Offset(12, -16), width: 18, height: 14), const Radius.circular(3));
       canvas.drawRRect(sign, Paint()..color = const Color(0xFFFFEB3B));
       canvas.drawRRect(sign, _stroke(1.2));
-      _text(canvas, top + const Offset(12, -16), '₩', const Color(0xFFE65100), 10);
+      _text(canvas, top + const Offset(12, -16), 'W', const Color(0xFFE65100), 10);
     case 'vending':
       // 자판기: 빨간 몸통, 앞면 유리 칸에 캔 세 줄, 동전 구멍
       const h = 62.0;

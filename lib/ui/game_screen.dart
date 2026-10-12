@@ -1100,7 +1100,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
         for (final p in o.items.toSet()) ...[
           SizedBox(width: 24, height: 24, child: CustomPaint(painter: FoodPreview(p))),
           if (o.items.where((x) => x == p).length > 1)
-            Text('×${o.items.where((x) => x == p).length}', style: style.copyWith(fontSize: 12)),
+            Text('x${o.items.where((x) => x == p).length}', style: style.copyWith(fontSize: 12)),
         ],
         const SizedBox(width: 4),
         Text('${o.left.ceil()}s', style: style.copyWith(color: o.left < 20 ? const Color(0xFFE53935) : Colors.black54)),
@@ -1331,7 +1331,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
               Text('${S.t('day_sales')}  ', style: const TextStyle(fontSize: 16, color: inkColor)),
               Coins(r.sales, size: 20),
             ]),
-            Text('${S.t('day_served')} ${r.served}  ·  ${S.t('day_upset')} ${r.upset}',
+            Text('${S.t('day_served')} ${r.served},  ${S.t('day_upset')} ${r.upset}',
                 style: const TextStyle(fontSize: 14, color: Colors.black54)),
           ]),
           actions: [Center(child: BubbleButton(S.t('btn_nice'), color: const Color(0xFF9FA8DA), onTap: () => Navigator.pop(c)))],

@@ -392,7 +392,7 @@ class DexScreen extends StatelessWidget {
       ]);
 
   Widget _stamps() => ListView(padding: const EdgeInsets.all(14), children: [
-        Text(S.tn('dex_stamps_hint', {'n': stampAt}), style: const TextStyle(fontSize: 13, color: Colors.black54)),
+        Text(S.tn('dex_stamps_hint', {'n': stampAt, 'm': stampPay}), style: const TextStyle(fontSize: 13, color: Colors.black54)),
         const SizedBox(height: 10),
         GridView.count(
           crossAxisCount: 4,
@@ -424,7 +424,7 @@ class DexScreen extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   decoration: BoxDecoration(border: Border.all(color: const Color(0xFF7E57C2), width: 2), borderRadius: BorderRadius.circular(6)),
-                  child: const Text('✔', style: TextStyle(color: Color(0xFF7E57C2), fontSize: 16)),
+                  child: const Text('★', style: TextStyle(color: Color(0xFF7E57C2), fontSize: 16)),
                 ),
               ),
           ]),
