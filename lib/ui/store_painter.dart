@@ -37,6 +37,8 @@ double itemHeight(String type) => switch (type) {
       'fridge' => 70,
       'rack' || 'register' || 'bakerycase' || 'coffeemachine' || 'hotcounter' || 'fruitstand' => 56,
       'plant' || 'lamp' || 'claw' => 60,
+      'vending' || 'photo' => 72,
+      'atm' => 56,
       'freezer' || 'box' || 'bin' || 'chair' || 'table' || 'flowers' => 40,
       _ => 0,
     };
@@ -1224,6 +1226,51 @@ void drawItem(Canvas canvas, String type, Tile t,
       canvas.drawRect(glass, _stroke(1.5));
       canvas.drawRect(Rect.fromCenter(center: glass.topCenter + const Offset(0, -5), width: 44, height: 10), Paint()..color = const Color(0xFFEC407A));
       canvas.drawRect(Rect.fromCenter(center: glass.topCenter + const Offset(0, -5), width: 44, height: 10), _stroke(1.5));
+    case 'vending':
+      // 자판기: 빨간 몸통, 앞면 유리 칸에 캔 세 줄, 동전 구멍
+      const h = 62.0;
+      final x0 = c - 0.36, y0 = r - 0.32;
+      _nbox(canvas, x0, y0, 0.72, 0.64, h, const Color(0xFFE53935));
+      final front = y0 + 0.64;
+      _glass(canvas, x0 + 0.06, front, 0.44, 18, h - 6, shelves: 3);
+      const cans = [Color(0xFF42A5F5), Color(0xFFFFCA28), Color(0xFF66BB6A), Color(0xFFAB47BC)];
+      for (var row = 0; row < 3; row++) {
+        for (var k = 0; k < 3; k++) {
+          final q = corner(x0 + 0.12 + k * 0.13 + 0.5, front + 0.5) + Offset(0, -24.0 - row * 12);
+          canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromCenter(center: q, width: 5, height: 8), const Radius.circular(1.5)),
+              Paint()..color = cans[(row + k) % cans.length]);
+        }
+      }
+      final slot = corner(x0 + 0.6 + 0.5, front + 0.5) + const Offset(0, -34);
+      canvas.drawRect(Rect.fromCenter(center: slot, width: 4, height: 9), Paint()..color = const Color(0xFF212121));
+      canvas.drawRect(Rect.fromCenter(center: corner(x0 + 0.3 + 0.5, front + 0.5) + const Offset(0, -9), width: 16, height: 6),
+          Paint()..color = const Color(0xFF263238));
+    case 'atm':
+      // ATM: 회색 몸통, 파란 화면, 숫자판
+      const h = 50.0;
+      final x0 = c - 0.34, y0 = r - 0.3;
+      _nbox(canvas, x0, y0, 0.68, 0.6, h, const Color(0xFFCFD8DC));
+      final front = y0 + 0.6;
+      _faceBand(canvas, x0, front, 0.68, h - 8, h, const Color(0xFF1565C0));
+      final scr = corner(x0 + 0.34 + 0.5, front + 0.5) + const Offset(0, -34);
+      canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromCenter(center: scr, width: 20, height: 12), const Radius.circular(2)),
+          Paint()..color = const Color(0xFF4FC3F7));
+      for (var k = 0; k < 6; k++) {
+        canvas.drawCircle(scr + Offset(-6.0 + (k % 3) * 6, 12.0 + (k ~/ 3) * 5), 1.6, Paint()..color = const Color(0xFF455A64));
+      }
+    case 'photo':
+      // 즉석 사진기: 보라 부스, 줄무늬 커튼, 위에 별 간판
+      const h = 64.0;
+      final x0 = c - 0.42, y0 = r - 0.42;
+      _nbox(canvas, x0, y0, 0.84, 0.84, h, const Color(0xFFBA68C8));
+      final front = y0 + 0.84;
+      for (var k = 0; k < 5; k++) {
+        final a = corner(x0 + 0.1 + k * 0.1 + 0.5, front + 0.5), b = corner(x0 + 0.2 + k * 0.1 + 0.5, front + 0.5);
+        canvas.drawPath(_quad(a + const Offset(0, -4), b + const Offset(0, -4), b + const Offset(0, -h + 14), a + const Offset(0, -h + 14)),
+            Paint()..color = k.isEven ? const Color(0xFFF8BBD0) : const Color(0xFFF48FB1));
+      }
+      _faceBand(canvas, x0, front, 0.84, h - 12, h, const Color(0xFF7B1FA2));
+      _text(canvas, corner(x0 + 0.42 + 0.5, front + 0.5) + const Offset(0, -h + 6), '★', const Color(0xFFFFEB3B), 11);
     case 'bin':
       if (!Props.prop(canvas, 'trash', feet, scale: 0.6)) {
         _box(canvas, t, 20, const Color(0xFFB0BEC5), const Color(0xFF90A4AE), const Color(0xFF78909C), inset: 0.32);

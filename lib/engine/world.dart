@@ -291,7 +291,7 @@ class World {
       }
     }
     // 고장: 옆에 멈춰 서 있으면 고친다
-    final near = game.shelves.where((s) => s.broken && player.distTo(s.tile) < 1.6).toList();
+    final near = game.items.where((s) => s.broken && player.distTo(s.tile) < 1.6).toList();
     if (player.moving || near.isEmpty) {
       _repairStill = 0;
     } else if ((_repairStill += dt) >= repairTime) {
@@ -552,7 +552,7 @@ class World {
     game.recordDay(daySales, dayServed);
     game.day++;
     game.weather = _pickWeather();
-    for (final s in game.shelves) {
+    for (final s in game.items) {
       s.broken = false;
     }
     game.ageShelves();
@@ -600,7 +600,7 @@ class World {
     }
     final aid = max(0, aidFloor - game.money);
     game.money += aid;
-    for (final s in game.shelves) {
+    for (final s in game.items) {
       s.broken = false; // 밤사이 수리 기사가 고친다
     }
     final (wasted, wasteValue) = game.ageShelves();
@@ -1432,13 +1432,18 @@ class World {
     if (!rated && c.carry.isNotEmpty && c.state != CState.leaving) {
       final sat = 5 - 2 * c.missed - (c.waited > queuePatience / 2 ? 1 : 0) - (game.trash.length > 3 ? 1 : 0) + c.bonus;
       _rate(sat.clamp(1, 5));
-      final claw = game.items
-          .where((i) => i.type == 'claw' && (i.c - c.tile.$1).abs() + (i.r - c.tile.$2).abs() <= clawRange)
-          .firstOrNull;
-      if (claw != null && phase != DayPhase.closed && _rng.nextDouble() < clawChance) {
-        game.money += clawPlay;
-        daySales += clawPlay;
-        fx.add(Fx(FxKind.pay, claw.c.toDouble(), claw.r.toDouble(), amount: clawPlay));
+      // 수익 기계: 가까운 것마다 한 번씩 써 볼 수 있다(고장 난 건 못 쓴다)
+      for (final m in game.items) {
+        final spec = machineSpecs[m.type];
+        if (spec == null || m.broken || phase == DayPhase.closed) continue;
+        if ((m.c - c.tile.$1).abs() + (m.r - c.tile.$2).abs() > clawRange || _rng.nextDouble() >= spec.$1) continue;
+        game.money += spec.$2;
+        daySales += spec.$2;
+        fx.add(Fx(FxKind.pay, m.c.toDouble(), m.r.toDouble(), amount: spec.$2));
+        if (_rng.nextDouble() < machineBreak) {
+          m.broken = true;
+          fx.add(Fx(FxKind.incident, m.c.toDouble(), m.r.toDouble(), amount: Incident.brokeDown.index));
+        }
       }
       if (sat >= 5 && phase != DayPhase.closed && _rng.nextDouble() < tipChance && game.walkable(c.tile)) {
         final tip = max(2, (c.prices.fold(0, (s, p) => s + p) * tipShare).round());

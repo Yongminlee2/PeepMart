@@ -124,6 +124,9 @@ const itemTypes = [
   ItemType('chair', ItemKind.seat, 70, 7, walkable: true),
   ItemType('table', ItemKind.decor, 90, 7),
   ItemType('claw', ItemKind.decor, 360, 6), // 인형뽑기: 지나가는 손님이 가끔 하고 간다
+  ItemType('vending', ItemKind.decor, 400, 4), // 수익 기계들: 손님이 쓰면 돈, 가끔 고장
+  ItemType('atm', ItemKind.decor, 900, 8),
+  ItemType('photo', ItemKind.decor, 1500, 12),
   ItemType('floor-pink', ItemKind.floor, 2, 1, walkable: true),
   ItemType('floor-mint', ItemKind.floor, 2, 1, walkable: true),
   ItemType('floor-blue', ItemKind.floor, 2, 2, walkable: true),
@@ -606,6 +609,16 @@ const chestJackpot = 0.05;
 const clawRange = 5; // 계산을 마친 자리(계산대 앞)에서 잰다
 const clawChance = 0.25;
 const clawPlay = 3;
+
+/// 수익 기계: 나가는 손님이 [clawRange] 칸 안에 있으면 (확률, 내는 돈). 쓸 때마다 [machineBreak] 확률로 고장 나서
+/// 점장이 옆에 서서 고칠 때까지 돈을 못 번다(밤사이 기사가 고친다).
+const machineSpecs = {
+  'claw': (clawChance, clawPlay),
+  'vending': (0.22, 4),
+  'atm': (0.12, 8),
+  'photo': (0.1, 14),
+};
+const machineBreak = 0.05;
 
 // ------------------------------------------------------------------ 자동 발주·동네 규칙·끝없는 목표
 

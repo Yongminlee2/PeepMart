@@ -126,4 +126,30 @@ void main() {
     run(w, cookTime * 2);
     expect(hot.raw, 2);
   });
+
+  test('수익 기계: 나가는 손님이 쓰면 돈, 고장 나면 못 쓰고 점장이 옆에 서면 고친다', () {
+    final g = shop(12);
+    g.hire(Staff.cashier);
+    expect(g.place('vending', (4, 5)), isTrue);
+    final m = g.at((4, 5))!;
+    final w = World(g, seed: 3)..openDay();
+    var paid = 0, broke = false;
+    for (var i = 0; i < 3600 && !broke; i++) {
+      for (final s in g.shelves) {
+        s.stock = s.capacity;
+      }
+      w.tick(0.05);
+      paid += w.fx.where((e) => e.kind == FxKind.pay && e.amount == machineSpecs['vending']!.$2 && e.x == 4 && e.y == 5).length;
+      broke = m.broken;
+      w.fx.clear();
+    }
+    expect(paid, greaterThan(0));
+    m.broken = true;
+    w.player
+      ..x = 4
+      ..y = 6
+      ..path = [];
+    run(w, repairTime + 0.3);
+    expect(m.broken, isFalse);
+  });
 }
