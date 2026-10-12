@@ -506,5 +506,9 @@
   "trait_quick": "Quick",
   "trait_sleepy": "Sleepy",
   "trait_cheerful": "Cheerful",
-  "staff_doze": "A staff member dozed off! Walk over to wake them"
+  "staff_doze": "A staff member dozed off! Walk over to wake them",
+  "night_open": "Night shift (1 min)",
+  "night_start": "Night shift! Prices +{n}%, but watch out for thieves",
+  "night_title": "Night shift",
+  "night_result": "Night shift over!"
 }

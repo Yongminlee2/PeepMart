@@ -298,6 +298,14 @@ class StorePainter extends CustomPainter {
     }
     canvas.restore();
     if (world.phase != DayPhase.closed) _weather(canvas, size);
+    if (world.night) {
+      // 야간 영업: 화면 전체가 밤빛, 가운데는 조금 밝게(가게 불빛)
+      canvas.drawRect(
+          Offset.zero & size,
+          Paint()
+            ..shader = RadialGradient(colors: const [Color(0x33101848), Color(0x99101848)], radius: 0.9)
+                .createShader(Offset.zero & size));
+    }
   }
 
   /// 비·눈은 화면 위에 그린다(가게 안팎 구분 없이 분위기만).

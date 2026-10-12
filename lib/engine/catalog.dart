@@ -389,6 +389,14 @@ const rankGrumpy = 2; // 진상 손님
 const rankDelivery = 3; // 배달 주문
 const rankFestival = 4; // 특별한 날에 동네 축제가 끼어든다
 const rankVip = 5; // VIP 가 두 배로 자주
+const rankNight = 2; // 하루가 끝난 뒤 야간 영업
+
+/// 야간 영업: 낮 장사가 끝나면 한 번 [nightLength] 초 더 열 수 있다. 손님은 [nightVisitors] 배로 적지만
+/// 값을 [nightPay] 배로 받고, 도둑·진상 손님이 [nightIncidents] 번쯤 든다. 목표·별·할 일은 없다.
+const nightLength = 60.0;
+const nightVisitors = 0.8;
+const nightPay = 1.4;
+const nightIncidents = (2, 4);
 
 // ------------------------------------------------------------------ 날씨·특별한 날
 

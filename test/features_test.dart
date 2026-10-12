@@ -217,4 +217,40 @@ void main() {
     }
     expect(g.staffXp[Staff.cashier]!, greaterThan(xp));
   });
+
+  test('야간 영업: 낮 장사를 끝낸 뒤 하루 한 번, 1분, 값을 더 받고 날짜는 안 넘어간다', () {
+    final g = shop(10);
+    g.hire(Staff.cashier);
+    final w = World(g, seed: 8);
+    expect(w.canOpenNight, isFalse); // 낮 장사 전
+    w.openDay();
+    close(w);
+    expect(w.canOpenNight, isFalse); // 결과 창을 보는 동안
+    w.result = null;
+    expect(w.canOpenNight, isTrue);
+    final day = g.day;
+    w.openNight();
+    expect(w.night, isTrue);
+    expect(w.dayLeft, nightLength);
+    for (var i = 0; i < 2000 && w.phase != DayPhase.closed; i++) {
+      for (final s in g.shelves) {
+        s.stock = s.capacity;
+      }
+      w.tick(0.05);
+    }
+    for (var i = 0; i < 400 && w.result == null; i++) {
+      w.customers.clear();
+      w.tick(0.05);
+    }
+    expect(w.result!.night, isTrue);
+    expect(g.day, day);
+    expect(w.night, isFalse);
+    w.result = null;
+    expect(w.canOpenNight, isFalse); // 하루 한 번
+    // 낮은 등급은 못 연다
+    final low = World(shop(5)..owner.tutorial = TutorialStep.done, seed: 1)..openDay();
+    close(low);
+    low.result = null;
+    expect(low.canOpenNight, isFalse);
+  });
 }

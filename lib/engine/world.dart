@@ -40,9 +40,10 @@ class DayResult {
   final Staff? quit; // 돈이 모자라 그만둔 알바
   final int aid; // 할머니가 채워 준 돈
   final int wasted, wasteValue; // 유통기한이 지나 버린 개수와 그 도매가
+  final bool night; // 야간 영업 결과(목표·별·할 일 없음)
   const DayResult(this.day, this.sales, this.target, this.served, this.upset, this.stars, this.bonus,
       this.taskReward, this.best, this.tasks,
-      {this.cost = 0, this.warPrize = 0, this.chest = 0, this.jackpot = false, this.goods = 0, this.wages = 0, this.missing = const [], this.quit, this.aid = 0, this.wasted = 0, this.wasteValue = 0});
+      {this.cost = 0, this.warPrize = 0, this.chest = 0, this.jackpot = false, this.goods = 0, this.wages = 0, this.missing = const [], this.quit, this.aid = 0, this.wasted = 0, this.wasteValue = 0, this.night = false});
 
   /// 오늘 남은 돈: 매출 + 보너스·상금 - 운영비 - 물건값 - 일당. (예전엔 물건값·일당을 빼지 않아 실제보다 크게 보였다)
   int get profit => sales + bonus + taskReward + (warPrize > 0 ? warPrize : 0) + chest - cost - goods - wages;
@@ -169,6 +170,8 @@ class World {
   int combo = 0; // 이어진 계산 수
   double sinceServe = 99, feverLeft = 0; // 마지막 계산 뒤 초, 남은 피버 타임
   DayResult? result; // 방금 끝난 하루. 화면이 보여 주고 null 로 지운다
+  bool night = false; // 지금 야간 영업 중
+  bool nightDone = true; // 오늘 야간 영업을 했거나 아직 낮 장사를 안 끝냈다
   Item? cooking; // 점장이 굽고 있는 온장 진열대
   double cookT = 0; // 지금 굽는 판이 익기까지 지난 초
 
@@ -205,6 +208,49 @@ class World {
     tasks = _makeTasks();
     _spawnIn = 1;
     _planIncidents();
+  }
+
+  /// 야간 영업을 열 수 있나: 낮 장사를 끝낸 닫힌 동안, 하루 한 번.
+  bool get canOpenNight => phase == DayPhase.closed && !nightDone && game.rank >= rankNight && result == null;
+
+  /// 야간 영업: 남은 시간을 [nightLength] 로 두고 연다. 도둑·진상 손님이 잦다.
+  void openNight() {
+    if (!canOpenNight) return;
+    phase = DayPhase.open;
+    night = true;
+    nightDone = true;
+    dayTime = dayLength - nightLength;
+    daySales = dayServed = dayUpset = 0;
+    dayMissing.clear();
+    daySold.clear();
+    tasks = [];
+    dayTarget = 0;
+    special = null;
+    priceWar = false;
+    holiday = null;
+    promo = null;
+    promoProduct = null;
+    _spawnIn = 1;
+    _incidents.clear();
+    order = null;
+    combo = 0;
+    feverLeft = 0;
+    final start = dayLength - nightLength;
+    for (var i = 0, n = nightIncidents.$1 + _rng.nextInt(nightIncidents.$2 - nightIncidents.$1 + 1); i < n; i++) {
+      _incidents.add((start + 6 + _rng.nextDouble() * (nightLength - 20), _rng.nextDouble() < 0.6 ? Incident.thiefFlee : Incident.grumpyIn));
+    }
+  }
+
+  void _closeNight() {
+    result = DayResult(game.day - 1, daySales, 0, dayServed, dayUpset, 0, 0, 0, false, const [], night: true);
+    night = false;
+    order = null;
+    tips.clear();
+    for (final s in game.items) {
+      s.broken = false;
+    }
+    phase = DayPhase.closed;
+    fx.add(Fx(FxKind.day, player.x, player.y, amount: dayClosed));
   }
 
   void _planIncidents() {
@@ -600,6 +646,15 @@ class World {
   /// 장사 도중에 화면을 떠난다: 하루를 건너뛸 수 없게 운영비를 내고 날짜를 넘긴다(별·보너스 없음).
   void abandonDay() {
     if (phase == DayPhase.closed || !_clockRuns) return;
+    if (night) {
+      // 야간 영업 중에 나가면 그냥 닫는다(날짜는 이미 넘어갔다)
+      night = false;
+      customers.clear();
+      order = null;
+      tips.clear();
+      phase = DayPhase.closed;
+      return;
+    }
     game.money -= game.dailyCost;
     game.recordDay(daySales, dayServed);
     game.day++;
@@ -624,6 +679,11 @@ class World {
   bool taskDone(DayTask t) => t.kind == DayTaskKind.calm ? dayUpset <= t.n : taskProgress(t) >= t.n;
 
   void _closeDay() {
+    if (night) {
+      _closeNight();
+      return;
+    }
+    nightDone = false;
     final stars = dayStars.where((r) => daySales >= dayTarget * r).length;
     final bonus = (daySales * dayBonus[stars] * (special == SpecialDay.festival ? festivalBonus : 1)).round();
     final done = [for (final t in tasks) (t, taskDone(t))];
@@ -689,6 +749,7 @@ class World {
       (feverLeft > 0 ? feverVisitors : 1.0) *
       (priceWar ? priceWarVisitors : 1.0) *
       (holiday != null ? holidayVisitors : 1.0) *
+      (night ? nightVisitors : 1.0) *
       (promo == Promo.flyer ? flyerVisitors : (promo == Promo.onePlusOne ? onePlusOneVisitors : 1.0)) *
       ruleOf(game.branch).visitors;
 
@@ -1052,6 +1113,7 @@ class World {
         CustomerKind.service => base,
     };
     if (feverLeft > 0) paid = (paid * feverPay).round();
+    if (night) paid = (paid * nightPay).round();
     // 콤보: 계산을 이어 가면 쌓이고, 다 차면 피버 타임
     combo = sinceServe < comboWindow(game.spawnGap) ? combo + 1 : 1;
     sinceServe = 0;

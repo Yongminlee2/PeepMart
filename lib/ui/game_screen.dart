@@ -845,6 +845,30 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
   /// 여는 동안: 날짜·남은 시간, 오늘 번 돈과 별 눈금, 할 일 두 개.
   Widget _dayCard() {
     final style = const TextStyle(fontSize: 13, color: inkColor);
+    if (world.night) {
+      // 야간 영업: 남은 시간과 번 돈만
+      return IgnorePointer(
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
+          decoration: BoxDecoration(
+            boxShadow: softShadow,
+            color: const Color(0xFFE8EAF6),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFF5C6BC0), width: 1.5),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(Icons.nightlight_round, size: 16, color: Color(0xFF3949AB)),
+            const SizedBox(width: 4),
+            Text(S.t('night_title'), style: style.copyWith(fontSize: 14)),
+            const SizedBox(width: 8),
+            Coins(world.daySales, size: 13),
+            const SizedBox(width: 8),
+            Text(world.phase == DayPhase.closing ? S.t('day_closing_short') : '${world.dayLeft.ceil()}s',
+                style: style.copyWith(color: Colors.black45, fontSize: 12)),
+          ]),
+        ),
+      );
+    }
     final ev = world.event;
     final closing = world.phase == DayPhase.closing;
     final full = world.dayTarget * dayStars.last; // 막대 끝 = 별 셋
@@ -1119,6 +1143,23 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
               textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, color: Colors.black54)),
         ),
         const SizedBox(height: 8),
+        if (world.canOpenNight) ...[
+          SizedBox(
+            width: 230,
+            child: BubbleButton(
+              S.t('night_open'),
+              color: const Color(0xFF9FA8DA),
+              trailing: const Icon(Icons.nightlight_round, color: inkColor),
+              onTap: () {
+                world.openNight();
+                toast(S.tn('night_start', {'n': ((nightPay - 1) * 100).round()}));
+                Sfx.play(FxKind.levelUp, clock);
+                setState(() {});
+              },
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
         SizedBox(
           width: 230,
           child: BubbleButton(
@@ -1276,6 +1317,28 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
   Future<void> _dayResult(DayResult r) async {
     Sfx.play(FxKind.levelUp, clock);
     saveGame(game);
+    if (r.night) {
+      await showDialog<void>(
+        context: context,
+        builder: (c) => AlertDialog(
+          backgroundColor: const Color(0xFFE8EAF6),
+          title: Text(S.t('night_result'), textAlign: TextAlign.center, style: const TextStyle(color: inkColor)),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(Icons.nightlight_round, size: 48, color: Color(0xFF3949AB)),
+            const SizedBox(height: 8),
+            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Text('${S.t('day_sales')}  ', style: const TextStyle(fontSize: 16, color: inkColor)),
+              Coins(r.sales, size: 20),
+            ]),
+            Text('${S.t('day_served')} ${r.served}  ·  ${S.t('day_upset')} ${r.upset}',
+                style: const TextStyle(fontSize: 14, color: Colors.black54)),
+          ]),
+          actions: [Center(child: BubbleButton(S.t('btn_nice'), color: const Color(0xFF9FA8DA), onTap: () => Navigator.pop(c)))],
+        ),
+      );
+      world.result = null;
+      return;
+    }
     const style = TextStyle(fontSize: 15, color: inkColor);
     Widget row(String label, Widget value) => Padding(
           padding: const EdgeInsets.symmetric(vertical: 3),
