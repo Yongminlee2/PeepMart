@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../engine/game.dart';
+import '../more_games.dart';
 import '../save.dart';
 import '../strings.dart';
 import 'game_screen.dart';
@@ -24,6 +25,8 @@ class _TitleScreenState extends State<TitleScreen> {
   Game? saved;
   bool loaded = false;
 
+  bool _iosMoreGames = false;
+
   @override
   void initState() {
     super.initState();
@@ -31,6 +34,18 @@ class _TitleScreenState extends State<TitleScreen> {
           saved = g;
           loaded = true;
         }));
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) _decideMoreGames();
+  }
+
+  /// 아이폰: 저장해 둔 목록으로 먼저 정하고, 하루에 한 번 새로 받아 다시 정한다.
+  Future<void> _decideMoreGames() async {
+    void apply(String? json) {
+      if (json == null || !mounted) return;
+      setState(() => _iosMoreGames = MoreGames.hasOthers(MoreGames.parse(json), ios: true));
+    }
+
+    apply(await MoreGames.cached());
+    apply(await MoreGames.refreshIfStale());
   }
 
   void _go(Game g) => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => GameScreen(g)));
@@ -127,8 +142,8 @@ class _TitleScreenState extends State<TitleScreen> {
               ]),
             ),
           ),
-          // 목록이 플레이 스토어 앱이라 안드로이드에서만 보인다.
-          if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android)
+          // 안드로이드는 늘, 아이폰은 앱스토어에서 받을 다른 게임이 있을 때만(심사 지침 2.3.10). 웹은 없음.
+          if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android || _iosMoreGames))
             Align(
               alignment: const Alignment(0, 0.97),
               child: TextButton.icon(

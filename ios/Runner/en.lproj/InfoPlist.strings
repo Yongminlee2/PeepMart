@@ -1,0 +1,3 @@
+/* 홈 화면 이름. 앱 안의 app_name(i18n/<언어>.json)과 같게 둔다. */
+"CFBundleDisplayName" = "Peep Mart";
+"CFBundleName" = "Peep Mart";

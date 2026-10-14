@@ -4,6 +4,7 @@ import 'engine/catalog.dart';
 import 'settings.dart';
 import 'strings.dart';
 import 'ui/sfx.dart';
+import 'ui/debug_shot.dart';
 import 'ui/sprites.dart';
 import 'ui/title_screen.dart';
 
@@ -15,11 +16,12 @@ Future<void> main() async {
   await Props.load(products.map((p) => p.id));
   await Sfx.load();
   await Music.init();
-  runApp(const PeepMartApp());
+  runApp(PeepMartApp(home: await debugShotHome()));
 }
 
 class PeepMartApp extends StatelessWidget {
-  const PeepMartApp({super.key});
+  final Widget? home; // 디버그 화면 확인(debug_shot.dart)이 아니면 비어 있다
+  const PeepMartApp({super.key, this.home});
 
   @override
   Widget build(BuildContext context) => ValueListenableBuilder(
@@ -28,7 +30,7 @@ class PeepMartApp extends StatelessWidget {
           title: 'Peep Mart',
           debugShowCheckedModeBanner: false,
           theme: ThemeData(fontFamily: 'Jua', colorSchemeSeed: const Color(0xFFFFB74D)),
-          home: const TitleScreen(),
+          home: home ?? const TitleScreen(),
         ),
       );
 }

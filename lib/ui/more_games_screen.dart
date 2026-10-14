@@ -20,17 +20,20 @@ class _MoreGamesScreenState extends State<MoreGamesScreen> {
 
   String get _lang => S.resolvedLanguage;
 
+  /// 아이폰은 앱스토어 번호가 있는 게임만 보인다.
+  List<MoreGame> _parse(String json) => MoreGames.visible(MoreGames.parse(json, lang: _lang), ios: MoreGames.onIos);
+
   @override
   void initState() {
     super.initState();
     MoreGames.cached().then((c) {
-      if (c != null && mounted && games == null) setState(() => games = MoreGames.parse(c, lang: _lang));
+      if (c != null && mounted && games == null) setState(() => games = _parse(c));
     });
     MoreGames.fetch().then((f) {
       if (!mounted) return;
       setState(() {
         fetching = false;
-        if (f != null) games = MoreGames.parse(f, lang: _lang);
+        if (f != null) games = _parse(f);
       });
     });
   }
@@ -106,7 +109,7 @@ class _GameRow extends StatelessWidget {
               ? Text(S.t('more_now'), style: const TextStyle(fontSize: 15, color: Color(0xFF43A047)))
               : FilledButton(
                   style: FilledButton.styleFrom(backgroundColor: const Color(0xFFFFB74D), foregroundColor: inkColor),
-                  onPressed: () => MoreGames.openStore(g.id),
+                  onPressed: () => MoreGames.openStore(MoreGames.storeKey(g, ios: MoreGames.onIos)),
                   child: Text(S.t('more_get')),
                 ),
         ]),

@@ -1,4 +1,5 @@
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import '../engine/world.dart';
@@ -12,14 +13,18 @@ class LowLatencySfx {
   var _next = 0;
   LowLatencySfx(this._players);
 
-  static final _ctx = AudioContext(android: AudioContextAndroid(audioFocus: AndroidAudioFocus.none));
+  /// 아이폰은 ambient: 무음 스위치를 따르고, 다른 앱 음악을 끊지 않는다.
+  static final ctx = AudioContext(
+    android: AudioContextAndroid(audioFocus: AndroidAudioFocus.none),
+    iOS: AudioContextIOS(category: AVAudioSessionCategory.ambient),
+  );
 
   static Future<LowLatencySfx> fromAsset(String asset, {int voices = 3}) async {
     final players = <AudioPlayer>[];
     for (var i = 0; i < voices; i++) {
       final p = AudioPlayer();
       await p.setPlayerMode(PlayerMode.lowLatency);
-      await p.setAudioContext(_ctx);
+      await p.setAudioContext(ctx);
       await p.setReleaseMode(ReleaseMode.stop);
       await p.setSource(AssetSource(asset));
       players.add(p);
@@ -107,6 +112,8 @@ class Music {
 
   static Future<void> init() async {
     try {
+      // 아이폰만: 효과음과 같은 ambient. 안드로이드 음악은 예전처럼 오디오 포커스를 받는다.
+      if (defaultTargetPlatform == TargetPlatform.iOS) await _player.setAudioContext(LowLatencySfx.ctx);
       await _player.setReleaseMode(ReleaseMode.loop);
       await _player.setVolume(0.35);
       await _player.setSource(AssetSource('audio/bgm.wav'));
