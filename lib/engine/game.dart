@@ -2,6 +2,7 @@ import 'dart:collection';
 import 'dart:math';
 
 import 'catalog.dart';
+import 'people.dart';
 
 /// 바닥에 놓인 것 하나.
 class Item {
@@ -49,6 +50,15 @@ class Owner {
   final Set<String> combosFound = {}; // 한 번이라도 만든 진열 세트
   int goalBase = 0; // 목표를 다 이룬 때의 손님 수(끝없는 목표의 출발점)
   final Map<String, int> chain = {}; // 연 체인점 → 레벨
+  // 사람들: 견습생 키우기와 친해지기 (lib/engine/people.dart)
+  Trainee trainee = Trainee();
+  final Set<Ending> perks = {}; // 졸업한 견습생들의 진로 덤
+  final List<(int, Ending)> graduates = []; // (기수, 진로)
+  final Map<String, int> affection = {}; // 친해진 정도 0~100
+  String? lover;
+  String actionKey = ''; // 오늘 만난 날
+  int actionsUsed = 0;
+  bool idolsMet = false; // 아이돌이 가게에 다녀갔다
   String current = 'piyak';
 
   Owner() {
@@ -128,6 +138,98 @@ class Owner {
     return true;
   }
 
+  // ---------------------------------------------------------------- 사람들
+
+  /// 오늘(지금 지점에서 다음에 여는 날). 수업·만남은 하루에 정해진 만큼.
+  String get dayKey => '$current:${game.day}';
+
+  bool get hasTrainee => level >= traineeLevel;
+  bool get lessonDone => trainee.lessonKey == dayKey;
+
+  /// 오늘 수업. 오른 능력치, 못 하면 null (레벨·이미 함·돈·스트레스는 [Trainee.take] 가 null).
+  Map<TStat, int>? giveLesson(Lesson l, {Random? rng}) {
+    final cost = lessonCost(l, trainee.generation);
+    if (!hasTrainee || lessonDone || money < cost) return null;
+    final got = trainee.take(l, rng ?? Random());
+    if (got == null) return null;
+    money -= cost;
+    trainee.lessonKey = dayKey;
+    return got;
+  }
+
+  /// 졸업: 진로 덤을 받고 다음 기수가 온다.
+  Ending? graduate() {
+    if (!trainee.canGraduate) return null;
+    final e = trainee.ending;
+    perks.add(e);
+    graduates.add((trainee.generation + 1, e));
+    trainee = Trainee()..generation = trainee.generation + 1;
+    return e;
+  }
+
+  int get actionsLeft => actionKey == dayKey ? max(0, actionsPerDay - actionsUsed) : actionsPerDay;
+
+  bool metDate(Datable d) => level >= d.level && (!d.idol || idolsMet);
+  int heartsOfDate(String id) => heartsFor(affection[id] ?? 0);
+
+  bool _useAction(Datable d) {
+    if (!metDate(d) || actionsLeft <= 0) return false;
+    if (actionKey != dayKey) {
+      actionKey = dayKey;
+      actionsUsed = 0;
+    }
+    actionsUsed++;
+    return true;
+  }
+
+  /// 호감도를 더하고 새로 찬 하트 번호들을 돌려준다(장면을 보여 줄 것).
+  List<int> _addAffection(String id, int n) {
+    final before = heartsOfDate(id);
+    affection[id] = ((affection[id] ?? 0) + n).clamp(0, heartStep * 5);
+    return [for (var h = before + 1; h <= heartsOfDate(id); h++) h];
+  }
+
+  /// 대화. (오른 호감도, 새 하트) 못 하면 null.
+  (int, List<int>)? talk(Datable d, {Random? rng}) {
+    if (!_useAction(d)) return null;
+    final n = talkGain + (rng ?? Random()).nextInt(3);
+    return (n, _addAffection(d.id, n));
+  }
+
+  /// 선물: 상품을 골라 값의 6배로 포장해 준다. 좋아하면 크게, 싫어하면 깎인다.
+  (int, List<int>)? gift(Datable d, String product) {
+    final cost = giftCost(product);
+    if (money < cost || !_useAction(d)) return null;
+    money -= cost;
+    final n = d.likes.contains(product) ? giftLike : (d.dislike == product ? giftDislike : giftNormal);
+    return (n, _addAffection(d.id, n));
+  }
+
+  /// 데이트: 하트 [dateHearts] 개부터. 좋아하는 장소면 더 오른다.
+  (int, List<int>)? date(Datable d, String place) {
+    final cost = datePlaces[place]!;
+    if (heartsOfDate(d.id) < dateHearts || money < cost || !_useAction(d)) return null;
+    money -= cost;
+    final n = datePlaceGain[place]! + (d.place == place ? favPlaceBonus : 0);
+    return (n, _addAffection(d.id, n));
+  }
+
+  /// 고백: 하트 다섯이고 아직 연인이 없으면 연인이 된다.
+  bool confess(Datable d) {
+    if (lover != null || heartsOfDate(d.id) < 5) return false;
+    lover = d.id;
+    return true;
+  }
+
+  // 덤: 졸업 진로·연인·견습생 능력치가 가게에 주는 힘
+  double get visitorBonus =>
+      perks.fold(0.0, (a, e) => a + (endingVisitors[e] ?? 0)) +
+      (lover == 'luna' ? loverVisitors : 0) +
+      (hasTrainee ? traineeVisitors(trainee) : 0);
+  double get satisfyChance => (perks.contains(Ending.host) ? hostChance : 0) + (hasTrainee ? traineeSatisfy(trainee) : 0);
+  double get reorderDiscount => hasTrainee ? traineeDiscount(trainee) : 0;
+  double get payBonus => (lover == 'jun' ? loverPay : 1) * (perks.contains(Ending.courier) ? courierPay : 1);
+
   int chainLevel(String id) => chain[id] ?? 0;
 
   bool canOpenChain(ChainSpot s) => chainLevel(s.id) == 0 && level >= s.level && money >= s.cost;
@@ -153,8 +255,9 @@ class Owner {
     return true;
   }
 
-  /// 체인점들이 하루에 버는 돈.
-  int get chainDaily => chainSpots.fold(0, (a, s) => a + chainIncome(s, chainLevel(s.id)));
+  /// 체인점들이 하루에 버는 돈 (경영 천재 진로면 30% 더).
+  int get chainDaily =>
+      (chainSpots.fold(0, (a, s) => a + chainIncome(s, chainLevel(s.id))) * (perks.contains(Ending.ceo) ? ceoChain : 1)).round();
 
   /// 꺼 둔 동안 모든 지점이 번 돈.
   int offlineEarnings(double seconds) => branches.values.fold(0, (s, g) => s + g.offlineEarnings(seconds));
@@ -177,6 +280,16 @@ class Owner {
         'goalBase': goalBase,
         'sold': sold,
         'chain': chain,
+        'people': {
+          'trainee': trainee.toJson(),
+          'perks': [for (final e in perks) e.name],
+          'grads': [for (final (g, e) in graduates) [g, e.name]],
+          'aff': affection,
+          'lover': ?lover,
+          'akey': actionKey,
+          'aused': actionsUsed,
+          'idols': idolsMet,
+        },
       };
 
   static Owner fromJson(Map<String, dynamic> j) {
@@ -198,6 +311,20 @@ class Owner {
     o.goalBase = j['goalBase'] as int? ?? 0;
     o.sold.addAll(((j['sold'] as Map?) ?? const {}).cast<String, int>());
     o.chain.addAll(((j['chain'] as Map?) ?? const {}).cast<String, int>());
+    final p = j['people'] as Map<String, dynamic>?;
+    if (p != null) {
+      o.trainee.fromJson(p['trainee'] as Map<String, dynamic>);
+      o.perks.addAll([for (final e in p['perks'] as List) ?Ending.values.asNameMap()[e]]);
+      for (final l in (p['grads'] as List).cast<List>()) {
+        final e = Ending.values.asNameMap()[l[1]];
+        if (e != null) o.graduates.add((l[0] as int, e));
+      }
+      o.affection.addAll((p['aff'] as Map).cast<String, int>());
+      o.lover = p['lover'] as String?;
+      o.actionKey = p['akey'] as String? ?? '';
+      o.actionsUsed = p['aused'] as int? ?? 0;
+      o.idolsMet = p['idols'] as bool? ?? false;
+    }
     o.branches.clear();
     for (final e in (j['branches'] as Map).entries) {
       Game._(o, e.key as String)._fromJson(e.value as Map<String, dynamic>);
@@ -280,7 +407,7 @@ class Game {
   /// 손님이 오는 평균 간격(초): 진열대·별점·꾸미기, 그리고 가게 등급.
   double get spawnGap =>
       spawnInterval(shelves.length, rating, decorCount) /
-      (1 + rankVisitorBonus * rank + plotBonus(plots.length) + chainVisitors * owner.chain.length);
+      (1 + rankVisitorBonus * rank + plotBonus(plots.length) + chainVisitors * owner.chain.length + owner.visitorBonus);
 
   // ---------------------------------------------------------------- 조회
 
@@ -309,7 +436,7 @@ class Game {
   int count(Staff s) => staff[s] ?? 0;
   int step(Upgrade u) => upgrades[u] ?? 0;
   int get arms => startArms + 2 * step(Upgrade.arms);
-  double get speed => playerSpeed * (1 + 0.25 * step(Upgrade.shoes));
+  double get speed => playerSpeed * (1 + 0.25 * step(Upgrade.shoes)) * (owner.perks.contains(Ending.courier) ? courierSpeed : 1);
   int get wages => Staff.values.fold(0, (s, k) => s + count(k) * staffSpecs[k]!.wage);
   int get decorCount => ofKind(ItemKind.decor).length + ofKind(ItemKind.seat).length;
 
@@ -332,6 +459,8 @@ class Game {
     v *= priceLevels[shelf.price.clamp(0, priceLevels.length - 1)];
     if (inCombo(shelf)) v *= comboPrice;
     if (shelf.sticker) v *= stickerPrice;
+    if (owner.perks.contains(Ending.legend)) v *= legendPrice;
+    if (owner.perks.contains(Ending.chef) && (p.kind == ShelfKind.hot || p.kind == ShelfKind.bakery)) v *= chefPrice;
     return max(1, v.round());
   }
 
@@ -339,7 +468,7 @@ class Game {
   bool reorder(Item box) {
     final p = box.product;
     if (box.t.kind != ItemKind.box || p == null || box.incoming > 0 || box.units >= boxMax - boxSize + 1) return false;
-    final cost = reorderCost(p);
+    final cost = reorderPrice(p);
     if (money < cost) return false;
     money -= cost;
     spentGoods += cost;
@@ -435,6 +564,9 @@ class Game {
     promoProduct = p == Promo.onePlusOne ? product : null;
     return true;
   }
+
+  /// 상자 재주문 값 (견습생 센스만큼 싸게).
+  int reorderPrice(String product) => (reorderCost(product) * (1 - owner.reorderDiscount)).round();
 
   /// 가격표를 다음 단계로 (싸게 → 보통 → 비싸게 → 프리미엄 → 싸게).
   void cyclePrice(Item shelf) => shelf.price = (shelf.price + 1) % priceLevels.length;

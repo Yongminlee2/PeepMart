@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'catalog.dart';
 import 'game.dart';
+import 'people.dart';
 
 /// 좌표는 칸 단위 소수. 정수 값이 칸의 한가운데다 (x=2 는 2번 칸 중앙).
 class Walker {
@@ -177,6 +178,8 @@ class World {
   bool night = false; // 지금 야간 영업 중
   bool nightDone = true; // 오늘 야간 영업을 했거나 아직 낮 장사를 안 끝냈다
   Item? cooking; // 점장이 굽고 있는 온장 진열대
+  Walker? sprout; // 견습생(가게를 돌아다닌다)
+  double _sproutCook = 0, _sproutIdle = 0;
   double cookT = 0; // 지금 굽는 판이 익기까지 지난 초
 
   World(this.game, {int? seed}) : _rng = Random(seed) {
@@ -386,10 +389,11 @@ class World {
       o.left -= dt;
       _pickForOrder(o);
       if (o.carrying && game.entrances.any((e) => player.distTo(e.tile) < 0.6)) {
-        game.money += o.pay;
-        daySales += o.pay;
+        final pay = (o.pay * game.owner.payBonus).round();
+        game.money += pay;
+        daySales += pay;
         order = null;
-        _fx(Incident.orderDone, money: o.pay);
+        _fx(Incident.orderDone, money: pay);
       } else if (o.left <= 0) {
         order = null;
         dayUpset++;
@@ -805,7 +809,7 @@ class World {
       for (final b in game.ofKind(ItemKind.box)) {
         final p = b.product;
         if (p == null || b.incoming > 0 || b.units >= autoOrderAt) continue;
-        final cost = (reorderCost(p) * autoOrderFee).round();
+        final cost = (game.reorderPrice(p) * autoOrderFee).round();
         if (game.money < cost) continue;
         game.money -= cost;
         game.spentGoods += cost;
@@ -823,6 +827,7 @@ class World {
       }
     }
     _selfCheckouts();
+    _sproutWork(dt);
     sinceServe += dt;
     if (sinceServe > comboWindow(game.spawnGap)) combo = 0;
     if (feverLeft > 0) feverLeft = max(0, feverLeft - dt);
@@ -1146,7 +1151,7 @@ class World {
     combo = sinceServe < comboWindow(game.spawnGap) ? combo + 1 : 1;
     sinceServe = 0;
     if (combo >= feverAt && feverLeft <= 0 && _clockRuns) {
-      feverLeft = feverTime;
+      feverLeft = feverTime + (game.owner.lover == 'rio' ? loverFever : 0);
       combo = 0;
       _fx(Incident.fever);
     }
@@ -1198,7 +1203,14 @@ class World {
   }
 
   /// 이 알바의 빠르기 배율: 숙련도 × 성격.
-  double _staffPace(StaffAgent s) => staffLevelSpeed(game.staffLevelOf(s.kind)) * (s.trait == Trait.quick ? quickSpeed : 1);
+  double _staffPace(StaffAgent s) {
+    final o = game.owner;
+    final love = (s.kind == Staff.cashier && o.lover == 'bori') ? loverCashier : ((s.kind == Staff.stocker && o.lover == 'hajun') ? loverStocker : 1.0);
+    return staffLevelSpeed(game.staffLevelOf(s.kind)) *
+        (s.trait == Trait.quick ? quickSpeed : 1) *
+        love *
+        (1 + (o.hasTrainee ? traineeStaffSpeed(o.trainee) : 0));
+  }
 
   void _staffWork(StaffAgent s, double dt) {
     if (s.asleep) {
@@ -1248,6 +1260,35 @@ class World {
         _scan(s.item!, staffed: true, by: s);
       }
     }
+  }
+
+  /// 견습생: 문 연 동안 가게를 천천히 돌아다니고, 요리를 30 넘게 배웠으면 온장 날것을 대신 굽는다.
+  void _sproutWork(double dt) {
+    final o = game.owner;
+    if (!o.hasTrainee || game.entrances.isEmpty) {
+      sprout = null;
+      return;
+    }
+    final w = sprout ??= Walker(game.entrances.first.tile);
+    _walk(w, dt, customerSpeed * 0.8);
+    if (w.arrived && (_sproutIdle -= dt) <= 0) {
+      _sproutIdle = 2 + _rng.nextDouble() * 3;
+      final spots = [
+        for (final s in game.shelves) _access(s.tile),
+        for (final r in game.registers) r.front,
+      ];
+      if (spots.isNotEmpty) _walkTo(w, spots[_rng.nextInt(spots.length)]);
+    }
+    final every = traineeCookEvery(o.trainee);
+    if (every == null || phase == DayPhase.closed) return;
+    if ((_sproutCook += dt) < every) return;
+    _sproutCook = 0;
+    final hot = game.shelves.where((s) => s.raw > 0).firstOrNull;
+    if (hot == null) return;
+    hot
+      ..raw -= 1
+      ..stock += 1;
+    fx.add(Fx(FxKind.cook, hot.c.toDouble(), hot.r.toDouble(), product: hot.product!));
   }
 
   /// 셀프 계산대: 맨 앞 손님이 스스로 찍는다. 손님마다 한 번 오류 굴림(오류면 점장이 고칠 때까지 멈춤).
@@ -1373,7 +1414,7 @@ class World {
     if (doors.isEmpty || sale.isEmpty) return;
     final door = doors[_rng.nextInt(doors.length)].tile;
     // 단골: 이 지점에 올 수 있고, 지금 가게에 없고, 한동안 안 왔던 사람
-    if (_rng.nextDouble() < regularChance) {
+    if (_rng.nextDouble() < regularChance * (game.owner.lover == 'mina' ? loverRegular : 1)) {
       final here = {for (final o in customers) o.regular};
       final cands = game.regularsHere
           .where((r) => !here.contains(r.id) && time - (_regularSeen[r.id] ?? -999) > regularCooldown)
@@ -1631,7 +1672,8 @@ class World {
   /// 나간다. 산 손님은 이때 만족도를 매기고, 휴지통이 멀면 가끔 쓰레기를 버린다.
   void _leave(Customer c, {bool rated = false}) {
     if (!rated && c.carry.isNotEmpty && c.state != CState.leaving) {
-      final sat = 5 - 2 * c.missed - (c.waited > queuePatience / 2 ? 1 : 0) - (game.trash.length > 3 ? 1 : 0) + c.bonus;
+      final sat = 5 - 2 * c.missed - (c.waited > queuePatience / 2 ? 1 : 0) - (game.trash.length > 3 ? 1 : 0) + c.bonus +
+          (game.owner.satisfyChance > 0 && _rng.nextDouble() < game.owner.satisfyChance ? 1 : 0);
       _rate(sat.clamp(1, 5));
       // 수익 기계: 가까운 것마다 한 번씩 써 볼 수 있다(고장 난 건 못 쓴다)
       for (final m in game.items) {

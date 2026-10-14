@@ -337,7 +337,7 @@ class HelpScreen extends StatelessWidget {
 
 // ------------------------------------------------------------------ 게임 중 메뉴
 
-enum MenuChoice { map, regulars, story, dex, help, settings, title }
+enum MenuChoice { map, people, regulars, story, dex, help, settings, title }
 
 Future<MenuChoice?> showGameMenu(BuildContext context) => showModalBottomSheet<MenuChoice>(
       context: context,
@@ -349,6 +349,7 @@ Future<MenuChoice?> showGameMenu(BuildContext context) => showModalBottomSheet<M
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             for (final (m, icon, key) in const [
               (MenuChoice.map, Icons.map_rounded, 'btn_map'),
+              (MenuChoice.people, Icons.diversity_1_rounded, 'btn_people'),
               (MenuChoice.regulars, Icons.favorite_rounded, 'btn_regulars'),
               (MenuChoice.story, Icons.auto_stories_rounded, 'btn_story'),
               (MenuChoice.dex, Icons.collections_bookmark_rounded, 'btn_dex'),

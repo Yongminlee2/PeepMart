@@ -1,6 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:peep_mart/engine/catalog.dart';
+import 'dart:math';
+
 import 'package:peep_mart/engine/game.dart';
+import 'package:peep_mart/engine/people.dart';
 import 'package:peep_mart/engine/world.dart';
 
 void run(World w, double seconds) {
@@ -387,5 +390,64 @@ void main() {
     expect(w.result!.chain, greaterThanOrEqualTo(chainIncome(school, 2)));
     final back = Game.fromJson(g.toJson());
     expect(back.owner.chainLevel('school'), 2);
+  });
+
+  test('견습생 키우기: 하루 한 번 수업, 지치면 쉬어야, 졸업하면 진로 덤과 다음 기수', () {
+    final g = shop(4);
+    final o = g.owner;
+    final r = Random(1);
+    expect(o.hasTrainee, isTrue);
+    final cook = lessonById('cooking');
+    final got = o.giveLesson(cook, rng: r)!;
+    expect(got[TStat.cook], greaterThan(0));
+    expect(o.giveLesson(cook, rng: r), isNull); // 오늘은 끝
+    // 스트레스가 높으면 쉬기만
+    o.trainee.stress = stressSulk;
+    g.day++;
+    expect(o.giveLesson(cook, rng: r), isNull);
+    expect(o.giveLesson(lessonById('rest'), rng: r), isNotNull);
+    expect(o.trainee.stress, lessThan(stressSulk));
+    // 요리를 많이 배우면 요리왕, 온장 대신 굽기
+    o.trainee
+      ..lessonsTaken = graduateAt
+      ..stats[TStat.cook] = 80;
+    expect(traineeCookEvery(o.trainee), isNotNull);
+    expect(o.graduate(), Ending.chef);
+    expect(o.perks, contains(Ending.chef));
+    expect(o.trainee.generation, 1);
+    expect(o.trainee.lessonsTaken, 0);
+    // 저장 왕복
+    final back = Game.fromJson(g.toJson()).owner;
+    expect(back.perks, contains(Ending.chef));
+    expect(back.trainee.generation, 1);
+    expect(back.graduates.single.$2, Ending.chef);
+  });
+
+  test('친해지기: 하루 두 번 만남, 선물 취향, 하트 장면, 데이트는 하트 둘부터, 고백은 다섯에 한 명', () {
+    final g = shop(5)..money = 100000;
+    final o = g.owner;
+    final bori = datableById('bori'), luna = datableById('luna');
+    expect(o.metDate(luna), isFalse); // 아이돌은 방문 뒤
+    expect(o.talk(bori, rng: Random(1)), isNotNull);
+    final like = o.gift(bori, 'bananamilk')!;
+    expect(like.$1, giftLike);
+    expect(o.talk(bori), isNull); // 오늘 두 번 다 썼다
+    g.day++;
+    expect(o.date(bori, 'cafe'), isNull); // 하트 모자람
+    o.affection['bori'] = heartStep * 2;
+    final d = o.date(bori, 'cafe')!;
+    expect(d.$1, datePlaceGain['cafe']! + favPlaceBonus);
+    // 하트를 넘기면 그 번호들
+    o.affection['bori'] = heartStep * 5 - 1;
+    g.day++;
+    final t = o.talk(bori, rng: Random(2))!;
+    expect(t.$2, [5]);
+    expect(o.confess(bori), isTrue);
+    expect(o.lover, 'bori');
+    o.affection['mina'] = heartStep * 5;
+    expect(o.confess(datableById('mina')), isFalse); // 한 명만
+    final back = Game.fromJson(g.toJson()).owner;
+    expect(back.lover, 'bori');
+    expect(back.heartsOfDate('bori'), 5);
   });
 }

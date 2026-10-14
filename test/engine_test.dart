@@ -1517,9 +1517,11 @@ void main() {
   test('손님은 동네 상품을 찾는다: 없는 건 못 팔고 세고, 종류가 많을수록 많이 산다', () {
     final g = Game()
       ..level = 5
-      ..owner.tutorial = TutorialStep.done;
+      ..owner.tutorial = TutorialStep.done
+      ..money = 1000;
+    g.hire(Staff.cashier); // 손님이 계속 드나들게
     final w = World(g, seed: 3)..openDay();
-    run(w, 60);
+    run(w, 100);
     expect(w.dayMissing, isNotEmpty);
     expect(w.dayMissing.keys.toSet().intersection(g.onSale), isEmpty);
     expect(g.demand.toSet().containsAll(w.dayMissing.keys), isTrue);

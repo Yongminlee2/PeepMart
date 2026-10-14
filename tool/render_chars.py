@@ -81,6 +81,11 @@ CHARS = {
     "cow": ("Cow", None, None),
     "goblin-female": ("Goblin_Female", None, None),
     "goblin-male": ("Goblin_Male", None, None),
+    # 아이돌(가게에 찾아오는 '스타삐약'): 무대 옷과 머리색. 네 번째 값 = 재질 이름 앞부분 → 색
+    "idol-luna": ("Casual3_Female", 2, (1.00, 0.42, 0.72), {"Hair": (0.72, 0.55, 0.98), "Pants": (0.98, 0.95, 1.0), "Belt": (1.0, 0.85, 0.3)}),
+    "idol-sera": ("Casual_Female", 0, (0.98, 0.98, 1.00), {"Hair": (0.99, 0.86, 0.42), "Pants": (0.55, 0.75, 1.0), "Belt": (1.0, 0.85, 0.3)}),
+    "idol-hana": ("Casual2_Female", 1, (0.40, 0.92, 0.82), {"Hair": (1.0, 0.58, 0.74), "Pants": (0.98, 0.98, 1.0), "Belt": (1.0, 0.85, 0.3)}),
+    "idol-rio": ("Casual3_Male", 0, (0.16, 0.16, 0.24), {"Hair": (0.86, 0.88, 0.95), "Pants": (0.95, 0.30, 0.45), "Belt": (1.0, 0.85, 0.3)}),
 }
 
 
@@ -124,7 +129,7 @@ def setup_scene():
     return sc
 
 
-def fix_materials(tone, shirt):
+def fix_materials(tone, shirt, extra=None):
     # FBX 재질은 투명·금속으로 들어오고 피부는 거의 검다: 불투명·무광으로, 피부색은 직접 준다.
     # 원래는 검은 피부에 흰 눈(Face)이라, 피부를 밝히면 눈을 어둡게 바꿔야 보인다.
     for m in bpy.data.materials:
@@ -142,17 +147,20 @@ def fix_materials(tone, shirt):
                 nd.inputs["Base Color"].default_value = (0.04, 0.025, 0.02, 1.0)
             if shirt and m.name.startswith("Shirt"):
                 nd.inputs["Base Color"].default_value = (*shirt, 1.0)
+            for prefix, col in (extra or {}).items():
+                if m.name.startswith(prefix):
+                    nd.inputs["Base Color"].default_value = (*col, 1.0)
         try:
             m.blend_method = "OPAQUE"
         except Exception:
             pass
 
 
-def load(fbx, tone, shirt):
+def load(fbx, tone, shirt, extra=None):
     before = set(bpy.data.objects)
     bpy.ops.import_scene.fbx(filepath=fbx)
     new = [o for o in bpy.data.objects if o not in before]
-    fix_materials(tone, shirt)
+    fix_materials(tone, shirt, extra)
     pivot = bpy.data.objects.new("pivot", None)
     bpy.context.scene.collection.objects.link(pivot)
     for o in new:
@@ -210,10 +218,11 @@ def main():
     names = args[2:] or list(CHARS)
     os.makedirs(dst, exist_ok=True)
     for n in names:
-        fbx, tone, shirt = CHARS[n]
+        fbx, tone, shirt, *extra = CHARS[n]
         tmp = os.path.join(dst, f"_frame_{n}.png")
         sc = setup_scene()
-        render_sheet(sc, (os.path.join(src, fbx + ".fbx"), tone, shirt), os.path.join(dst, f"character-{n}.png"), tmp)
+        render_sheet(sc, (os.path.join(src, fbx + ".fbx"), tone, shirt, extra[0] if extra else None),
+                     os.path.join(dst, f"character-{n}.png"), tmp)
         os.remove(tmp)
         print("done", n)
 

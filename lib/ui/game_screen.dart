@@ -11,6 +11,8 @@ import '../settings.dart';
 import '../strings.dart';
 import 'build_panel.dart';
 import 'hub_screens.dart';
+import 'people_screen.dart';
+import '../engine/people.dart' show traineeLevel;
 import 'sprites.dart';
 import 'title_screen.dart';
 import 'settings_sheet.dart';
@@ -223,6 +225,11 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
         if (p.level == level) S.t('p_${p.id}'),
     ];
     final head = S.tn('level_up', {'n': level});
+    if (level == traineeLevel) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) toast(S.tn('tr_arrive', {'name': S.t('tr_${game.owner.trainee.name}')}));
+      });
+    }
     final spot = chainSpots.where((s) => s.level == level).firstOrNull;
     if (spot != null) news.add(S.tn('chain_unlocked', {'name': S.t('chain_${spot.id}')}));
     toast(news.isEmpty ? head : '$head\n${S.tn('unlocked', {'list': news.join(', ')})}');
@@ -576,6 +583,21 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                     child: const Icon(Icons.my_location_rounded),
                   ),
                 ),
+              if (b == null && game.owner.tutorial == TutorialStep.done && world.phase == DayPhase.closed)
+                Positioned(
+                  right: 14,
+                  bottom: 86,
+                  child: FloatingActionButton.small(
+                    heroTag: 'people',
+                    backgroundColor: const Color(0xFFF8BBD0),
+                    foregroundColor: inkColor,
+                    onPressed: () async {
+                      await Navigator.of(context).push(MaterialPageRoute(builder: (_) => PeopleScreen(game.owner)));
+                      setState(() {});
+                    },
+                    child: const Icon(Icons.diversity_1_rounded),
+                  ),
+                ),
               if (b == null || ((b.ghostType == null || b.hover == null) && b.selected == null)) // 단추끼리 겹치지 않게
               Positioned(
                 right: 12,
@@ -608,6 +630,9 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                   saveGame(g);
                   nav.pushAndRemoveUntil(MaterialPageRoute(builder: (_) => GameScreen(g)), (_) => false);
                 })));
+      case MenuChoice.people:
+        await nav.push(MaterialPageRoute(builder: (_) => PeopleScreen(game.owner)));
+        setState(() {});
       case MenuChoice.regulars:
         nav.push(MaterialPageRoute(builder: (_) => RegularsScreen(game.owner)));
       case MenuChoice.help:
@@ -998,7 +1023,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
   /// 상자 재주문: 값과 도착 시간을 보여 주고 주문한다.
   Future<void> _reorder(Item box) async {
     final p = box.product!;
-    final cost = reorderCost(p);
+    final cost = game.reorderPrice(p);
     final ok = await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(

@@ -41,7 +41,10 @@ const characterFiles = [
   'suit-female-b', 'suit-male-b', 'pug', 'cow', 'goblin-female', 'goblin-male',
   'female-a', 'female-b', 'female-c', 'female-d', 'female-e', 'female-f',
   'male-a', 'male-b', 'male-c', 'male-d', 'male-e', 'male-f',
+  // 아이돌 '스타삐약'(render_chars.py 의 idol-*): 손님으로는 안 나오고 아이돌 방문·친해지기에만
+  'idol-luna', 'idol-sera', 'idol-hana', 'idol-rio',
 ];
+const idolChars = [58, 59, 60, 61]; // 루나·세라·하나·리오 (lib/engine/people.dart 의 Datable.look 과 같아야 한다)
 
 /// 걷는 방향(세계 좌표) → 화면에서 보는 방향.
 Facing facingOf(double dx, double dy) {
@@ -58,7 +61,7 @@ const _staffChars = {playerChar, cashierChar, stockerChar, janitorChar};
 const npcLooks = {Npc.me: playerChar, Npc.grandma: 21, Npc.rival: 41, Npc.mayor: 38, Npc.bori: cashierChar};
 final customerChars = [
   for (var i = 0; i < characterFiles.length; i++)
-    if (!_staffChars.contains(i) && !npcLooks.values.contains(i)) i
+    if (!_staffChars.contains(i) && !npcLooks.values.contains(i) && !idolChars.contains(i)) i
 ];
 
 Future<ui.Image?> _image(String asset) async {

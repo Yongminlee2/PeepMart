@@ -234,6 +234,21 @@ class StorePainter extends CustomPainter {
     for (final c in world.customers) {
       add(c.x, c.y + 0.02, () => _customer(canvas, c));
     }
+    final sp = world.sprout;
+    if (sp != null) {
+      // 견습생: 작은 키, 머리 위 새싹
+      add(sp.x, sp.y + 0.02, () {
+        _char(canvas, game.owner.trainee.look, sp.x, sp.y, sp.moving ? Anim.walk : Anim.idle, facingOf(sp.dx, sp.dy),
+            fps: sp.moving ? 12 : 6, scale: kidScale);
+        final h = iso(sp.x, sp.y) + const Offset(0, -38);
+        final leaf = Paint()..color = const Color(0xFF66BB6A);
+        canvas.drawLine(h, h + const Offset(0, -8), Paint()
+          ..color = const Color(0xFF388E3C)
+          ..strokeWidth = 2);
+        canvas.drawOval(Rect.fromCenter(center: h + const Offset(-4, -9), width: 8, height: 5), leaf);
+        canvas.drawOval(Rect.fromCenter(center: h + const Offset(4, -10), width: 8, height: 5), leaf);
+      });
+    }
     final pl = world.player;
     add(pl.x, pl.y + 0.03, () {
       canvas.drawOval(
