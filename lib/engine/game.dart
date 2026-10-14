@@ -48,6 +48,7 @@ class Owner {
   final Set<String> story = {}; // 본 이야기
   final Set<String> combosFound = {}; // 한 번이라도 만든 진열 세트
   int goalBase = 0; // 목표를 다 이룬 때의 손님 수(끝없는 목표의 출발점)
+  final Map<String, int> chain = {}; // 연 체인점 → 레벨
   String current = 'piyak';
 
   Owner() {
@@ -127,6 +128,34 @@ class Owner {
     return true;
   }
 
+  int chainLevel(String id) => chain[id] ?? 0;
+
+  bool canOpenChain(ChainSpot s) => chainLevel(s.id) == 0 && level >= s.level && money >= s.cost;
+
+  bool openChain(ChainSpot s) {
+    if (!canOpenChain(s)) return false;
+    money -= s.cost;
+    chain[s.id] = 1;
+    return true;
+  }
+
+  /// 다음 레벨 값 (다 올렸거나 안 열었으면 null).
+  int? chainUpgradePrice(ChainSpot s) {
+    final l = chainLevel(s.id);
+    return l == 0 || l >= chainMaxLevel ? null : chainUpgradeCost(s, l);
+  }
+
+  bool upgradeChain(ChainSpot s) {
+    final c = chainUpgradePrice(s);
+    if (c == null || money < c) return false;
+    money -= c;
+    chain[s.id] = chainLevel(s.id) + 1;
+    return true;
+  }
+
+  /// 체인점들이 하루에 버는 돈.
+  int get chainDaily => chainSpots.fold(0, (a, s) => a + chainIncome(s, chainLevel(s.id)));
+
   /// 꺼 둔 동안 모든 지점이 번 돈.
   int offlineEarnings(double seconds) => branches.values.fold(0, (s, g) => s + g.offlineEarnings(seconds));
 
@@ -147,6 +176,7 @@ class Owner {
         'combos': combosFound.toList(),
         'goalBase': goalBase,
         'sold': sold,
+        'chain': chain,
       };
 
   static Owner fromJson(Map<String, dynamic> j) {
@@ -167,6 +197,7 @@ class Owner {
     o.combosFound.addAll(((j['combos'] as List?) ?? const []).cast<String>());
     o.goalBase = j['goalBase'] as int? ?? 0;
     o.sold.addAll(((j['sold'] as Map?) ?? const {}).cast<String, int>());
+    o.chain.addAll(((j['chain'] as Map?) ?? const {}).cast<String, int>());
     o.branches.clear();
     for (final e in (j['branches'] as Map).entries) {
       Game._(o, e.key as String)._fromJson(e.value as Map<String, dynamic>);
@@ -248,7 +279,8 @@ class Game {
 
   /// 손님이 오는 평균 간격(초): 진열대·별점·꾸미기, 그리고 가게 등급.
   double get spawnGap =>
-      spawnInterval(shelves.length, rating, decorCount) / (1 + rankVisitorBonus * rank + plotBonus(plots.length));
+      spawnInterval(shelves.length, rating, decorCount) /
+      (1 + rankVisitorBonus * rank + plotBonus(plots.length) + chainVisitors * owner.chain.length);
 
   // ---------------------------------------------------------------- 조회
 

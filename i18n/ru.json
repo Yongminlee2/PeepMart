@@ -537,5 +537,21 @@
   "help_week_t": "Town sales ranking",
   "help_week_b": "Every 7 days you compete on weekly sales with Mega Mart, Happy Super, Corner Shop and 24h Mart. 1st-3rd place win prizes. Beating Mega Mart takes 30% more than usual, so make good use of holidays and promotions. Tap the ranking chip at the top left while closed to see the table.",
   "week_start": "New week! Compete on 7 days of sales",
-  "week_done_none": "This week: #{n} in town, aim higher next week"
+  "week_done_none": "This week: #{n} in town, aim higher next week",
+  "chain_title": "Chain stores",
+  "chain_desc": "Open small stores outside town. They pay out at the end of each day, and each one brings {n}% more customers to all your shops. Daily income now: {d}",
+  "chain_school": "School gate",
+  "chain_station": "Station square",
+  "chain_hospital": "Hospital lobby",
+  "chain_campus": "College street",
+  "chain_office": "Office district",
+  "chain_park": "Theme park",
+  "chain_airport": "Airport",
+  "chain_tower": "Landmark tower",
+  "chain_income": "Daily income {n}",
+  "chain_open": "Open",
+  "chain_open_q": "Open {name} for {n}?",
+  "chain_unlocked": "Chain store: {name}",
+  "day_chain": "Chain store income",
+  "day_chain_boom": "Chain income ({name} boomed!)"
 }

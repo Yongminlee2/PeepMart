@@ -537,5 +537,21 @@
   "help_week_t": "동네 매출 순위",
   "help_week_b": "7일마다 메가마트, 행복슈퍼, 골목상회, 24시 편의점과 그 주 매출을 겨뤄요. 1~3위는 상금을 받아요. 1위를 하려면 평소보다 30% 넘게 벌어야 하니 명절, 홍보 날을 잘 써요. 문 닫힌 동안 왼쪽 위 순위 칩을 누르면 순위표를 봐요.",
   "week_start": "새 주 시작! 7일 매출로 동네 순위를 겨뤄요",
-  "week_done_none": "이번 주 동네 {n}위, 다음 주엔 더 위로"
+  "week_done_none": "이번 주 동네 {n}위, 다음 주엔 더 위로",
+  "chain_title": "체인점",
+  "chain_desc": "동네 밖에 작은 점포를 열어요. 하루가 끝날 때마다 수익이 들어오고, 점포 하나마다 모든 가게 손님이 {n}% 늘어요. 지금 하루 수익 {d}",
+  "chain_school": "학교 앞 점포",
+  "chain_station": "역 앞 점포",
+  "chain_hospital": "병원 점포",
+  "chain_campus": "대학가 점포",
+  "chain_office": "오피스 점포",
+  "chain_park": "놀이공원 점포",
+  "chain_airport": "공항 점포",
+  "chain_tower": "랜드마크 타워 점포",
+  "chain_income": "하루 수익 {n}",
+  "chain_open": "열기",
+  "chain_open_q": "{name}을(를) {n}에 열까요?",
+  "chain_unlocked": "체인점: {name}",
+  "day_chain": "체인점 수익",
+  "day_chain_boom": "체인점 수익 ({name} 대박!)"
 }

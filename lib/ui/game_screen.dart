@@ -223,6 +223,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
         if (p.level == level) S.t('p_${p.id}'),
     ];
     final head = S.tn('level_up', {'n': level});
+    final spot = chainSpots.where((s) => s.level == level).firstOrNull;
+    if (spot != null) news.add(S.tn('chain_unlocked', {'name': S.t('chain_${spot.id}')}));
     toast(news.isEmpty ? head : '$head\n${S.tn('unlocked', {'list': news.join(', ')})}');
     Sfx.play(FxKind.levelUp, clock);
   }
@@ -1403,6 +1405,9 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
             if (r.warPrize > 0) row(S.t('war_won'), Coins(r.warPrize, size: 14)),
             if (r.warPrize < 0) row(S.t('war_lost'), const Icon(Icons.close_rounded, size: 18, color: Color(0xFFE53935))),
             if (r.chest > 0) _Chest(r.chest, r.jackpot),
+            if (r.chain > 0)
+              row(r.chainBoom != null ? S.tn('day_chain_boom', {'name': S.t('chain_${r.chainBoom}')}) : S.t('day_chain'),
+                  Coins(r.chain, size: 14)),
             if (r.weekRank > 0)
               row(S.tn(r.weekPrize > 0 ? 'week_done' : 'week_done_none', {'n': r.weekRank}),
                   r.weekPrize > 0 ? Coins(r.weekPrize, size: 14) : const Icon(Icons.emoji_events_outlined, size: 18, color: Colors.black38)),

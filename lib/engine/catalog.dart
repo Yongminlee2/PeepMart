@@ -680,6 +680,32 @@ const weekLength = 7;
 const rivalShops = [1.3, 1.1, 0.95, 0.75]; // rival_0 메가마트, rival_1 행복슈퍼, rival_2 골목상회, rival_3 24시 편의점
 const weekPrizes = [0.5, 0.25, 0.1];
 
+/// 체인점: 레벨이 되면 동네 밖 자리(학교 앞·역 앞…)에 작은 점포를 연다. 직접 운영하지 않고 하루가 끝날 때마다 수익이 들어온다.
+/// 레벨(1~[chainMaxLevel])을 올리면 수익이 50%씩 늘고, 체인점 하나마다 모든 가게 손님이 [chainVisitors] 늘어난다(브랜드).
+/// 하루가 끝날 때 [chainBoomChance] 확률로 한 곳이 대박(그날 그 점포 수익 두 배).
+class ChainSpot {
+  final String id;
+  final int level, cost, income;
+  const ChainSpot(this.id, this.level, this.cost, this.income);
+}
+
+const chainSpots = [
+  ChainSpot('school', 6, 1500, 120),
+  ChainSpot('station', 9, 3500, 220),
+  ChainSpot('hospital', 12, 6000, 320),
+  ChainSpot('campus', 15, 10000, 450),
+  ChainSpot('office', 18, 16000, 600),
+  ChainSpot('park', 21, 25000, 800),
+  ChainSpot('airport', 24, 40000, 1100),
+  ChainSpot('tower', 27, 60000, 1500),
+];
+ChainSpot chainSpotById(String id) => chainSpots.firstWhere((s) => s.id == id);
+const chainMaxLevel = 5;
+const chainVisitors = 0.02;
+const chainBoomChance = 0.12;
+int chainUpgradeCost(ChainSpot s, int level) => (s.cost * 0.8 * level).round();
+int chainIncome(ChainSpot s, int level) => level <= 0 ? 0 : (s.income * (1 + 0.5 * (level - 1))).round();
+
 /// 목표를 다 이루면 끝없이 이어지는 목표: 그때부터 손님 [extraGoalStep] 명마다.
 const extraGoalStep = 500;
 int extraGoalReward(int i) => 1000 + 250 * i;

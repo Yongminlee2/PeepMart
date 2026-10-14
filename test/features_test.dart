@@ -370,4 +370,22 @@ void main() {
     expect(w4.result!.wages, greaterThan(0));
     expect(g4.spentWages, 0);
   });
+
+  test('체인점: 레벨이 되면 열고, 하루가 끝날 때 수익, 올리면 더 벌고, 손님도 는다', () {
+    final g = shop(9)..money = 100000;
+    final school = chainSpotById('school'), airport = chainSpotById('airport');
+    expect(g.owner.canOpenChain(airport), isFalse); // 레벨 모자람
+    final gap = g.spawnGap;
+    expect(g.owner.openChain(school), isTrue);
+    expect(g.owner.openChain(school), isFalse);
+    expect(g.spawnGap, lessThan(gap));
+    expect(g.owner.chainDaily, chainIncome(school, 1));
+    expect(g.owner.upgradeChain(school), isTrue);
+    expect(g.owner.chainDaily, chainIncome(school, 2));
+    final w = World(g, seed: 17)..openDay();
+    close(w);
+    expect(w.result!.chain, greaterThanOrEqualTo(chainIncome(school, 2)));
+    final back = Game.fromJson(g.toJson());
+    expect(back.owner.chainLevel('school'), 2);
+  });
 }

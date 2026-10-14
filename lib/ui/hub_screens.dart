@@ -69,8 +69,66 @@ class _MapScreenState extends State<MapScreen> {
           Row(children: [Text(S.tn('level_n', {'n': o.level}), style: const TextStyle(fontSize: 18, color: inkColor)), const Spacer(), Coins(o.money)]),
           const SizedBox(height: 12),
           for (final b in branches) _branchCard(b),
+          const SizedBox(height: 16),
+          Text(S.t('chain_title'), style: const TextStyle(fontSize: 20, color: inkColor)),
+          Text(S.tn('chain_desc', {'n': (chainVisitors * 100).round(), 'd': o.chainDaily}),
+              style: const TextStyle(fontSize: 13, color: Colors.black54)),
+          const SizedBox(height: 8),
+          for (final s in chainSpots) _chainCard(s),
         ]),
       );
+
+  static const _chainIcons = {
+    'school': Icons.school_rounded,
+    'station': Icons.train_rounded,
+    'hospital': Icons.local_hospital_rounded,
+    'campus': Icons.account_balance_rounded,
+    'office': Icons.business_rounded,
+    'park': Icons.attractions_rounded,
+    'airport': Icons.flight_rounded,
+    'tower': Icons.location_city_rounded,
+  };
+
+  Widget _chainCard(ChainSpot s) {
+    final lv = o.chainLevel(s.id);
+    final locked = lv == 0 && o.level < s.level;
+    final up = o.chainUpgradePrice(s);
+    Widget button(Widget child, bool ok, VoidCallback onTap) => FilledButton.tonal(onPressed: ok ? onTap : null, child: child);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        decoration: _card(lv > 0 ? const Color(0xFFFFF8E1) : (locked ? const Color(0xFFEEEEEE) : Colors.white)),
+        padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+        child: Row(children: [
+          Icon(_chainIcons[s.id], size: 32, color: locked ? Colors.black26 : const Color(0xFFFF8F00)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(lv > 0 ? '${S.t('chain_${s.id}')}  Lv.$lv' : S.t('chain_${s.id}'),
+                  style: TextStyle(fontSize: 16, color: locked ? Colors.black38 : inkColor)),
+              Text(
+                  locked
+                      ? S.tn('need_level', {'n': s.level})
+                      : S.tn('chain_income', {'n': chainIncome(s, lv == 0 ? 1 : lv)}),
+                  style: const TextStyle(fontSize: 12, color: Colors.black54)),
+            ]),
+          ),
+          if (lv == 0 && !locked)
+            button(Row(mainAxisSize: MainAxisSize.min, children: [Text('${S.t('chain_open')} '), Coins(s.cost, size: 13)]),
+                o.money >= s.cost, () async {
+              if (await confirm(context, S.tn('chain_open_q', {'name': S.t('chain_${s.id}'), 'n': s.cost})) && o.openChain(s)) {
+                setState(() {});
+              }
+            })
+          else if (up != null)
+            button(Row(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.arrow_upward_rounded, size: 16), Coins(up, size: 13)]),
+                o.money >= up, () => setState(() => o.upgradeChain(s)))
+          else if (lv >= chainMaxLevel)
+            const Icon(Icons.star_rounded, color: Color(0xFFFFC107)),
+        ]),
+      ),
+    );
+  }
 
   Widget _branchCard(Branch b) {
     final th = themeOf(b.id);

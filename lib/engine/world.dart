@@ -42,12 +42,14 @@ class DayResult {
   final int wasted, wasteValue; // 유통기한이 지나 버린 개수와 그 도매가
   final bool night; // 야간 영업 결과(목표·별·할 일 없음)
   final int weekRank, weekPrize; // 7일째 끝이면 주간 동네 순위와 상금
+  final int chain; // 체인점 수익
+  final String? chainBoom; // 오늘 대박 난 체인점
   const DayResult(this.day, this.sales, this.target, this.served, this.upset, this.stars, this.bonus,
       this.taskReward, this.best, this.tasks,
-      {this.cost = 0, this.warPrize = 0, this.chest = 0, this.jackpot = false, this.goods = 0, this.wages = 0, this.missing = const [], this.quit, this.aid = 0, this.wasted = 0, this.wasteValue = 0, this.night = false, this.weekRank = 0, this.weekPrize = 0});
+      {this.cost = 0, this.warPrize = 0, this.chest = 0, this.jackpot = false, this.goods = 0, this.wages = 0, this.missing = const [], this.quit, this.aid = 0, this.wasted = 0, this.wasteValue = 0, this.night = false, this.weekRank = 0, this.weekPrize = 0, this.chain = 0, this.chainBoom});
 
   /// 오늘 남은 돈: 매출 + 보너스·상금 - 운영비 - 물건값 - 일당. (예전엔 물건값·일당을 빼지 않아 실제보다 크게 보였다)
-  int get profit => sales + bonus + taskReward + (warPrize > 0 ? warPrize : 0) + chest + weekPrize + aid - cost - goods - wages;
+  int get profit => sales + bonus + taskReward + (warPrize > 0 ? warPrize : 0) + chest + weekPrize + chain + aid - cost - goods - wages;
 }
 
 class Customer extends Walker {
@@ -715,6 +717,15 @@ class World {
     }
     game.money += bonus + taskReward - cost + (warPrize > 0 ? warPrize : 0) + chest;
     final (weekRank, weekPrize) = game.addWeekSales(daySales); // 상금이 들어온 뒤에 빚을 본다
+    // 체인점 수익: 가끔 한 곳이 대박
+    var chainMoney = game.owner.chainDaily;
+    String? boom;
+    final owned = game.owner.chain.keys.toList()..sort();
+    if (owned.isNotEmpty && _rng.nextDouble() < chainBoomChance) {
+      boom = owned[_rng.nextInt(owned.length)];
+      chainMoney += chainIncome(chainSpotById(boom), game.owner.chainLevel(boom));
+    }
+    game.money += chainMoney;
     // 빚 막기: 모자라면 일당 비싼 알바부터 한 명 그만두고, 그래도 바닥이면 할머니 용돈
     Staff? quit;
     if (game.money < 0) {
@@ -733,7 +744,7 @@ class World {
     final (wasted, wasteValue) = game.ageShelves();
     result = DayResult(game.day, daySales, dayTarget, dayServed, dayUpset, stars, bonus, taskReward, best, done,
         cost: cost, warPrize: warPrize, chest: chest, jackpot: jackpot, goods: game.spentGoods, wages: game.spentWages, quit: quit, aid: aid, wasted: wasted, wasteValue: wasteValue,
-        weekRank: weekRank, weekPrize: weekPrize,
+        weekRank: weekRank, weekPrize: weekPrize, chain: chainMoney, chainBoom: boom,
         missing: (dayMissing.entries.map((e) => (e.key, e.value)).toList()..sort((a, b) => b.$2.compareTo(a.$2))).take(3).toList());
     game.spentGoods = 0;
     game.spentWages = 0;
