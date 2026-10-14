@@ -156,6 +156,13 @@ class StorePainter extends CustomPainter {
     canvas.drawPicture(_wallPicture(game));
     _rankSign(canvas);
     if (world.holiday != null) _bunting(canvas, world.holiday!);
+    if (world.busLeft > 0 && game.entrances.isNotEmpty) {
+      final e = game.entrances.first;
+      final arrive = ((8 - world.busLeft) / 1.5).clamp(0.0, 1.0); // 처음 1.5초 동안 들어온다
+      final leave = (1 - world.busLeft / 1.2).clamp(0.0, 1.0); // 마지막 1.2초 동안 떠난다
+      final p = iso(e.c + 3.2 + 6 * (1 - arrive) + 6 * leave, e.r + 1.6);
+      _tourBus(canvas, p);
+    }
     if (world.tvLeft > 0 && game.entrances.isNotEmpty) {
       final e = game.entrances.first;
       final p = iso(e.c + 1.0, e.r + 0.0);
@@ -331,6 +338,10 @@ class StorePainter extends CustomPainter {
     }
     canvas.restore();
     if (world.phase != DayPhase.closed) _weather(canvas, size);
+    if (world.blackoutLeft > 0) {
+      final flick = (clock * 12).floor() % 3 == 0 ? 0.35 : 0.6;
+      canvas.drawRect(Offset.zero & size, Paint()..color = Color.fromRGBO(10, 10, 30, flick * (world.blackoutLeft / 3).clamp(0.3, 1.0)));
+    }
     if (world.night) {
       // 야간 영업: 화면 전체가 밤빛, 가운데는 조금 밝게(가게 불빛)
       canvas.drawRect(
@@ -650,6 +661,15 @@ class StorePainter extends CustomPainter {
       _text(canvas, iso(c.x, c.y) + const Offset(0, 12), '${regularName(c.regular!)} ${'♥' * hearts}',
           const Color(0xFFAD1457), 11, outline: 1);
     }
+    if (c.fan && c.state != CState.leaving) {
+      // 팬: 분홍 응원봉을 흔든다
+      final hand = iso(c.x, c.y) + Offset(12, -30 + sin(clock * 8 + c.look) * 4);
+      canvas.drawLine(hand, hand + const Offset(4, -12), Paint()
+        ..color = Colors.white
+        ..strokeWidth = 2.5);
+      canvas.drawCircle(hand + const Offset(4, -14), 5, Paint()..color = const Color(0xFFFF4081));
+      canvas.drawCircle(hand + const Offset(4, -14), 9, Paint()..color = const Color(0x55FF80AB));
+    }
     if (c.star != null) {
       // 아이돌: 반짝이와 이름표
       for (var k = 0; k < 4; k++) {
@@ -889,6 +909,25 @@ class StorePainter extends CustomPainter {
     canvas.skew(0, 0.5); // 벽 기울기(2:1)에 맞춘다
     paintSign(canvas, game.rank, 84, 22);
     canvas.restore();
+  }
+
+  /// 관광버스: 노란 몸통, 창문 줄, TOUR 간판, 바퀴.
+  void _tourBus(Canvas canvas, Offset p) {
+    canvas.drawOval(Rect.fromCenter(center: p + const Offset(0, 6), width: 120, height: 26), Paint()..color = const Color(0x33000000));
+    final body = RRect.fromRectAndRadius(Rect.fromCenter(center: p + const Offset(0, -26), width: 112, height: 46), const Radius.circular(10));
+    canvas.drawRRect(body, Paint()..color = const Color(0xFFFFCA28));
+    canvas.drawRRect(body, _stroke(2));
+    for (var i = 0; i < 5; i++) {
+      final w = RRect.fromRectAndRadius(Rect.fromLTWH(p.dx - 50 + i * 20.0, p.dy - 44, 15, 13), const Radius.circular(3));
+      canvas.drawRRect(w, Paint()..color = const Color(0xFF81D4FA));
+      canvas.drawRRect(w, _stroke(1));
+    }
+    canvas.drawRect(Rect.fromLTWH(p.dx - 56, p.dy - 22, 112, 6), Paint()..color = const Color(0xFFE53935));
+    _text(canvas, p + const Offset(0, -56), 'TOUR', const Color(0xFFE65100), 12, outline: 1.2);
+    for (final dx in [-34.0, 34.0]) {
+      canvas.drawCircle(p + Offset(dx, -2), 9, Paint()..color = const Color(0xFF37474F));
+      canvas.drawCircle(p + Offset(dx, -2), 4, Paint()..color = const Color(0xFFB0BEC5));
+    }
   }
 
   /// 온장 진열대의 날것: 프라이팬과 개수, 굽는 중이면 둥근 진행 막대.

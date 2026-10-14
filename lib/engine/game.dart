@@ -157,6 +157,23 @@ class Owner {
     return got;
   }
 
+  /// 지금 고민할 성장 이벤트 (수업 [traineeEventEvery] 번마다, 아직 안 고른 것).
+  TraineeEvent? get traineeEvent {
+    final t = trainee;
+    if (!hasTrainee || t.lessonsTaken == 0 || t.lessonsTaken % traineeEventEvery != 0 || t.eventAt == t.lessonsTaken) return null;
+    return traineeEvents[(t.generation * 3 + t.lessonsTaken ~/ traineeEventEvery) % traineeEvents.length];
+  }
+
+  /// 성장 이벤트에서 고른다(a 면 true).
+  void chooseTraineeEvent(TraineeEvent e, bool a) {
+    final t = trainee;
+    for (final g in (a ? e.a : e.b).entries) {
+      t.stats[g.key] = min(100, t.stat(g.key) + g.value);
+    }
+    t.stress = (t.stress + (a ? e.stressA : e.stressB)).clamp(0, 100);
+    t.eventAt = t.lessonsTaken;
+  }
+
   /// 졸업: 진로 덤을 받고 다음 기수가 온다.
   Ending? graduate() {
     if (!trainee.canGraduate) return null;
@@ -206,11 +223,18 @@ class Owner {
   }
 
   /// 데이트: 하트 [dateHearts] 개부터. 좋아하는 장소면 더 오른다.
-  (int, List<int>)? date(Datable d, String place) {
-    final cost = datePlaces[place]!;
-    if (heartsOfDate(d.id) < dateHearts || money < cost || !_useAction(d)) return null;
-    money -= cost;
-    final n = datePlaceGain[place]! + (d.place == place ? favPlaceBonus : 0);
+  /// 데이트를 할 수 있나 (하트·돈·오늘 횟수). 장면을 보여 주기 전에 본다.
+  bool canDate(Datable d, String place) =>
+      metDate(d) && heartsOfDate(d.id) >= dateHearts && money >= datePlaces[place]! && actionsLeft > 0;
+
+  /// 데이트를 마친다: [good] = 질문에 마음에 드는 답을 한 수.
+  (int, List<int>)? date(Datable d, String place, {int good = 0}) {
+    if (!canDate(d, place) || !_useAction(d)) return null;
+    money -= datePlaces[place]!;
+    final n = datePlaceGain[place]! +
+        (d.place == place ? favPlaceBonus : 0) +
+        good * dateGoodAnswer +
+        (dateQuestions - good) * dateBadAnswer;
     return (n, _addAffection(d.id, n));
   }
 

@@ -444,8 +444,8 @@ void main() {
     g.day++;
     expect(o.date(bori, 'cafe'), isNull); // 하트 모자람
     o.affection['bori'] = heartStep * 2;
-    final d = o.date(bori, 'cafe')!;
-    expect(d.$1, datePlaceGain['cafe']! + favPlaceBonus);
+    final d = o.date(bori, 'cafe', good: 2)!; // 질문 셋 중 둘을 마음에 들게 답했다
+    expect(d.$1, datePlaceGain['cafe']! + favPlaceBonus + 2 * dateGoodAnswer + dateBadAnswer);
     // 하트를 넘기면 그 번호들
     o.affection['bori'] = heartStep * 5 - 1;
     g.day++;
@@ -493,5 +493,20 @@ void main() {
     expect(w.customers.any((c) => c.youtuber), isTrue);
     // 저장 왕복
     expect(Game.fromJson(g.toJson()).buzzDays, g.buzzDays);
+  });
+
+  test('견습생 성장 이벤트: 수업 7번마다 고민, 고르면 능력치·스트레스가 바뀌고 다시 안 나온다', () {
+    final o = shop(4).owner;
+    o.trainee.lessonsTaken = traineeEventEvery - 1;
+    expect(o.traineeEvent, isNull);
+    o.trainee.lessonsTaken = traineeEventEvery;
+    final e = o.traineeEvent!;
+    final before = {for (final s in TStat.values) s: o.trainee.stat(s)};
+    o.chooseTraineeEvent(e, true);
+    for (final g in e.a.entries) {
+      expect(o.trainee.stat(g.key), before[g.key]! + g.value);
+    }
+    expect(o.traineeEvent, isNull);
+    expect(Game.fromJson(o.game.toJson()).owner.trainee.eventAt, traineeEventEvery);
   });
 }

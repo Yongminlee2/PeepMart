@@ -74,6 +74,7 @@ class Customer extends Walker {
   String? service; // 서비스 손님: 'parcel'(택배) 또는 'lottery'(복권)
   bool selfChecked = false; // 셀프 계산대 오류 굴림을 이미 했다
   int? star; // 아이돌이면 캐릭터 시트 번호
+  bool fan = false; // 아이돌을 보러 온 팬(응원봉)
   bool youtuber = false; // 리뷰하러 온 유튜버
   Customer(this.look, super.at, this.wants);
 
@@ -173,6 +174,7 @@ class World {
   double _bigAt = 0;
   bool _bigDone = false;
   double tvLeft = 0; // TV 촬영 남은 초
+  double busLeft = 0, blackoutLeft = 0, fansLeft = 0; // 연출: 관광버스가 서 있는·정전으로 깜빡이는·팬이 오는 남은 초
   int _tvUpset = 0;
   String? promoProduct; // 오늘의 1+1 상품
   Order? order; // 들어온 배달 주문
@@ -291,6 +293,7 @@ class World {
         game.owner.idolsMet = true;
         startEvent(EventKind.rush);
         eventLeft = idolFans;
+        fansLeft = idolFans;
         _fx(Incident.idolIn);
       case BigEvent.tv:
         tvLeft = tvTime;
@@ -300,8 +303,10 @@ class World {
         for (final s in game.items) {
           if (breakableShelves.contains(s.t.shelf) || s.type == 'selfcheck' || machineSpecs.containsKey(s.type)) s.broken = true;
         }
+        blackoutLeft = 3;
         _fx(Incident.blackout);
       case BigEvent.tour:
+        busLeft = 8;
         final n = tourGroup.$1 + _rng.nextInt(tourGroup.$2 - tourGroup.$1 + 1);
         for (var i = 0; i < n && customers.length < 60; i++) {
           _spawn();
@@ -933,6 +938,9 @@ class World {
     }
     _selfCheckouts();
     _sproutWork(dt);
+    busLeft = max(0, busLeft - dt);
+    blackoutLeft = max(0, blackoutLeft - dt);
+    fansLeft = max(0, fansLeft - dt);
     sinceServe += dt;
     if (sinceServe > comboWindow(game.spawnGap)) combo = 0;
     if (feverLeft > 0) feverLeft = max(0, feverLeft - dt);
@@ -1588,7 +1596,7 @@ class World {
         break;
       }
     }
-    final c = Customer(_rng.nextInt(1024), door, wants);
+    final c = Customer(_rng.nextInt(1024), door, wants)..fan = fansLeft > 0;
     if (vip) {
       c.kind = CustomerKind.vip;
       if (_vipQueue > 0) _vipQueue--;

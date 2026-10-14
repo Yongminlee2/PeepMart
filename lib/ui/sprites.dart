@@ -43,6 +43,10 @@ const characterFiles = [
   'male-a', 'male-b', 'male-c', 'male-d', 'male-e', 'male-f',
   // VRoid CC0 애니메 캐릭터(tool/render_vrm.py): 손님으로는 안 나오고 아이돌·친해지기·견습생에만
   'vroid-d', 'vroid-e', 'vroid-f', 'vroid-g', 'vroid-fumiriya', 'vroid-shino',
+  // 귀여운 손님: Quaternius Cute Animated Monsters(tool/render_monsters.py), KayKit Adventurers(tool/render_kaykit.py), 둘 다 CC0
+  'mon-alien', 'mon-alien-tall', 'mon-bat', 'mon-bee', 'mon-cactus', 'mon-chicken', 'mon-crab', 'mon-cthulhu', 'mon-cyclops',
+  'mon-deer', 'mon-ghost', 'mon-mushroom', 'mon-panda', 'mon-penguin', 'mon-pig', 'mon-tree', 'mon-dragon', 'mon-yeti',
+  'kk-knight', 'kk-barbarian', 'kk-mage', 'kk-ranger', 'kk-rogue', 'kk-rogue-hood',
 ];
 const idolChars = [58, 59, 60, 61, 62, 63]; // 손님 뽑기에서 뺀다 (lib/engine/people.dart 의 idolLooks·datables·traineeLooks 와 맞춘다)
 

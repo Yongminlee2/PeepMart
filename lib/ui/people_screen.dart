@@ -7,6 +7,7 @@ import '../engine/game.dart';
 import '../engine/people.dart';
 import '../strings.dart';
 import 'hub_screens.dart' show Portrait;
+import 'scene.dart';
 import 'settings_sheet.dart' show confirm;
 import 'sprites.dart';
 import 'store_painter.dart' show FoodPreview;
@@ -201,10 +202,22 @@ class _PeopleScreenState extends State<PeopleScreen> {
     }
     final list = [for (final e in got.entries) '${S.t('stat_${e.key.name}')} +${e.value}'].join(', ');
     _snack(S.tn('tr_gain', {'list': list.isEmpty ? S.t('lesson_rest') : list, 's': l.stress >= 0 ? '+${l.stress}' : '${l.stress}'}));
-    if (o.trainee.stage > stageBefore) {
-      _say(o.trainee.look, S.t('tr_${o.trainee.name}'), S.tn('tr_grow_${o.trainee.stage}', {'name': S.t('tr_${o.trainee.name}')}));
-    }
     setState(() {});
+    final name = S.t('tr_${o.trainee.name}'), look = o.trainee.look;
+    final grew = o.trainee.stage > stageBefore;
+    final ev = o.traineeEvent;
+    if (!grew && ev == null) return;
+    playScene(context, SceneBg.store, (c) async {
+      if (grew) await c.say(look, name, S.tn('tr_grow_${o.trainee.stage}', {'name': name}), smile: true);
+      if (ev != null) {
+        final pick = await c.ask(look, '${S.t('tev_title')}: ${S.t('tev_${ev.id}')}', S.tn('tev_${ev.id}_d', {'name': name}),
+            [S.t('tev_${ev.id}_a'), S.t('tev_${ev.id}_b')]);
+        o.chooseTraineeEvent(ev, pick == 0);
+        await c.say(look, name, S.t('tev_${ev.id}_r${pick == 0 ? 'a' : 'b'}'), smile: true);
+      }
+    }).then((_) {
+      if (mounted) setState(() {});
+    });
   }
 
   Future<void> _graduate() async {
@@ -214,9 +227,11 @@ class _PeopleScreenState extends State<PeopleScreen> {
     final e = o.graduate();
     if (e == null || !mounted) return;
     setState(() {});
-    await _say(look, name, '${S.t('end_${e.name}')}!\n${S.t('end_${e.name}_d')}', title: S.t('tr_graduate'));
-    if (!mounted) return;
-    await _say(o.trainee.look, S.t('tr_${o.trainee.name}'), S.tn('tr_next', {'name': S.t('tr_${o.trainee.name}')}));
+    final next = S.t('tr_${o.trainee.name}'), nextLook = o.trainee.look;
+    await playScene(context, SceneBg.ceremony, (c) async {
+      await c.say(look, name, '${S.t('end_${e.name}')}!\n${S.t('end_${e.name}_d')}', smile: true);
+      await c.say(nextLook, next, S.tn('tr_next', {'name': next}), smile: true);
+    });
   }
 
   // ---------------------------------------------------------------- 친해지기
@@ -308,12 +323,14 @@ class _PeopleScreenState extends State<PeopleScreen> {
     if (res == null) return;
     setState(() {});
     final (n, hearts) = res;
-    await _say(d.look, S.t('dt_${d.id}'), line);
-    _snack(S.tn(n >= 0 ? 'dt_gain' : 'dt_loss', {'name': S.t('dt_${d.id}'), 'n': n}));
-    for (final h in hearts) {
-      if (!mounted) return;
-      await _say(d.look, S.t('dt_${d.id}'), S.t('dt_${d.id}_h$h'), title: '♥' * h);
-    }
+    final name = S.t('dt_${d.id}');
+    await playScene(context, SceneBg.store, (c) async {
+      await c.say(d.look, name, line, smile: n > 0);
+      for (final h in hearts) {
+        await c.say(d.look, '$name ${'♥' * h}', S.t('dt_${d.id}_h$h'), smile: true);
+      }
+    });
+    _snack(S.tn(n >= 0 ? 'dt_gain' : 'dt_loss', {'name': name, 'n': n}));
   }
 
   Future<void> _talk(Datable d) async {
@@ -400,12 +417,36 @@ class _PeopleScreenState extends State<PeopleScreen> {
       ),
     );
     if (place == null || !mounted) return;
-    if (o.money < datePlaces[place]!) {
+    if (!o.canDate(d, place)) {
       _snack(S.t('no_money'));
       return;
     }
-    final res = o.date(d, place);
-    await _after(d, res, d.place == place ? '${S.t('date_$place')}\n${S.t('date_fav')}' : S.t('date_$place'));
+    final name = S.t('dt_${d.id}');
+    var good = 0;
+    await playScene(context, sceneOf(place), (c) async {
+      await c.say(d.look, name, d.place == place ? '${S.t('date_$place')}\n${S.t('date_fav')}' : S.t('date_$place'), smile: true);
+      for (final q in [0, 1, 2]..shuffle(_rng)) {
+        final goodFirst = _rng.nextBool();
+        final a = S.t('date_q_${place}_${q}_a'), b = S.t('date_q_${place}_${q}_b');
+        final pick = await c.ask(d.look, name, S.t('date_q_${place}_$q'), goodFirst ? [a, b] : [b, a]);
+        final ok = (pick == 0) == goodFirst;
+        if (ok) good++;
+        await c.say(d.look, name, S.t(ok ? 'date_react_good' : 'date_react_bad'), smile: ok);
+      }
+      await c.say(d.look, name, S.t(good >= 3 ? 'date_end_good' : (good >= 2 ? 'date_end_ok' : 'date_end_bad')), smile: good >= 2);
+    });
+    if (!mounted) return;
+    final res = o.date(d, place, good: good);
+    if (res == null) return;
+    setState(() {});
+    _snack('${S.tn('date_result', {'g': good, 'n': dateQuestions})}  ${S.tn(res.$1 >= 0 ? 'dt_gain' : 'dt_loss', {'name': name, 'n': res.$1})}');
+    if (res.$2.isNotEmpty && mounted) {
+      await playScene(context, sceneOf(place), (c) async {
+        for (final h in res.$2) {
+          await c.say(d.look, '$name ${'♥' * h}', S.t('dt_${d.id}_h$h'), smile: true);
+        }
+      });
+    }
   }
 
   Future<void> _confess(Datable d) async {
@@ -415,25 +456,17 @@ class _PeopleScreenState extends State<PeopleScreen> {
     }
     if (!o.confess(d)) return;
     setState(() {});
-    await _say(d.look, S.t('dt_${d.id}'), '${S.t('dt_${d.id}_yes')}\n\n${S.t('dt_${d.id}_perk')}', title: '♥♥♥♥♥');
+    await playScene(context, d.idol ? SceneBg.concert : SceneBg.beach, (c) async {
+      await c.say(d.look, '${S.t('dt_${d.id}')} ♥♥♥♥♥', S.t('dt_${d.id}_yes'), smile: true);
+      await c.say(d.look, S.t('dt_lover'), S.t('dt_${d.id}_perk'), smile: true);
+    });
   }
-
-  Future<void> _say(int look, String name, String text, {String? title}) => showDialog<void>(
-        context: context,
-        builder: (c) => AlertDialog(
-          backgroundColor: bg,
-          title: title == null ? null : Text(title, textAlign: TextAlign.center, style: const TextStyle(color: Color(0xFFEC407A))),
-          content: Column(mainAxisSize: MainAxisSize.min, children: [
-            SizedBox(width: 100, height: 100, child: CustomPaint(painter: Portrait(look, anim: Anim.yes))),
-            Container(
-              margin: const EdgeInsets.only(top: 4, bottom: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-              decoration: BoxDecoration(color: const Color(0xFFEC407A), borderRadius: BorderRadius.circular(10)),
-              child: Text(name, style: const TextStyle(color: Colors.white, fontSize: 14)),
-            ),
-            Text(text, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, color: inkColor, height: 1.5)),
-          ]),
-          actions: [TextButton(onPressed: () => Navigator.pop(c), child: Text(S.t('btn_ok')))],
-        ),
-      );
 }
+
+/// 데이트 장소 → 장면 배경.
+SceneBg sceneOf(String place) => switch (place) {
+      'cafe' => SceneBg.cafe,
+      'beach' => SceneBg.beach,
+      'amusement' => SceneBg.amusement,
+      _ => SceneBg.concert,
+    };

@@ -56,6 +56,7 @@ class Trainee {
   int generation = 0;
   final Map<TStat, int> stats = {for (final s in TStat.values) s: 0};
   int stress = 0, lessonsTaken = 0;
+  int eventAt = 0; // 마지막으로 성장 이벤트를 고른 수업 수
   String lessonKey = ''; // 마지막으로 수업한 날
 
   String get name => traineeNames[generation % traineeNames.length];
@@ -98,6 +99,7 @@ class Trainee {
         'stress': stress,
         'n': lessonsTaken,
         'key': lessonKey,
+        'ev': eventAt,
       };
 
   void fromJson(Map<String, dynamic> j) {
@@ -109,6 +111,7 @@ class Trainee {
     stress = j['stress'] as int? ?? 0;
     lessonsTaken = j['n'] as int? ?? 0;
     lessonKey = j['key'] as String? ?? '';
+    eventAt = j['ev'] as int? ?? 0;
   }
 }
 
@@ -153,6 +156,30 @@ int giftCost(String product) => productById(product).price * 6;
 const datePlaces = {'cafe': 120, 'beach': 250, 'amusement': 400, 'concert': 600};
 const datePlaceGain = {'cafe': 10, 'beach': 14, 'amusement': 18, 'concert': 20};
 const favPlaceBonus = 10;
+
+/// 데이트 중 질문 [dateQuestions] 개. 마음에 드는 답이면 [dateGoodAnswer], 아니면 [dateBadAnswer] 만큼 더한다.
+/// 질문은 장소마다 셋(date_q_{장소}_{n}), 답은 a(좋은 답)·b. 화면이 섞어서 보여 준다.
+const dateQuestions = 3;
+const dateGoodAnswer = 4, dateBadAnswer = -2;
+
+/// 견습생 성장 이벤트: 수업 [traineeEventEvery] 번마다 고민이 생기고 둘 중 하나를 고른다.
+/// 고른 결과: 능력치 변화와 스트레스 변화.
+class TraineeEvent {
+  final String id;
+  final Map<TStat, int> a, b;
+  final int stressA, stressB;
+  const TraineeEvent(this.id, this.a, this.stressA, this.b, this.stressB);
+}
+
+const traineeEventEvery = 7;
+const traineeEvents = [
+  TraineeEvent('contest', {TStat.cook: 10, TStat.charm: 3}, 15, {TStat.cook: 2}, -10), // 요리 대회에 나가고 싶대요
+  TraineeEvent('friend', {TStat.kind: 6, TStat.charm: 4}, -15, {TStat.sense: 6}, 5), // 친구가 놀자는데 공부도 해야 해요
+  TraineeEvent('audition', {TStat.charm: 12}, 15, {TStat.stamina: 6, TStat.kind: 3}, -5), // 아이돌 오디션 전단지
+  TraineeEvent('marathon', {TStat.stamina: 12}, 10, {TStat.sense: 4, TStat.cook: 3}, -5), // 동네 마라톤
+  TraineeEvent('mistake', {TStat.kind: 8, TStat.sense: 4}, 10, {TStat.charm: 3}, -20), // 손님에게 실수했어요
+  TraineeEvent('recipe', {TStat.cook: 8, TStat.sense: 5}, 10, {TStat.kind: 5}, -8), // 할머니 비법 노트
+];
 const dateHearts = 2; // 이만큼 친해져야 데이트
 const heartStep = 20; // 호감도 이만큼마다 하트 하나 (최대 5)
 int heartsFor(int affection) => min(5, affection ~/ heartStep);
