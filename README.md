@@ -25,6 +25,28 @@ flutter build apk --release
 
 같은 와이파이의 폰에서 웹으로 해 보기: `flutter build web --release` 후 `python tool/serve_web.py` → `http://<PC 주소>:8762`
 
+## 아이폰 (맥)
+
+같은 Dart 코드에 `ios/` 설정만 맞췄다. 번들 ID `com.peep.mart`(안드로이드와 같음), 팀 3276G27R59 자동 서명,
+**아이폰 전용·세로 전용**(아이패드에서는 아이폰 앱으로 돈다), 최소 iOS 15, 14개 언어 홈 화면 이름(`ios/Runner/<언어>.lproj`),
+개인정보 매니페스트(`PrivacyInfo.xcprivacy`, UserDefaults CA92.1, 추적 없음). 맥 Flutter 는 윈도우와 같은 3.44.9(`~/flutter`).
+
+```bash
+~/flutter/bin/flutter build ios --simulator --debug     # 시뮬레이터
+~/flutter/bin/flutter build ios --release               # 실기기(자동 서명) → xcrun devicectl device install app …
+```
+
+- 아이폰에서 다른 점: 소리는 ambient(무음 스위치를 따르고 다른 앱 음악을 끊지 않음, `sfx.dart`),
+  홈 제스처를 한 번 늦춤(`GameViewController`), 「다른 게임」은 앱스토어 번호(`apps.json` 의 `"ios"`)가 있는 게임만 보이고
+  하나도 없으면 첫 화면 단추를 숨긴다(심사 지침 2.3.10). `test/ios_config_test.dart` 가 설정이 안드로이드·i18n 과 맞는지 본다.
+- 화면 확인: 이 맥의 시뮬레이터는 탭이 앱에 안 닿아서 디버그 빌드가 실행 인자로 화면을 연다(`lib/ui/debug_shot.dart`,
+  Swift 쪽 `#if DEBUG` 통로). 키운 가게 저장은 `SHOT_SAVE=100 flutter test test/shot_save_test.dart` → `build/shot_save.json`.
+  `python3 tool/ios_shots.py <시뮬레이터 UDID> --langs ko,en` 이 `build/ios-shots/<언어>/` 에 1320×2868(6.9형)로 찍는다.
+  정식 빌드에는 이 통로가 빠진다(`strings` 로 0건 확인).
+- 앱스토어에 낼 때 남은 일: 개인정보처리방침 페이지(legal), 앱스토어 등록 문구 —
+  `store/등록정보-14개국어.md` 는 초기 판(상품 10가지·바닥 초록 칸으로 사기) 그대로라 지금 게임(상품 40가지·건설 패널·하루 장사)에 맞게 다시 써야 한다.
+  절차는 공통 저장소 `flutter/ios/README.md` 5번·`checklists/release-ios.md`.
+
 ## 그림 다시 만들기
 
 Kenney 묶음(CC0)을 받아 둔 폴더를 넘긴다. 블렌더가 찍은 뒤 `pack_assets.py` 로 256색으로 줄인다

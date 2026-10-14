@@ -24,7 +24,8 @@ class GameScreen extends StatefulWidget {
   final Game game;
   final World? world; // 시험에서 넣어 준다
   final bool followCamera; // 시험에서는 끈다(누를 자리가 흔들리지 않게)
-  const GameScreen(this.game, {super.key, this.world, this.followCamera = true});
+  final bool debugBuild; // 건설 화면으로 바로 연다(debug_shot.dart)
+  const GameScreen(this.game, {super.key, this.world, this.followCamera = true, this.debugBuild = false});
 
   @override
   State<GameScreen> createState() => _GameScreenState();
@@ -61,6 +62,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    if (widget.debugBuild) building = BuildView();
     _ticker.start();
     _welcomeBack();
   }
