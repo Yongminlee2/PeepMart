@@ -726,5 +726,11 @@
   "inc_tourIn": "A tour bus arrived! A crowd is pouring in",
   "inc_ytIn": "A YouTuber came to review! Make sure they find everything and check out fast",
   "inc_ytGood": "Great review posted! Rating up and more customers for a few days",
-  "inc_ytBad": "A bad review went up... rating dropped"
+  "inc_ytBad": "A bad review went up... rating dropped",
+  "help_people_t": "People: raising and romance",
+  "help_people_b": "At level 4, Grandma sends a trainee. Open People from the menu or the pink button while closed, and pick one lesson a day. Stamina, Cooking, Kindness, Sense and Charm go up and help the store right away (from Cooking 30 they cook the hot counter for you). Let them rest when stressed. After 30 lessons they graduate; their best skill decides a path (Master chef, Idol debut, Business whiz...) that gives a permanent bonus, and the next trainee arrives. Under Get close, meet Bori, Hajun, Mina, Jun and idols Luna and Rio twice a day to talk, give gifts and go on dates. Each heart unlocks a scene; at five hearts you can confess and become sweethearts (each gives a different bonus).",
+  "help_chain_t": "Chain stores",
+  "help_chain_b": "From level 6, open stores at the school gate, station, hospital, college street, office district, theme park, airport and landmark tower under Chain stores on the town map. They pay out at the end of each day without you running them, and earn more as you upgrade. Each one brings 2% more customers to all your shops, and sometimes one booms.",
+  "help_events_t": "Big events",
+  "help_events_b": "Sometimes one big thing happens in a day. When idol group Star Peep visits, fans flood in and you can get close to the idols. If nobody gets upset during a 40-second TV shoot, you win a prize and more customers tomorrow. In a blackout, fridges and machines go off: stand next to each to restart it. Tour buses bring crowds at once, and a YouTuber leaves a good review if they find everything and check out fast."
 }

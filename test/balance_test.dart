@@ -10,6 +10,7 @@ import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:peep_mart/engine/catalog.dart';
 import 'package:peep_mart/engine/game.dart';
+import 'package:peep_mart/engine/people.dart';
 import 'package:peep_mart/engine/world.dart';
 
 class Bot {
@@ -115,6 +116,14 @@ class Bot {
     if (g.count(Staff.stocker) < (g.shelves.length / 6).ceil() && g.money > 200) g.hire(Staff.stocker);
     if (g.trash.length > 3 && g.count(Staff.janitor) < 1 + g.plots.length ~/ 4 && g.money > 150) g.hire(Staff.janitor);
 
+    // 체인점: 여유가 있으면 연다, 견습생: 매일 가게 실습(공짜)이나 지치면 쉬기
+    for (final c in chainSpots) {
+      if (g.owner.chainLevel(c.id) == 0 && g.money > c.cost * 2) g.owner.openChain(c);
+    }
+    if (g.owner.hasTrainee && !g.owner.lessonDone) {
+      g.owner.giveLesson(lessonById(g.owner.trainee.stress >= stressTired ? 'rest' : 'practice'));
+      if (g.owner.trainee.canGraduate) g.owner.graduate();
+    }
     // 새 상품: 진열대 + 상자
     final sale = g.onSale;
     for (final p in products) {
@@ -176,7 +185,7 @@ void main() {
           days.writeln('${r.day.toString().padLeft(3)}일 ${(t / 60).toStringAsFixed(1).padLeft(5)}분  레벨 ${g.level.toString().padLeft(2)}  '
               '매출 ${r.sales.toString().padLeft(5)} / 목표 ${r.target.toString().padLeft(5)}  별 ${r.stars}  손님 ${r.served.toString().padLeft(3)}  '
               '실망 ${r.upset.toString().padLeft(2)}  운영비 ${r.cost.toString().padLeft(4)}  물건 ${r.goods.toString().padLeft(4)}  일당 ${r.wages.toString().padLeft(4)}  폐기 ${r.wasted.toString().padLeft(3)}  순이익 ${r.profit.toString().padLeft(5)}  '
-              '돈 ${g.money.toString().padLeft(6)}  진열대 ${g.shelves.length}  알바 ${g.count(Staff.cashier)}/${g.count(Staff.stocker)}');
+              '체인 ${r.chain.toString().padLeft(4)}  보너스 ${(r.bonus + r.taskReward + r.chest + r.weekPrize).toString().padLeft(4)}  돈 ${g.money.toString().padLeft(6)}  진열대 ${g.shelves.length}  알바 ${g.count(Staff.cashier)}/${g.count(Staff.stocker)}');
         }
         w.result = null;
       }
