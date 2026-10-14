@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../engine/catalog.dart';
 import '../engine/game.dart';
+import '../engine/people.dart' show idolLooks;
 import '../engine/world.dart';
 import '../strings.dart';
 import 'sprites.dart';
@@ -155,6 +156,21 @@ class StorePainter extends CustomPainter {
     canvas.drawPicture(_wallPicture(game));
     _rankSign(canvas);
     if (world.holiday != null) _bunting(canvas, world.holiday!);
+    if (world.tvLeft > 0 && game.entrances.isNotEmpty) {
+      final e = game.entrances.first;
+      final p = iso(e.c + 1.0, e.r + 0.0);
+      final leg = Paint()
+        ..color = const Color(0xFF424242)
+        ..strokeWidth = 2;
+      canvas.drawLine(p, p + const Offset(-6, -26), leg);
+      canvas.drawLine(p + const Offset(8, 0), p + const Offset(-4, -26), leg);
+      canvas.drawLine(p + const Offset(-10, 2), p + const Offset(-6, -26), leg);
+      final body = Rect.fromCenter(center: p + const Offset(-6, -32), width: 22, height: 13);
+      canvas.drawRRect(RRect.fromRectAndRadius(body, const Radius.circular(3)), Paint()..color = const Color(0xFF263238));
+      canvas.drawCircle(body.centerLeft + const Offset(-3, 0), 5, Paint()..color = const Color(0xFF546E7A));
+      if ((clock * 2).floor().isEven) canvas.drawCircle(body.topRight + const Offset(-3, 3), 2.5, Paint()..color = const Color(0xFFE53935));
+      _text(canvas, p + const Offset(-6, -48), 'TV ${world.tvLeft.ceil()}', const Color(0xFFE53935), 11, outline: 1.2);
+    }
 
     final b = build;
     if (b != null && b.land) _plotsForSale(canvas);
@@ -634,7 +650,25 @@ class StorePainter extends CustomPainter {
       _text(canvas, iso(c.x, c.y) + const Offset(0, 12), '${regularName(c.regular!)} ${'♥' * hearts}',
           const Color(0xFFAD1457), 11, outline: 1);
     }
-    if (c.kind == CustomerKind.vip) {
+    if (c.star != null) {
+      // 아이돌: 반짝이와 이름표
+      for (var k = 0; k < 4; k++) {
+        final a = clock * 2 + k * pi / 2;
+        _text(canvas, iso(c.x, c.y) + Offset(cos(a) * 18, -30 + sin(a) * 10), '★',
+            Color.fromRGBO(255, 214, 0, 0.5 + 0.5 * sin(clock * 6 + k).abs()), 9);
+      }
+      _text(canvas, iso(c.x, c.y) + const Offset(0, 12), S.t('idol_${idolLooks[c.star]}'), const Color(0xFFD81B60), 12, outline: 1.2);
+    } else if (c.youtuber) {
+      // 유튜버: 머리 위 빨간 재생 단추
+      final p = crownAt + const Offset(0, -4);
+      canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromCenter(center: p, width: 20, height: 14), const Radius.circular(4)),
+          Paint()..color = const Color(0xFFE53935));
+      canvas.drawPath(Path()
+        ..moveTo(p.dx - 3, p.dy - 4)
+        ..lineTo(p.dx + 5, p.dy)
+        ..lineTo(p.dx - 3, p.dy + 4)
+        ..close(), Paint()..color = Colors.white);
+    } else if (c.kind == CustomerKind.vip) {
       // 금관
       final cr = Path()
         ..moveTo(crownAt.dx - 9, crownAt.dy)
@@ -1505,7 +1539,7 @@ Color weatherColor(Weather w) => switch (w) {
     };
 
 /// 손님이 쓰는 캐릭터 시트: 단골은 정해진 얼굴, 그냥 손님은 손님 시트 중 하나.
-int customerSheet(Customer c) => c.regular != null ? c.look : customerChars[c.look % customerChars.length];
+int customerSheet(Customer c) => c.star ?? (c.regular != null ? c.look : customerChars[c.look % customerChars.length]);
 
 /// 동네 지도 카드의 작은 장면: 그 동네 땅·가게·나무(야자수·네온·눈사람).
 class BranchThumb extends CustomPainter {

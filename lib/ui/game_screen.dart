@@ -157,7 +157,10 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
         Sfx.cue(
             switch (k) {
               Incident.thiefFlee || Incident.brokeDown || Incident.grumpyIn || Incident.boxEmpty || Incident.kidLost ||
-                Incident.selfError => 'alarm',
+                Incident.selfError || Incident.blackout => 'alarm',
+              Incident.idolIn || Incident.tourIn => 'fever',
+              Incident.idolHappy || Incident.tvGood || Incident.ytGood => 'chest',
+              Incident.tvBad || Incident.ytBad => 'bad',
               Incident.thiefCaught || Incident.kidFound || Incident.orderDone || Incident.repaired || Incident.grumpyCalmed ||
                 Incident.inspectGood => 'good',
               Incident.thiefEscaped || Incident.kidGone || Incident.orderLate || Incident.grumpyLeft || Incident.inspectBad => 'bad',
@@ -952,6 +955,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
               if (world.special != null) const Icon(Icons.celebration_rounded, size: 15, color: Color(0xFFE65100)),
               if (world.holiday != null) const Icon(Icons.redeem_rounded, size: 15, color: Color(0xFFD81B60)),
               if (world.promo != null) const Icon(Icons.campaign_rounded, size: 15, color: Color(0xFFE65100)),
+              if (world.tvLeft > 0) const Icon(Icons.videocam_rounded, size: 15, color: Color(0xFFE53935)),
+              if (game.buzzDays > 0) const Icon(Icons.trending_up_rounded, size: 15, color: Color(0xFF43A047)),
               if (world.priceWar) const Icon(Icons.local_offer_rounded, size: 15, color: Color(0xFFC62828)),
               const SizedBox(width: 8),
               if (closing)

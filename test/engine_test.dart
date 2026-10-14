@@ -1393,7 +1393,9 @@ void main() {
       final g = shop(6);
       g.hire(Staff.cashier);
       expect(g.place('claw', (4, 5)), isTrue); // 계산대(6,2) 가까이
-      final w = World(g, seed: 3)..openDay();
+      final w = World(g, seed: 3)
+        ..openDay()
+        ..bigEvent = null; // 정전 같은 큰 이벤트 없이
       var plays = 0;
       for (var i = 0; i < 3600; i++) {
         for (final s in g.shelves) {

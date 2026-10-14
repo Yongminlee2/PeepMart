@@ -680,6 +680,20 @@ const weekLength = 7;
 const rivalShops = [1.3, 1.1, 0.95, 0.75]; // rival_0 메가마트, rival_1 행복슈퍼, rival_2 골목상회, rival_3 24시 편의점
 const weekPrizes = [0.5, 0.25, 0.1];
 
+/// 큰 이벤트: 문을 열 때 [bigEventChance] 확률로 그날 하나(명절·야간엔 없음), [bigEventWindow] 사이에 벌어진다.
+/// 아이돌 방문(스타삐약이 와서 팬이 몰린다, 친해지기가 열린다) · TV 촬영(찍는 동안 실망 손님 [tvMaxUpset] 이하면 상금과 다음 날 손님↑)
+/// · 정전(전기 진열대가 다 꺼져서 하나씩 다시 켠다) · 관광버스(손님이 한꺼번에) · 유튜버(만족시키면 별점과 며칠 손님↑, 실망시키면 별점↓).
+enum BigEvent { idol, tv, blackout, tour, youtuber }
+
+const bigEventChance = 0.4;
+const bigEventRank = {BigEvent.idol: 2, BigEvent.tv: 2, BigEvent.blackout: 1, BigEvent.tour: 3, BigEvent.youtuber: 1};
+const bigEventWindow = (25.0, 70.0);
+const idolFans = 25.0; // 아이돌이 오면 이만큼(초) 손님 몰림
+const tvTime = 40.0, tvMaxUpset = 1, tvReward = 0.12;
+const tourGroup = (8, 12);
+const buzzVisitors = 1.2; // 방송·리뷰 효과가 남은 날 손님
+const buzzDaysTv = 1, buzzDaysYoutube = 2;
+
 /// 체인점: 레벨이 되면 동네 밖 자리(학교 앞·역 앞…)에 작은 점포를 연다. 직접 운영하지 않고 하루가 끝날 때마다 수익이 들어온다.
 /// 레벨(1~[chainMaxLevel])을 올리면 수익이 50%씩 늘고, 체인점 하나마다 모든 가게 손님이 [chainVisitors] 늘어난다(브랜드).
 /// 하루가 끝날 때 [chainBoomChance] 확률로 한 곳이 대박(그날 그 점포 수익 두 배).

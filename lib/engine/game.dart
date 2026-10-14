@@ -354,6 +354,7 @@ class Game {
   double avgShelves = 0; // 그 평균을 낼 때의 진열대 수(가게를 키우면 목표도 따라 오르게)
   int spentGoods = 0, spentWages = 0; // 지난 결산 뒤 쓴 물건값·일당 (결과 창의 순이익용, 저장 안 함)
   Weather weather = Weather.sunny; // 다음에 여는 날의 날씨 (닫을 때 정해 둔다)
+  int buzzDays = 0; // 방송·리뷰 효과로 손님이 더 오는 남은 날
   int weekSales = 0; // 이번 주(7일) 낮 매출 합
   double weekBase = 0; // 이번 주 라이벌 매출을 정한 내 하루 평균
   int lastWeekRank = 0; // 지난주 순위 (0 = 아직 없음)
@@ -1058,6 +1059,7 @@ class Game {
         'weather': weather.name,
         if (promo != null) 'promo': [promo!.name, promoProduct ?? ''],
         'week': [weekSales, weekBase, lastWeekRank],
+        'buzz': buzzDays,
       };
 
   void _fromJson(Map<String, dynamic> j) {
@@ -1104,6 +1106,7 @@ class Game {
     avgServed = (avg?[1] as num?)?.toDouble() ?? 0;
     avgShelves = avg != null && avg.length > 2 ? (avg[2] as num).toDouble() : shelves.length.toDouble();
     weather = Weather.values.asNameMap()[j['weather']] ?? Weather.sunny;
+    buzzDays = j['buzz'] as int? ?? 0;
     final wk = j['week'] as List?;
     if (wk != null) {
       weekSales = wk[0] as int;

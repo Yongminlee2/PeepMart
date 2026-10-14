@@ -73,6 +73,8 @@ class Customer extends Walker {
   bool balked = false; // 이번 진열대 가격을 이미 봤다
   String? service; // 서비스 손님: 'parcel'(택배) 또는 'lottery'(복권)
   bool selfChecked = false; // 셀프 계산대 오류 굴림을 이미 했다
+  int? star; // 아이돌이면 캐릭터 시트 번호
+  bool youtuber = false; // 리뷰하러 온 유튜버
   Customer(this.look, super.at, this.wants);
 
   double get patience => kind == CustomerKind.hurry ? 0.5 : 1.0;
@@ -104,7 +106,8 @@ enum Incident {
   thiefFlee, thiefCaught, thiefEscaped, kidLost, kidFound, kidGone, orderIn, orderDone, orderLate,
   brokeDown, repaired, grumpyIn, grumpyCalmed, grumpyLeft,
   fever, inspectIn, inspectGood, inspectOk, inspectBad,
-  boxEmpty, boxArrived, bulkIn, clawPlay, selfError
+  boxEmpty, boxArrived, bulkIn, clawPlay, selfError,
+  idolIn, idolHappy, tvIn, tvGood, tvBad, blackout, tourIn, ytIn, ytGood, ytBad
 }
 
 /// 배달 주문: 진열대를 돌며 상품을 챙기고(진열대에서 빠진다) 입구까지 들고 가면 끝.
@@ -166,6 +169,11 @@ class World {
   bool priceWar = false; // 오늘이 메가마트 가격 전쟁 날이면
   Holiday? holiday; // 오늘이 명절이면
   Promo? promo; // 오늘의 홍보
+  BigEvent? bigEvent; // 오늘 벌어질 큰 이벤트
+  double _bigAt = 0;
+  bool _bigDone = false;
+  double tvLeft = 0; // TV 촬영 남은 초
+  int _tvUpset = 0;
   String? promoProduct; // 오늘의 1+1 상품
   Order? order; // 들어온 배달 주문
   Customer? chase; // 쫓고 있는 도둑
@@ -204,6 +212,7 @@ class World {
     special = game.todaySpecial;
     priceWar = game.priceWarDay;
     holiday = game.todayHoliday;
+    _pickBigEvent();
     promo = game.promo;
     promoProduct = game.promoProduct;
     game
@@ -246,6 +255,88 @@ class World {
     for (var i = 0, n = nightIncidents.$1 + _rng.nextInt(nightIncidents.$2 - nightIncidents.$1 + 1); i < n; i++) {
       _incidents.add((start + 6 + _rng.nextDouble() * (nightLength - 20), _rng.nextDouble() < 0.6 ? Incident.thiefFlee : Incident.grumpyIn));
     }
+  }
+
+  void _pickBigEvent() {
+    bigEvent = null;
+    _bigDone = false;
+    tvLeft = 0;
+    if (holiday != null || game.rank < 1 || _rng.nextDouble() >= bigEventChance) return;
+    final can = [for (final e in BigEvent.values) if (game.rank >= bigEventRank[e]!) e];
+    bigEvent = can[_rng.nextInt(can.length)];
+    _bigAt = bigEventWindow.$1 + _rng.nextDouble() * (bigEventWindow.$2 - bigEventWindow.$1);
+  }
+
+  /// 큰 이벤트를 바로 일으킨다(시험·연출용).
+  void triggerBig(BigEvent e) => _startBig(e);
+
+  /// 큰 이벤트가 벌어진다.
+  void _startBig(BigEvent e) {
+    _bigDone = true;
+    final doors = game.entrances.toList();
+    final sale = game.onSale.toList()..sort();
+    if (doors.isEmpty || sale.isEmpty) return;
+    switch (e) {
+      case BigEvent.idol:
+        // 스타삐약 둘이 들어오고 팬들이 몰린다
+        final looks = idolLooks.keys.toList()..shuffle(_rng);
+        for (final look in looks.take(2)) {
+          sale.shuffle(_rng);
+          final c = Customer(look, doors[_rng.nextInt(doors.length)].tile, sale.take(min(2, sale.length)).toList())
+            ..kind = CustomerKind.vip
+            ..star = look;
+          customers.add(c);
+          _toShelf(c);
+        }
+        game.owner.idolsMet = true;
+        startEvent(EventKind.rush);
+        eventLeft = idolFans;
+        _fx(Incident.idolIn);
+      case BigEvent.tv:
+        tvLeft = tvTime;
+        _tvUpset = 0;
+        _fx(Incident.tvIn);
+      case BigEvent.blackout:
+        for (final s in game.items) {
+          if (breakableShelves.contains(s.t.shelf) || s.type == 'selfcheck' || machineSpecs.containsKey(s.type)) s.broken = true;
+        }
+        _fx(Incident.blackout);
+      case BigEvent.tour:
+        final n = tourGroup.$1 + _rng.nextInt(tourGroup.$2 - tourGroup.$1 + 1);
+        for (var i = 0; i < n && customers.length < 60; i++) {
+          _spawn();
+        }
+        _fx(Incident.tourIn);
+      case BigEvent.youtuber:
+        sale.shuffle(_rng);
+        final c = Customer(_rng.nextInt(1024), doors.first.tile, sale.take(min(3, sale.length)).toList())..youtuber = true;
+        customers.add(c);
+        _toShelf(c);
+        _fx(Incident.ytIn);
+    }
+  }
+
+  /// TV 촬영이 끝났다: 실망 손님이 적었으면 상금과 다음 날 방송 효과.
+  void _endTv() {
+    if (_tvUpset <= tvMaxUpset) {
+      final reward = max(20, (dayTarget * tvReward).round());
+      game.money += reward;
+      daySales += reward;
+      game.buzzDays = max(game.buzzDays, buzzDaysTv + 1); // 오늘 끝나며 하나 줄어든다
+      _fx(Incident.tvGood, money: reward);
+    } else {
+      _fx(Incident.tvBad);
+    }
+  }
+
+  /// 유튜버가 나간다: 찾던 걸 다 사고 금방 계산했으면 좋은 리뷰.
+  void _review(Customer c, bool good) {
+    c.youtuber = false;
+    for (var i = 0; i < 4; i++) {
+      game.rate(good ? 5 : 1);
+    }
+    if (good) game.buzzDays = max(game.buzzDays, buzzDaysYoutube + 1);
+    _fx(good ? Incident.ytGood : Incident.ytBad);
   }
 
   void _closeNight() {
@@ -297,6 +388,12 @@ class World {
   /// 지금 일어날 일을 일으키고, 도둑·아이·배달을 돌본다.
   void _incidentsTick(double dt) {
     if (phase == DayPhase.open && _clockRuns) {
+      final big = bigEvent;
+      if (big != null && !_bigDone && dayTime >= _bigAt) _startBig(big);
+      if (tvLeft > 0 && (tvLeft -= dt) <= 0) {
+        tvLeft = 0;
+        _endTv();
+      }
       for (final e in _incidents.where((e) => e.$1 <= dayTime).toList()) {
         _incidents.remove(e);
         switch (e.$2) {
@@ -704,6 +801,12 @@ class World {
       return;
     }
     nightDone = false;
+    if (tvLeft > 0) {
+      tvLeft = 0;
+      _endTv();
+    }
+    if (game.buzzDays > 0) game.buzzDays--;
+    bigEvent = null;
     final stars = dayStars.where((r) => daySales >= dayTarget * r).length;
     final bonus = (daySales * dayBonus[stars] * (special == SpecialDay.festival ? festivalBonus : 1)).round();
     final done = [for (final t in tasks) (t, taskDone(t))];
@@ -781,6 +884,7 @@ class World {
       (priceWar ? priceWarVisitors : 1.0) *
       (holiday != null ? holidayVisitors : 1.0) *
       (night ? nightVisitors : 1.0) *
+      (game.buzzDays > 0 ? buzzVisitors : 1.0) *
       (promo == Promo.flyer ? flyerVisitors : (promo == Promo.onePlusOne ? onePlusOneVisitors : 1.0)) *
       ruleOf(game.branch).visitors;
 
@@ -788,6 +892,7 @@ class World {
     game.rate(satisfaction);
     if (satisfaction <= 2 && phase != DayPhase.closed) {
       dayUpset++;
+      if (tvLeft > 0) _tvUpset++;
       combo = 0; // 실망한 손님이 나오면 콤보가 끊긴다
     }
   }
@@ -1161,6 +1266,7 @@ class World {
       reg.cash += paid;
       game.owner.advance(TutorialStep.checkout);
     }
+    if (c.star != null) _fx(Incident.idolHappy, money: paid);
     final reg0 = c.regular;
     if (reg0 != null && c.carry.contains(c.wants.first)) {
       final h = game.giveHeart(reg0);
@@ -1671,6 +1777,7 @@ class World {
 
   /// 나간다. 산 손님은 이때 만족도를 매기고, 휴지통이 멀면 가끔 쓰레기를 버린다.
   void _leave(Customer c, {bool rated = false}) {
+    if (c.youtuber && c.state != CState.leaving) _review(c, c.carry.isNotEmpty && c.missed == 0 && c.waited < queuePatience / 2);
     if (!rated && c.carry.isNotEmpty && c.state != CState.leaving) {
       final sat = 5 - 2 * c.missed - (c.waited > queuePatience / 2 ? 1 : 0) - (game.trash.length > 3 ? 1 : 0) + c.bonus +
           (game.owner.satisfyChance > 0 && _rng.nextDouble() < game.owner.satisfyChance ? 1 : 0);

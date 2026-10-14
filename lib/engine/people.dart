@@ -133,6 +133,9 @@ class Datable {
   const Datable(this.id, this.look, this.level, this.likes, this.dislike, this.place, {this.idol = false});
 }
 
+/// 아이돌 '스타삐약' 네 명의 캐릭터 시트 번호 → 이름.
+const idolLooks = {58: 'luna', 59: 'sera', 60: 'hana', 61: 'rio'};
+
 const datables = [
   Datable('bori', 4, 2, ['bananamilk', 'donut'], 'coffee', 'cafe'),
   Datable('hajun', 9, 4, ['cupramen', 'hotdog'], 'cake', 'amusement'),

@@ -262,13 +262,22 @@ void main() {
     // 원래 계산대를 팔 수 없으니 셀프 계산대를 하나 더 놓고, 원래 것은 줄이 안 생기게 막는다
     expect(g.place('selfcheck', (4, 5)), isTrue);
     final self = g.at((4, 5))!;
-    final w = World(g, seed: 9)..openDay();
+    final w = World(g, seed: 9)
+      ..openDay()
+      ..bigEvent = null; // 정전 같은 큰 이벤트 없이
     var paidAtSelf = 0, errors = 0;
-    for (var i = 0; i < 3000; i++) {
+    for (var i = 0; i < 12000; i++) {
       for (final s in g.shelves) {
         s.stock = s.capacity;
       }
       w.tick(0.05);
+      if (w.result != null) {
+        // 여러 날 돌려 운에 덜 기대게
+        w
+          ..result = null
+          ..openDay()
+          ..bigEvent = null;
+      }
       errors += w.fx.where((e) => e.kind == FxKind.incident && e.amount == Incident.selfError.index).length;
       paidAtSelf += w.fx.where((e) => e.kind == FxKind.pay && e.x == 4 && e.y == 5).length;
       if (self.broken && i % 400 == 399) self.broken = false; // 가끔 점장이 고쳐 준 셈
@@ -449,5 +458,40 @@ void main() {
     final back = Game.fromJson(g.toJson()).owner;
     expect(back.lover, 'bori');
     expect(back.heartsOfDate('bori'), 5);
+  });
+
+  test('큰 이벤트: 아이돌은 팬 몰림과 친해지기, TV 는 실망 없으면 상금과 다음 날 손님, 정전은 전기 진열대가 꺼지고, 유튜버 리뷰', () {
+    final g = shop(12);
+    g.hire(Staff.cashier);
+    final w = World(g, seed: 18)..openDay();
+    expect(g.owner.idolsMet, isFalse);
+    w.triggerBig(BigEvent.idol);
+    expect(g.owner.idolsMet, isTrue);
+    expect(w.customers.where((c) => c.star != null).length, 2);
+    expect(w.event, EventKind.rush);
+    expect(g.owner.metDate(datableById('luna')), isTrue);
+    // TV: 실망 손님이 없으면 상금
+    final money = g.money;
+    w.triggerBig(BigEvent.tv);
+    expect(w.tvLeft, tvTime);
+    w.customers.clear();
+    for (var i = 0; i < (tvTime / 0.05).ceil() + 2; i++) {
+      for (final s in g.shelves) {
+        s.stock = s.capacity;
+      }
+      w.customers.removeWhere((c) => c.star == null);
+      w.tick(0.05);
+    }
+    expect(w.tvLeft, 0);
+    expect(g.buzzDays, greaterThan(0));
+    expect(g.money, greaterThan(money - 200)); // 상금이 들어왔다(일당이 나가도)
+    // 정전: 냉장고가 꺼진다
+    w.triggerBig(BigEvent.blackout);
+    expect(first(g, 'fridge').broken, isTrue);
+    // 유튜버가 온다
+    w.triggerBig(BigEvent.youtuber);
+    expect(w.customers.any((c) => c.youtuber), isTrue);
+    // 저장 왕복
+    expect(Game.fromJson(g.toJson()).buzzDays, g.buzzDays);
   });
 }
