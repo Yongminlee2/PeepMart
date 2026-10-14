@@ -219,28 +219,28 @@ class Goal {
 }
 
 const goals = [
-  Goal(GoalKind.shelves, 3, 30),
-  Goal(GoalKind.served, 10, 30),
-  Goal(GoalKind.cashiers, 1, 40),
-  Goal(GoalKind.registers, 2, 50),
-  Goal(GoalKind.level, 5, 75),
-  Goal(GoalKind.plots, 2, 100),
-  Goal(GoalKind.decor, 5, 75),
-  Goal(GoalKind.stockers, 1, 100),
-  Goal(GoalKind.products, 8, 150),
-  Goal(GoalKind.rating, 45, 150),
-  Goal(GoalKind.seats, 4, 150),
-  Goal(GoalKind.level, 10, 250),
-  Goal(GoalKind.plots, 4, 400),
-  Goal(GoalKind.janitors, 1, 200),
-  Goal(GoalKind.served, 500, 500),
-  Goal(GoalKind.products, 15, 750),
-  Goal(GoalKind.level, 15, 750),
-  Goal(GoalKind.plots, 8, 1500),
-  Goal(GoalKind.products, 25, 2000),
-  Goal(GoalKind.level, 20, 2500),
-  Goal(GoalKind.plots, plotCols * plotRows, 10000),
-  Goal(GoalKind.level, maxLevel, 15000),
+  Goal(GoalKind.shelves, 3, 20),
+  Goal(GoalKind.served, 10, 20),
+  Goal(GoalKind.cashiers, 1, 20),
+  Goal(GoalKind.registers, 2, 25),
+  Goal(GoalKind.level, 5, 37),
+  Goal(GoalKind.plots, 2, 50),
+  Goal(GoalKind.decor, 5, 37),
+  Goal(GoalKind.stockers, 1, 50),
+  Goal(GoalKind.products, 8, 75),
+  Goal(GoalKind.rating, 45, 75),
+  Goal(GoalKind.seats, 4, 75),
+  Goal(GoalKind.level, 10, 125),
+  Goal(GoalKind.plots, 4, 200),
+  Goal(GoalKind.janitors, 1, 100),
+  Goal(GoalKind.served, 500, 250),
+  Goal(GoalKind.products, 15, 375),
+  Goal(GoalKind.level, 15, 375),
+  Goal(GoalKind.plots, 8, 750),
+  Goal(GoalKind.products, 25, 1000),
+  Goal(GoalKind.level, 20, 1250),
+  Goal(GoalKind.plots, plotCols * plotRows, 5000),
+  Goal(GoalKind.level, maxLevel, 7500),
 ];
 
 // ------------------------------------------------------------------ 손님 종류·행사
@@ -346,7 +346,7 @@ Regular regularById(String id) => regulars.firstWhere((r) => r.id == id);
 const maxHearts = 5;
 const regularChance = 0.12; // 손님이 올 때 단골일 확률
 const regularCooldown = 45.0; // 같은 단골이 다시 오기까지 초
-int heartReward(int heart) => 40 * heart * heart;
+int heartReward(int heart) => 20 * heart * heart;
 
 // ------------------------------------------------------------------ 처음 안내
 
@@ -363,8 +363,8 @@ const dayTargetShare = 1.0; // 첫날 목표 = 진열대가 늘 차 있을 때 �
 const dayTargetGrowth = 1.15; // 둘째 날부터 목표 = 최근 하루 평균의 1.15배 (평소만큼이면 별 하나, 더 잘해야 둘·셋)
 const dayAverageWeight = 0.4; // 오늘이 평균에 얼마나 들어가나
 const dayStars = [0.7, 1.0, 1.3]; // 목표의 이만큼 벌면 별 1·2·3개
-const dayBonus = [0.0, 0.05, 0.1, 0.15]; // 별 개수별 보너스 (그날 번 돈 대비)
-const dayTaskReward = 0.08; // 할 일 하나 = 목표의 이만큼
+const dayBonus = [0.0, 0.03, 0.05, 0.08]; // 별 개수별 보너스 (그날 번 돈 대비). 돈은 장사로 벌고 상금은 덤이 되게
+const dayTaskReward = 0.04; // 할 일 하나 = 목표의 이만큼
 const calmLimit = 2; // "실망한 손님 n명 이하"
 
 enum DayTaskKind { sell, serve, calm }
@@ -471,7 +471,7 @@ const thiefFine = 2; // 잡으면 훔친 값의 이만큼을 벌금으로
 const thiefSpeed = 1.25; // 도망칠 때 손님 걸음의 이만큼 (플레이어보다는 느리다)
 const catchRange = 1.1; // 이만큼 가까이 가면 잡는다/달랜다
 const lostPatience = 35.0; // 길 잃은 아이가 기다리는 초
-const lostReward = 0.1; // 아이를 찾아 주면 오늘 목표의 이만큼
+const lostReward = 0.05; // 아이를 찾아 주면 오늘 목표의 이만큼
 const kidScale = 0.72;
 const orderTime = 60.0; // 배달 주문 제한 시간
 const orderPay = 2; // 배달은 값의 이만큼을 받는다
@@ -480,10 +480,10 @@ const orderPay = 2; // 배달은 값의 이만큼을 받는다
 
 /// 손님 도감: 처음 보는 손님을 만나면 기록되고, [meetEvery] 명마다 상금.
 const meetEvery = 10;
-int meetReward(int milestone) => 100 * milestone; // milestone = 10명째 1, 20명째 2, ...
+int meetReward(int milestone) => 50 * milestone; // milestone = 10명째 1, 20명째 2, ...
 
 /// 상품 도장: 한 상품을 [stampAt] 개 팔면 도장과 상금(값 × [stampPay]).
-const stampAt = 30, stampPay = 8;
+const stampAt = 30, stampPay = 4;
 
 // ------------------------------------------------------------------ 삐약동 이야기
 
@@ -596,7 +596,7 @@ const inspectWindow = (35.0, 90.0); // 이 사이(초)에 온다
 const inspectStops = 3; // 둘러보는 곳 수
 const inspectTrash = 15, inspectEmpty = 10, inspectBroken = 20;
 const inspectGood = 80, inspectBad = 50;
-const inspectReward = 0.3, inspectFine = 0.2; // 오늘 목표 대비
+const inspectReward = 0.15, inspectFine = 0.2; // 오늘 목표 대비
 
 // ------------------------------------------------------------------ 재고·재주문
 
@@ -622,10 +622,10 @@ const bulkPay = 2.5;
 const priceWarEvery = 6;
 const priceWarBalk = [0.0, 0.10, 0.25, 0.30];
 const priceWarVisitors = 0.85;
-const priceWarPrize = 0.3;
+const priceWarPrize = 0.2;
 
 /// 보물 상자: 별 둘 이상인 날 결과 창에서 연다. 상금은 오늘 목표 대비.
-/// 별 둘: 10~20%, 별 셋: 20~40%, 별 셋이면 [chestJackpot] 확률로 대박(목표의 1.5배).
+/// 별 둘: 5~10%, 별 셋: 10~20%, 별 셋이면 [chestJackpot] 확률로 대박(목표만큼).
 const chestJackpot = 0.05;
 
 /// 인형뽑기: 나가는 손님이 [clawRange] 칸 안에 있으면 [clawChance] 확률로 한 판([clawPlay] 원).
@@ -678,11 +678,11 @@ BranchRule ruleOf(String branch) => branchRules[branch] ?? const BranchRule();
 /// 1·2·3위면 내 하루 평균의 [weekPrizes] 배 상금. 1등을 하려면 평소보다 30% 넘게 벌어야 한다.
 const weekLength = 7;
 const rivalShops = [1.3, 1.1, 0.95, 0.75]; // rival_0 메가마트, rival_1 행복슈퍼, rival_2 골목상회, rival_3 24시 편의점
-const weekPrizes = [1.0, 0.5, 0.25];
+const weekPrizes = [0.5, 0.25, 0.1];
 
 /// 목표를 다 이루면 끝없이 이어지는 목표: 그때부터 손님 [extraGoalStep] 명마다.
 const extraGoalStep = 500;
-int extraGoalReward(int i) => 2000 + 500 * i;
+int extraGoalReward(int i) => 1000 + 250 * i;
 
 // ------------------------------------------------------------------ 땅 보너스·손님 장바구니
 

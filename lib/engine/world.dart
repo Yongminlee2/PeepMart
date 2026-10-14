@@ -710,7 +710,7 @@ class World {
     var chest = 0, jackpot = false;
     if (stars >= 2) {
       jackpot = stars == 3 && _rng.nextDouble() < chestJackpot;
-      final share = jackpot ? 1.5 : (stars == 3 ? 0.2 + _rng.nextDouble() * 0.2 : 0.1 + _rng.nextDouble() * 0.1);
+      final share = jackpot ? 1.0 : (stars == 3 ? 0.1 + _rng.nextDouble() * 0.1 : 0.05 + _rng.nextDouble() * 0.05);
       chest = max(10, (dayTarget * share).round());
     }
     game.money += bonus + taskReward - cost + (warPrize > 0 ? warPrize : 0) + chest;
