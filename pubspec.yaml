@@ -24,6 +24,7 @@ flutter:
   assets:
     - assets/characters/
     - assets/characters/thumbs/
+    - assets/characters/portraits/
     - assets/props/
     - assets/audio/
   fonts:

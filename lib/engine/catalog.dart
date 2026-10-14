@@ -332,7 +332,7 @@ class Regular {
 }
 
 const regulars = [
-  Regular('mina', 'piyak', 0, 'donut', 1),
+  Regular('mina', 'piyak', 58, 'donut', 1), // VRoid D (친해지기의 민아와 같은 사람)
   Regular('jun', 'piyak', 10, 'sandwich', 3),
   Regular('sora', 'beach', 33, 'icecream', 10),
   Regular('taeo', 'beach', 8, 'watermelon', 12),

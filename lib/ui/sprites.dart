@@ -41,10 +41,10 @@ const characterFiles = [
   'suit-female-b', 'suit-male-b', 'pug', 'cow', 'goblin-female', 'goblin-male',
   'female-a', 'female-b', 'female-c', 'female-d', 'female-e', 'female-f',
   'male-a', 'male-b', 'male-c', 'male-d', 'male-e', 'male-f',
-  // 아이돌 '스타삐약'(render_chars.py 의 idol-*): 손님으로는 안 나오고 아이돌 방문·친해지기에만
-  'idol-luna', 'idol-sera', 'idol-hana', 'idol-rio',
+  // VRoid CC0 애니메 캐릭터(tool/render_vrm.py): 손님으로는 안 나오고 아이돌·친해지기·견습생에만
+  'vroid-d', 'vroid-e', 'vroid-f', 'vroid-g', 'vroid-fumiriya', 'vroid-shino',
 ];
-const idolChars = [58, 59, 60, 61]; // 루나·세라·하나·리오 (lib/engine/people.dart 의 Datable.look 과 같아야 한다)
+const idolChars = [58, 59, 60, 61, 62, 63]; // 손님 뽑기에서 뺀다 (lib/engine/people.dart 의 idolLooks·datables·traineeLooks 와 맞춘다)
 
 /// 걷는 방향(세계 좌표) → 화면에서 보는 방향.
 Facing facingOf(double dx, double dy) {
@@ -157,6 +157,10 @@ class Sprites {
   /// 도감처럼 수십 개를 그려도 시트를 올리지 않는다.
   static void drawPortrait(Canvas canvas, int who, Anim anim) {
     who %= characterFiles.length;
+    if (characterFiles[who].startsWith('vroid-')) {
+      _drawBust(canvas, who, anim == Anim.yes ? Anim.yes : Anim.idle);
+      return;
+    }
     final key = (who, anim == Anim.yes ? Anim.yes : Anim.idle);
     final img = _thumbs[key];
     if (img == null) {
@@ -172,6 +176,28 @@ class Sprites {
     final size = orthoWorld * (tw / 1.41421356) * charScale;
     canvas.drawImageRect(img, Rect.fromLTWH(0, 0, img.width.toDouble(), img.height.toDouble()),
         Rect.fromLTWH(-size / 2, -size * footY, size, size), Paint()..filterQuality = FilterQuality.medium);
+  }
+
+  static final Map<(int, Anim), ui.Image> _busts = {};
+  static final Set<(int, Anim)> _bustLoading = {};
+
+  /// VRoid 캐릭터는 몸이 가늘어 전신 한 칸이 작게 보여서, 상반신 초상화(tool/render_vrm.py)를 칸 가득 그린다.
+  /// 초상화 칸(너비 50, 바닥 가운데가 원점)에 맞춘다.
+  static void _drawBust(Canvas canvas, int who, Anim anim) {
+    final key = (who, anim);
+    final img = _busts[key];
+    if (img == null) {
+      if (_bustLoading.add(key)) {
+        _image('assets/characters/portraits/${characterFiles[who]}-${anim.name}.png').then((i) {
+          if (i == null) return;
+          _busts[key] = i;
+          loaded.value++;
+        });
+      }
+      return;
+    }
+    canvas.drawImageRect(img, Rect.fromLTWH(0, 0, img.width.toDouble(), img.height.toDouble()), const Rect.fromLTWH(-25, -49, 50, 50),
+        Paint()..filterQuality = FilterQuality.medium);
   }
 
   /// 발 위치에 캐릭터 한 프레임을 그린다. 그림이 없으면 false.

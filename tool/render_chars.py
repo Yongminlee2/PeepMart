@@ -81,11 +81,6 @@ CHARS = {
     "cow": ("Cow", None, None),
     "goblin-female": ("Goblin_Female", None, None),
     "goblin-male": ("Goblin_Male", None, None),
-    # 아이돌(가게에 찾아오는 '스타삐약'): 무대 옷과 머리색. 네 번째 값 = 재질 이름 앞부분 → 색
-    "idol-luna": ("Casual3_Female", 2, (1.00, 0.42, 0.72), {"Hair": (0.72, 0.55, 0.98), "Pants": (0.98, 0.95, 1.0), "Belt": (1.0, 0.85, 0.3)}),
-    "idol-sera": ("Casual_Female", 0, (0.98, 0.98, 1.00), {"Hair": (0.99, 0.86, 0.42), "Pants": (0.55, 0.75, 1.0), "Belt": (1.0, 0.85, 0.3)}),
-    "idol-hana": ("Casual2_Female", 1, (0.40, 0.92, 0.82), {"Hair": (1.0, 0.58, 0.74), "Pants": (0.98, 0.98, 1.0), "Belt": (1.0, 0.85, 0.3)}),
-    "idol-rio": ("Casual3_Male", 0, (0.16, 0.16, 0.24), {"Hair": (0.86, 0.88, 0.95), "Pants": (0.95, 0.30, 0.45), "Belt": (1.0, 0.85, 0.3)}),
 }
 
 

@@ -36,7 +36,7 @@ const graduateAt = 30; // 수업(쉬기 빼고) 이만큼이면 졸업
 const stressTired = 70; // 이 위면 수업 효과 절반
 const stressSulk = 90; // 이 위면 쉬기 말고는 안 한다
 const traineeNames = ['saessak', 'kkomul', 'kongal', 'bangul', 'dotori'];
-const traineeLooks = [33, 35, 29, 37, 47]; // 캐릭터 시트 번호(lib/ui/sprites.dart characterFiles)
+const traineeLooks = [63, 35, 29, 37, 47]; // 캐릭터 시트 번호(lib/ui/sprites.dart characterFiles). 첫 기수는 VRoid 시노
 
 /// 기수가 올라갈수록 수업료가 오른다.
 int lessonCost(Lesson l, int generation) => (l.cost * (1 + 0.5 * generation)).round();
@@ -133,16 +133,16 @@ class Datable {
   const Datable(this.id, this.look, this.level, this.likes, this.dislike, this.place, {this.idol = false});
 }
 
-/// 아이돌 '스타삐약' 네 명의 캐릭터 시트 번호 → 이름.
-const idolLooks = {58: 'luna', 59: 'sera', 60: 'hana', 61: 'rio'};
+/// 아이돌 '스타삐약' 네 명의 캐릭터 시트 번호 → 이름 (VRoid CC0 모델: G·F·E·후미리야).
+const idolLooks = {61: 'luna', 60: 'sera', 59: 'hana', 62: 'rio'};
 
 const datables = [
   Datable('bori', 4, 2, ['bananamilk', 'donut'], 'coffee', 'cafe'),
   Datable('hajun', 9, 4, ['cupramen', 'hotdog'], 'cake', 'amusement'),
-  Datable('mina', 0, 1, ['donut', 'cupcake'], 'sushi', 'cafe'),
+  Datable('mina', 58, 1, ['donut', 'cupcake'], 'sushi', 'cafe'), // VRoid D
   Datable('jun', 10, 3, ['sandwich', 'coffee'], 'donut', 'beach'),
-  Datable('luna', 58, 1, ['strawberry', 'frappe'], 'cupramen', 'concert', idol: true),
-  Datable('rio', 61, 1, ['burger', 'soda'], 'tea', 'concert', idol: true),
+  Datable('luna', 61, 1, ['strawberry', 'frappe'], 'cupramen', 'concert', idol: true),
+  Datable('rio', 62, 1, ['burger', 'soda'], 'tea', 'concert', idol: true),
 ];
 Datable datableById(String id) => datables.firstWhere((d) => d.id == id);
 
