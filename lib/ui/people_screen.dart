@@ -206,8 +206,8 @@ class _PeopleScreenState extends State<PeopleScreen> {
     final name = S.t('tr_${o.trainee.name}'), look = o.trainee.look;
     final grew = o.trainee.stage > stageBefore;
     final ev = o.traineeEvent;
-    if (!grew && ev == null) return;
     playScene(context, SceneBg.store, (c) async {
+      await c.say(look, name, '${S.t('tr_react_${l.id}')}\n($list)', smile: true);
       if (grew) await c.say(look, name, S.tn('tr_grow_${o.trainee.stage}', {'name': name}), smile: true);
       if (ev != null) {
         final pick = await c.ask(look, '${S.t('tev_title')}: ${S.t('tev_${ev.id}')}', S.tn('tev_${ev.id}_d', {'name': name}),
@@ -283,6 +283,20 @@ class _PeopleScreenState extends State<PeopleScreen> {
                         : (d.idol ? S.t('dt_locked_idol') : S.tn('dt_locked_level', {'n': d.level})),
                     style: const TextStyle(fontSize: 12, color: Colors.black54)),
                 Text('♥' * hearts + '♡' * (5 - hearts), style: const TextStyle(fontSize: 16, color: Color(0xFFEC407A))),
+                if (metNow && hearts < 5)
+                  // 다음 하트까지: 대화·선물이 쌓이는 게 보이게
+                  SizedBox(
+                    width: 96,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(3),
+                      child: LinearProgressIndicator(
+                        value: ((o.affection[d.id] ?? 0) % heartStep) / heartStep,
+                        minHeight: 5,
+                        backgroundColor: const Color(0xFFFCE4EC),
+                        color: const Color(0xFFEC407A),
+                      ),
+                    ),
+                  ),
               ]),
             ),
             if (metNow)

@@ -1013,7 +1013,7 @@ class Game {
     // 물건 원가(도매가)를 빼고 남는 만큼만
     final perSecond = avg * (1 - wholesaleRate) * 1.5 / spawnGap * (1 + 0.15 * managers.length);
     // 재고는 끝이 있으니 하루 평균 매출을 넘게 벌진 못한다
-    return min((min(seconds, offlineHours * 3600) * perSecond / 3).floor(), avgSales.round());
+    return min((min(seconds, offlineHours * 3600) * perSecond / 3).floor(), (avgSales * offlineCap).round());
   }
 
   // ---------------------------------------------------------------- 내부
@@ -1083,6 +1083,7 @@ class Game {
         'weather': weather.name,
         if (promo != null) 'promo': [promo!.name, promoProduct ?? ''],
         'week': [weekSales, weekBase, lastWeekRank],
+        'econ': 2, // 2 = 하루 2분 기준 평균
         'buzz': buzzDays,
       };
 
@@ -1131,6 +1132,11 @@ class Game {
     avgShelves = avg != null && avg.length > 2 ? (avg[2] as num).toDouble() : shelves.length.toDouble();
     weather = Weather.values.asNameMap()[j['weather']] ?? Weather.sunny;
     buzzDays = j['buzz'] as int? ?? 0;
+    if ((j['econ'] as int? ?? 1) < 2) {
+      // 하루가 3분이던 때의 평균: 2분에 맞춰 줄인다(안 그러면 목표가 1.5배라 며칠 동안 별을 못 받는다)
+      avgSales *= dayLength / 180;
+      avgServed *= dayLength / 180;
+    }
     final wk = j['week'] as List?;
     if (wk != null) {
       weekSales = wk[0] as int;

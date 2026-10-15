@@ -604,7 +604,7 @@ void main() {
     expect(hour, greaterThan(0));
     expect(g.offlineEarnings(100000), g.offlineEarnings(7200));
     g.avgSales = 50; // 하루 평균 매출보다 많이 벌진 못한다
-    expect(g.offlineEarnings(7200), 50);
+    expect(g.offlineEarnings(7200), (50 * offlineCap).round());
   });
 
   test('저장했다 불러오면 그대로다', () {

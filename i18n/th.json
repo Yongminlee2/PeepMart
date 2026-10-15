@@ -812,5 +812,12 @@
   "tev_recipe_b": "Sleep well, read tomorrow",
   "tev_recipe_ra": "Learned lots of secrets",
   "tev_recipe_rb": "Slept well and smiled at customers",
-  "tev_title": "Growth event"
+  "tev_title": "Growth event",
+  "tr_react_cooking": "I learned rolled omelets today! Smells good, right?",
+  "tr_react_manners": "Welcome~! I practiced my smile a lot!",
+  "tr_react_gym": "Huff huff... my legs are shaking. But I feel proud!",
+  "tr_react_study": "I think I'm starting to get how to count stock!",
+  "tr_react_vocal": "La la la~ I hit the high note today!",
+  "tr_react_practice": "I was nervous in front of customers, but it was fun!",
+  "tr_react_rest": "I rested well and feel so light~"
 }

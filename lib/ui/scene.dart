@@ -122,7 +122,7 @@ class _SceneScreenState extends State<_SceneScreen> with SingleTickerProviderSta
               Positioned(
                 left: 0,
                 right: 0,
-                bottom: 150,
+                bottom: 70, // 초상화 아래 잘린 곳이 대사 상자 뒤로 들어가게
                 child: Center(
                   child: TweenAnimationBuilder<double>(
                     key: ValueKey('$look$_name'),

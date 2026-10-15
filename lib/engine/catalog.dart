@@ -296,6 +296,7 @@ const managers = [
 const managerRestock = 2.5; // 이만큼마다 그 코너의 가장 빈 진열대에 1개
 const managerPrice = 1.1;
 const offlineBaseHours = 2.0, offlineHoursPerManager = 1.0, offlineMaxHours = 8.0;
+const offlineCap = 0.5; // 꺼 둔 동안 번 돈은 하루 평균 매출의 이만큼까지 (돈이 너무 쉽지 않게)
 
 // ------------------------------------------------------------------ 동네(지점)
 

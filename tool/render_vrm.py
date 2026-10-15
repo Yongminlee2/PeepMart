@@ -259,14 +259,15 @@ def render_sheet(sc, src, out_png, tmpdir):
 
 
 def smile_key(path):
-    """VRM 의 표정 이름 표에서 'Fcl_ALL_Fun'(눈 뜨고 웃기) 번호. 가져오면 shape key 이름이 target_N 이 된다."""
+    """VRM 의 표정 이름 표에서 'Fcl_ALL_Joy'(눈 감고 활짝 웃기) 번호. 눈 뜬 웃음(Fun)은 너무 옅어서 바꿨다. 가져오면 shape key 이름이 target_N 이 된다."""
     b = open(path, "rb").read()
     n = struct.unpack("<I", b[12:16])[0]
     j = json.loads(b[20:20 + n])
     for m in j["meshes"]:
-        names = (m.get("extras") or {}).get("targetNames") or []
+        names = ((m.get("extras") or {}).get("targetNames")
+                 or (m["primitives"][0].get("extras") or {}).get("targetNames") or [])  # 파일마다 둘 중 한 곳에 있다
         for i, x in enumerate(names):
-            if x.endswith("Fcl_ALL_Fun"):
+            if x.endswith("Fcl_ALL_Joy"):
                 return f"target_{i}"
     return None
 
