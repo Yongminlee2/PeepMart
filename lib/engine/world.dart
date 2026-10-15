@@ -758,7 +758,8 @@ class World {
     final visitors = game.hasHistory ? game.avgServed * 1.05 : game.fullDay.$1 * 0.6;
     final p = sale[_rng.nextInt(sale.length)];
     final sell = DayTask(DayTaskKind.sell, max(3, (visitors * 1.5 / sale.length).round()), product: p);
-    final other = _rng.nextBool()
+    // 처음 사흘은 '실망 손님 n명 이하'를 안 낸다(혼자 다 하느라 첫날부터 실패했다)
+    final other = game.day <= 3 || _rng.nextBool()
         ? DayTask(DayTaskKind.serve, max(5, visitors.round()))
         : const DayTask(DayTaskKind.calm, calmLimit);
     return [sell, other];
@@ -1708,7 +1709,7 @@ class World {
             c.prices.add(0);
           }
           _nextWant(c);
-        } else if (c.timer > shelfPatience * c.patience * patienceFactor(game.rank) * ruleOf(game.branch).patience) {
+        } else if (c.timer > shelfPatience * c.patience * patienceFactor(game.rank) * ruleOf(game.branch).patience * (game.day <= 2 ? 1.5 : 1)) {
           c
             ..missed += 1
             ..react = 0.8

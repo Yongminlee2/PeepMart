@@ -23,18 +23,22 @@ class SceneController {
 }
 
 /// 연애 게임처럼: 배경 그림 + 큰 초상화 + 이름표와 대사 상자(한 글자씩), 선택지. 대본이 끝나면 닫힌다.
-Future<void> playScene(BuildContext context, SceneBg bg, Future<void> Function(SceneController c) script) =>
+/// [title] 이 있으면 위에 작게, [skippable] 이면 '건너뛰기' 단추(남은 대사를 다 넘긴다).
+Future<void> playScene(BuildContext context, SceneBg bg, Future<void> Function(SceneController c) script,
+        {String? title, bool skippable = false}) =>
     Navigator.of(context).push(PageRouteBuilder<void>(
       opaque: true,
       transitionDuration: const Duration(milliseconds: 350),
-      pageBuilder: (_, _, _) => _SceneScreen(bg, script),
+      pageBuilder: (_, _, _) => _SceneScreen(bg, script, title, skippable),
       transitionsBuilder: (_, a, _, child) => FadeTransition(opacity: a, child: child),
     ));
 
 class _SceneScreen extends StatefulWidget {
   final SceneBg bg;
   final Future<void> Function(SceneController c) script;
-  const _SceneScreen(this.bg, this.script);
+  final String? title;
+  final bool skippable;
+  const _SceneScreen(this.bg, this.script, this.title, this.skippable);
 
   @override
   State<_SceneScreen> createState() => _SceneScreenState();
@@ -66,7 +70,10 @@ class _SceneScreenState extends State<_SceneScreen> with SingleTickerProviderSta
     super.dispose();
   }
 
+  bool _skipped = false;
+
   Future<int?> _show(int look, String name, String text, bool smile, List<String> choices) {
+    if (_skipped) return Future.value(0);
     _type?.cancel();
     setState(() {
       _look = look;
@@ -139,6 +146,37 @@ class _SceneScreenState extends State<_SceneScreen> with SingleTickerProviderSta
                 ),
               ),
             Positioned(left: 12, right: 12, bottom: 16, child: SafeArea(top: false, child: _box())),
+            if (widget.title != null)
+              Positioned(
+                left: 0,
+                right: 0,
+                top: 0,
+                child: SafeArea(
+                  child: Center(
+                    child: Container(
+                      margin: const EdgeInsets.only(top: 10),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.85), borderRadius: BorderRadius.circular(14)),
+                      child: Text(widget.title!, style: const TextStyle(fontSize: 15, color: inkColor)),
+                    ),
+                  ),
+                ),
+              ),
+            if (widget.skippable)
+              Positioned(
+                right: 8,
+                top: 0,
+                child: SafeArea(
+                  child: TextButton(
+                    onPressed: () {
+                      _skipped = true;
+                      _type?.cancel();
+                      _done(0);
+                    },
+                    child: Text(S.t('btn_skip'), style: const TextStyle(color: inkColor, fontSize: 15)),
+                  ),
+                ),
+              ),
           ]),
         ),
       ),

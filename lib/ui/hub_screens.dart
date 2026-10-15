@@ -6,6 +6,7 @@ import '../engine/catalog.dart';
 import '../engine/game.dart';
 import '../strings.dart';
 import 'settings_sheet.dart';
+import 'scene.dart';
 import 'sprites.dart';
 import 'store_painter.dart';
 import 'widgets.dart';
@@ -501,60 +502,20 @@ class DexScreen extends StatelessWidget {
 // ------------------------------------------------------------------ 삐약동 이야기
 
 /// 이야기 한 편을 말풍선으로 한 줄씩 보여 준다.
-Future<void> showChapter(BuildContext context, Chapter ch) async {
-  var i = 0;
-  await showDialog<void>(
-    context: context,
-    barrierDismissible: false,
-    builder: (c) => StatefulBuilder(builder: (c, set) {
-      final who = ch.lines[i];
-      final last = i == ch.lines.length - 1;
-      return AlertDialog(
-        backgroundColor: bg,
-        title: Text(S.t('story_${ch.id}_t'), textAlign: TextAlign.center, style: const TextStyle(fontSize: 15, color: Colors.black45)),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          SizedBox(
-            width: 96,
-            height: 96,
-            child: CustomPaint(painter: Portrait(npcLooks[who]!, anim: who == Npc.rival && i < ch.lines.length - 2 ? Anim.idle : Anim.yes)),
-          ),
-          Container(
-            margin: const EdgeInsets.only(top: 4, bottom: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-            decoration: BoxDecoration(color: _npcColor(who), borderRadius: BorderRadius.circular(10)),
-            child: Text(S.t('npc_${who.name}'), style: const TextStyle(color: Colors.white, fontSize: 14)),
-          ),
-          Text(S.t('story_${ch.id}_$i'), textAlign: TextAlign.center, style: const TextStyle(fontSize: 17, color: inkColor, height: 1.5)),
-          const SizedBox(height: 8),
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            for (var k = 0; k < ch.lines.length; k++)
-              Container(
-                width: 6,
-                height: 6,
-                margin: const EdgeInsets.symmetric(horizontal: 2),
-                decoration: BoxDecoration(shape: BoxShape.circle, color: k <= i ? inkColor : Colors.black12),
-              ),
-          ]),
-        ]),
-        actions: [
-          if (!last) TextButton(onPressed: () => Navigator.pop(c), child: Text(S.t('btn_skip'))),
-          TextButton(
-            onPressed: () => last ? Navigator.pop(c) : set(() => i++),
-            child: Text(S.t(last ? 'btn_ok' : 'btn_next')),
-          ),
-        ],
-      );
-    }),
-  );
-}
+Future<void> showChapter(BuildContext context, Chapter ch) => playScene(
+      context,
+      SceneBg.store,
+      (c) async {
+        for (var i = 0; i < ch.lines.length; i++) {
+          final who = ch.lines[i];
+          await c.say(npcLooks[who]!, S.t('npc_${who.name}'), S.t('story_${ch.id}_$i'),
+              smile: !(who == Npc.rival && i < ch.lines.length - 2));
+        }
+      },
+      title: S.t('story_${ch.id}_t'),
+      skippable: true,
+    );
 
-Color _npcColor(Npc n) => switch (n) {
-      Npc.me => const Color(0xFFFF9800),
-      Npc.grandma => const Color(0xFFAB47BC),
-      Npc.rival => const Color(0xFF546E7A),
-      Npc.mayor => const Color(0xFF8D6E63),
-      Npc.bori => const Color(0xFF43A047),
-    };
 
 /// 본 이야기를 다시 본다. 아직 못 본 건 여는 조건만 보여 준다.
 class StoryScreen extends StatelessWidget {

@@ -201,18 +201,19 @@ void main() {
     g.owner.tutorial = TutorialStep.done;
     final w = World(g, seed: 8);
     await tester.pumpWidget(MaterialApp(home: GameScreen(g, world: w, followCamera: false)));
-    await runFor(tester, 0.3);
+    // 대사는 한 글자씩 나온다: 충분히 기다린 뒤 본다
+    await runFor(tester, 4);
     expect(find.text(S.t('story_opening_0')), findsOneWidget);
     final t = w.time;
     await runFor(tester, 1);
     expect(w.time, t); // 멈춤
     for (var i = 0; i < 4; i++) {
-      await tester.tap(find.text(S.t('btn_next')));
-      await tester.pump();
+      await tester.tapAt(const Offset(180, 300)); // 눌러서 다음 줄
+      await runFor(tester, 4);
     }
     expect(find.text(S.t('story_opening_4')), findsOneWidget);
-    await tester.tap(find.text(S.t('btn_ok')));
-    await runFor(tester, 0.5);
+    await tester.tapAt(const Offset(180, 300));
+    await runFor(tester, 1);
     expect(g.owner.story, contains('opening'));
     expect(w.time, greaterThan(t));
     await tester.pumpWidget(const SizedBox());

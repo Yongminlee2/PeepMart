@@ -105,7 +105,14 @@ class Owner {
 
   /// 처음 안내가 [step] 에 있으면 다음으로 넘긴다.
   void advance(TutorialStep step) {
-    if (tutorial == step) tutorial = TutorialStep.values[step.index + 1];
+    if (tutorial != step) return;
+    tutorial = TutorialStep.values[step.index + 1];
+    if (tutorial == TutorialStep.done) {
+      // 안내를 마치면 1일째를 공정하게: 안내 중 비운 진열대를 다시 채워 둔다(실기기에서 1일째 시작부터 실망 손님이 쌓였다)
+      for (final s in game.shelves) {
+        s.stock = s.capacity;
+      }
+    }
   }
 
   /// 경험치를 더한다. 오른 레벨 수를 돌려준다.
