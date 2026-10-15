@@ -346,9 +346,11 @@ enum MenuChoice { map, people, regulars, story, dex, help, settings, title }
 Future<MenuChoice?> showGameMenu(BuildContext context) => showModalBottomSheet<MenuChoice>(
       context: context,
       backgroundColor: bg,
+      isScrollControlled: true, // 항목이 늘어 기본 높이(화면 9/16)를 넘으면 마지막 단추가 내비게이션 바에 가렸다
+      useSafeArea: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (c) => SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             for (final (m, icon, key) in const [
