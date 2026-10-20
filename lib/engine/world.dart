@@ -850,6 +850,12 @@ class World {
     }
     final aid = max(0, aidFloor - game.money);
     game.money += aid;
+    if (aid > 0) {
+      // 물건 살 돈도 없으면 팔 게 없어 더 못 버는 악순환에 갇힌다: 할머니가 빈 상자도 조금씩 채워 준다
+      for (final b in game.ofKind(ItemKind.box)) {
+        if (b.product != null && b.units < aidBoxUnits) b.units = aidBoxUnits;
+      }
+    }
     for (final s in game.items) {
       s.broken = false; // 밤사이 수리 기사가 고친다
     }
@@ -1224,15 +1230,31 @@ class World {
       }
     }
     if (!pick) return false;
-    for (final b in game.ofKind(ItemKind.box)) {
-      if (b.product != null && b.units > 0 && w.carry.length < arms && w.distTo(b.tile) <= reach + 0.25) {
-        w.carry.add(b.product!);
-        if (--b.units == 0) fx.add(Fx(FxKind.incident, b.c.toDouble(), b.r.toDouble(), amount: Incident.boxEmpty.index, product: b.product!));
-        fx.add(Fx(FxKind.pick, b.c.toDouble(), b.r.toDouble(), tx: w.x, ty: w.y, product: b.product!));
-        return true;
-      }
+    // 손이 닿는 상자 중 제일 가까운 하나에서만 집는다(옆 상자 물건까지 섞어 들지 않게)
+    Item? b;
+    for (final x in game.ofKind(ItemKind.box)) {
+      if (x.product == null || x.units <= 0 || w.distTo(x.tile) > reach + 0.25) continue;
+      if (b == null || w.distTo(x.tile) < w.distTo(b.tile)) b = x;
     }
-    return false;
+    if (b == null) return false;
+    if (w == player && !w.carry.contains(b.product)) _returnUseless();
+    if (w.carry.length >= arms) return false;
+    w.carry.add(b.product!);
+    if (--b.units == 0) fx.add(Fx(FxKind.incident, b.c.toDouble(), b.r.toDouble(), amount: Incident.boxEmpty.index, product: b.product!));
+    fx.add(Fx(FxKind.pick, b.c.toDouble(), b.r.toDouble(), tx: w.x, ty: w.y, product: b.product!));
+    return true;
+  }
+
+  /// 다른 상자 앞에 섰는데, 들고 있는 것 중 놓을 진열대 자리가 없는 건 제 상자로 돌려놓는다.
+  /// (콜라로 손이 꽉 찼는데 콜라 진열대가 가득이면 아무것도 못 하고 갇혔다)
+  void _returnUseless() {
+    for (final p in player.carry.toSet()) {
+      if (game.shelves.any((s) => s.product == p && s.stock + s.raw < s.capacity)) continue;
+      final box = game.boxOf(p);
+      final n = player.carry.where((x) => x == p).length;
+      player.carry.removeWhere((x) => x == p);
+      if (box != null) box.units += n;
+    }
   }
 
   // ---------------------------------------------------------------- 계산

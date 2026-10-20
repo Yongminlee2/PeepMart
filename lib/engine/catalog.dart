@@ -530,6 +530,7 @@ const rentPerPlot = 24; // 첫 필지는 할머니 땅이라 임대료가 없다
 
 /// 빚 막기: 하루 끝에 돈이 모자라면 알바 한 명이 그만두고, 그래도 [aidFloor] 아래면 할머니가 그만큼 채워 준다.
 const aidFloor = 60;
+const aidBoxUnits = 8; // 할머니가 도와준 날, 상자마다 이만큼까지 채워 준다
 const rentPerRank = 0.3;
 const upkeepPerShelf = 6;
 

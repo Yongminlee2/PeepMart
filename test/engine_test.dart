@@ -183,6 +183,24 @@ void main() {
       expect(fridge.stock, greaterThanOrEqualTo(g.arms - 1)); // 그새 손님이 하나 집을 수 있다
     });
 
+    test('손이 꽉 찼는데 놓을 데가 없으면, 다른 상자 앞에서 제 상자로 돌려놓고 새 걸 든다', () {
+      final g = Game()..owner.tutorial = TutorialStep.done;
+      for (final s in g.shelves) {
+        s.stock = s.capacity; // 콜라 진열대 가득
+      }
+      final donut = g.shelves.firstWhere((s) => s.product == 'donut')..stock = 0;
+      final soda = g.boxOf('soda')!, box = g.boxOf('donut')!;
+      final w = World(g, seed: 2);
+      w.player.carry.addAll(List.filled(g.arms, 'soda'));
+      final before = soda.units;
+      expect(w.walkPlayerTo(box.tile), isNotNull);
+      run(w, 6);
+      expect(w.player.carry, contains('donut'));
+      expect(w.player.carry, isNot(contains('soda')));
+      expect(soda.units, before + g.arms);
+      expect(donut.capacity, greaterThan(0));
+    });
+
     test('누르면 걸어가서 그 일을 한다: 상자 → 들기, 진열대 → 채우기, 계산대 → 계산 자리', () {
       final g = Game()..owner.tutorial = TutorialStep.done; // 안내 손님이 채운 걸 사 가지 않게
       final fridge = first(g, 'fridge')..stock = 0;

@@ -73,7 +73,7 @@ class Bot {
       final boxes = {for (final b in g.ofKind(ItemKind.box)) b.product: b};
       final low = g.shelves.where((s) => s.stock * 2 < s.capacity && boxes.containsKey(s.product)).toList()
         ..sort((a, b) => a.stock.compareTo(b.stock));
-      if (low.isNotEmpty && w.player.carry.isEmpty) {
+      if (low.isNotEmpty) { // 들고 있는 게 쓸모없으면 상자 앞에서 저절로 돌려놓는다
         w.walkPlayerTo(boxes[low.first.product]!.tile);
         return;
       }
@@ -165,7 +165,7 @@ class Bot {
 void main() {
   test('자동 플레이로 성장 속도 보기', () {
     final g = Game();
-    final w = World(g, seed: 7);
+    final w = World(g, seed: int.tryParse(Platform.environment['SEED'] ?? '') ?? 7);
     final bot = Bot(w);
     const dt = 0.1;
     final out = StringBuffer('분  레벨  돈      땅  진열대 상품 계산대 직원(계/진/청) 별점 목표 손님\n');

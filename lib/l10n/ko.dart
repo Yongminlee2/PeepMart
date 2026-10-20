@@ -125,7 +125,7 @@ const Map<String, String> kKo = {
   'date_react_bad': '아... 그렇구나.',
   'date_react_good': '헤헤, 그 말 좋다.',
   'date_result': '데이트 결과: 마음에 든 답 {g}/{n}',
-  'day_aid': '할머니가 보내 준 용돈',
+  'day_aid': '할머니가 보내 준 용돈과 물건',
   'day_best': '최고 기록!',
   'day_bonus': '별 보너스',
   'day_chain': '체인점 수익',

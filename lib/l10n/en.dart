@@ -125,7 +125,7 @@ const Map<String, String> kEn = {
   'date_react_bad': 'Oh... I see.',
   'date_react_good': 'Hehe, I like that.',
   'date_result': 'Date result: {g}/{n} good answers',
-  'day_aid': 'Grandma\'s helping hand',
+  'day_aid': 'Grandma sent money and stock',
   'day_best': 'New record!',
   'day_bonus': 'Star bonus',
   'day_chain': 'Chain store income',
