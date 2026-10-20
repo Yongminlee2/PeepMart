@@ -216,6 +216,11 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
       _serviceHinted = true;
       toast(S.t('service_hint'));
     }
+    // 고치는 동안 똑딱똑딱(무엇을 하고 있는지 소리로도)
+    if (world.repairing.isNotEmpty && (_repairTick -= dt) <= 0) {
+      _repairTick = 0.3;
+      Sfx.play(FxKind.place, clock);
+    }
     _toastLeft -= dt;
     _regularLeft -= dt;
     _maybeStory();
@@ -250,6 +255,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
 
   bool _storyOpen = false;
   bool _cookHinted = false, _serviceHinted = false;
+  double _repairTick = 0;
 
   /// 다음 이야기가 열렸으면 보여 준다. 장사 중에는 끝날 때까지 기다린다(첫 이야기만 바로).
   void _maybeStory() {

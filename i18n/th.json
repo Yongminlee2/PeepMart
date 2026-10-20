@@ -860,5 +860,7 @@
   "advice_price": "Bori: {n} customers found it too pricey. Maybe lower some price tags?",
   "advice_missing": "Bori: {n} customers wanted things we don't sell. Stock the items listed above!",
   "advice_great": "Bori: A perfect day, boss! Keep it up!",
-  "advice_ok": "Bori: Good work! Let's finish both tasks tomorrow."
+  "advice_ok": "Bori: Good work! Let's finish both tasks tomorrow.",
+  "repairing": "Fixing",
+  "repair_stop": "Stand still to fix"
 }

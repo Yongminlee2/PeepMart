@@ -396,7 +396,7 @@
   "story_finale_5": "The end... no, business goes on!\nPeep Mart is open today too!",
   "town_construction": "Coming soon",
   "town_annex": "Peep Mart Annex",
-  "inc_brokeDown": "A shelf broke down! Go stand next to it to fix it",
+  "inc_brokeDown": "Broken! Stand still next to it to fix it",
   "inc_repaired": "Fixed!",
   "inc_grumpyIn": "An angry customer is making a scene! Go calm them down",
   "inc_grumpyCalmed": "You calmed the customer down",
@@ -860,5 +860,7 @@
   "advice_price": "Bori: {n} customers found it too pricey. Maybe lower some price tags?",
   "advice_missing": "Bori: {n} customers wanted things we don't sell. Stock the items listed above!",
   "advice_great": "Bori: A perfect day, boss! Keep it up!",
-  "advice_ok": "Bori: Good work! Let's finish both tasks tomorrow."
+  "advice_ok": "Bori: Good work! Let's finish both tasks tomorrow.",
+  "repairing": "Fixing",
+  "repair_stop": "Stand still to fix"
 }

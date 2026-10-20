@@ -281,6 +281,15 @@ class StorePainter extends CustomPainter {
             ..style = PaintingStyle.stroke
             ..strokeWidth = 3);
       _walker(canvas, pl, playerChar);
+      if (world.repairing.isNotEmpty) {
+        // 머리 위에서 공구를 두드린다
+        final top = iso(pl.x, pl.y) + const Offset(10, -58);
+        canvas.save();
+        canvas.translate(top.dx, top.dy);
+        canvas.rotate(-0.6 + sin(clock * 18) * 0.7);
+        _text(canvas, const Offset(0, -6), '🔨', Colors.white, 16);
+        canvas.restore();
+      }
       if (world.order?.carrying == true) {
         final top = iso(pl.x, pl.y) + const Offset(0, -50);
         final box = Rect.fromCenter(center: top, width: 20, height: 15);
@@ -894,10 +903,37 @@ class StorePainter extends CustomPainter {
       canvas.drawCircle(p + Offset(sin(t * 6 + k) * 6, -t * 26), 5 + t * 7,
           Paint()..color = Color.fromRGBO(120, 120, 120, 0.45 * (1 - t)));
     }
+    if (world.repairing.contains(i)) {
+      // 고치는 중: 노란 동그라미에 초록 진행 고리, 흔들리는 공구, 튀는 불꽃, '고치는 중'
+      final k = world.repairProgress;
+      canvas.drawCircle(p, 14, Paint()..color = const Color(0xFFFFF59D));
+      canvas.drawCircle(p, 14, _stroke(1.5));
+      canvas.drawArc(Rect.fromCircle(center: p, radius: 18), -pi / 2, 2 * pi * k, false,
+          Paint()
+            ..color = const Color(0xFF43A047)
+            ..style = PaintingStyle.stroke
+            ..strokeCap = StrokeCap.round
+            ..strokeWidth = 5);
+      for (var s = 0; s < 4; s++) {
+        final t = (clock * 3 + s / 4) % 1.0, ang = s * pi / 2 + clock * 2;
+        canvas.drawCircle(p + Offset(cos(ang), sin(ang)) * (14 + t * 14), 2.2 * (1 - t), Paint()..color = const Color(0xFFFFB300));
+      }
+      canvas.save();
+      canvas.translate(p.dx, p.dy);
+      canvas.rotate(sin(clock * 18) * 0.5);
+      _text(canvas, Offset.zero, '🔧', Colors.white, 14);
+      canvas.restore();
+      _text(canvas, p + const Offset(0, -28), '${S.t('repairing')} ${(k * 100).round()}%', const Color(0xFF2E7D32), 11, outline: 2.5);
+      return;
+    }
     final a = 0.65 + 0.35 * sin(clock * 10);
     canvas.drawCircle(p, 11, Paint()..color = Color.fromRGBO(229, 57, 53, a));
     canvas.drawCircle(p, 11, _stroke(1.5));
     _text(canvas, p, '🔧', Colors.white, 12);
+    // 점장이 가까이 왔는데 아직 걷는 중이면: 멈춰 서야 고친다고 알려 준다
+    if (world.player.distTo(i.tile) < 1.6) {
+      _text(canvas, p + const Offset(0, -22), S.t('repair_stop'), const Color(0xFFC62828), 11, outline: 2.5);
+    }
   }
 
   /// 첫 땅 뒤쪽 벽의 간판: 가게 등급 이름.

@@ -638,6 +638,8 @@ const Map<String, String> kPt = {
   'reorder_done': 'Ordered! Arrives in {s} seconds',
   'reorder_left': '{n} left in the box now',
   'reorder_q': 'Order {n} {item}?\nArrives in {s} seconds',
+  'repair_stop': 'Stand still to fix',
+  'repairing': 'Fixing',
   'reset_confirm': 'Sua loja vai sumir. Quer mesmo começar do zero?',
   'rival_0': 'Mega Mart',
   'rival_1': 'Happy Super',

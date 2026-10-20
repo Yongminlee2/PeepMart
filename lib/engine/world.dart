@@ -182,6 +182,10 @@ class World {
   Order? order; // 들어온 배달 주문
   Customer? chase; // 쫓고 있는 도둑
   double _chaseStep = 0, _repairStill = 0;
+
+  /// 지금 고치는 것들(점장이 옆에 멈춰 서 있다)과 진행 0~1. 그림이 진행 고리와 공구를 그린다.
+  List<Item> repairing = const [];
+  double get repairProgress => (_repairStill / repairTime).clamp(0.0, 1.0);
   final List<(double, Incident)> _incidents = []; // 오늘 일어날 일 (시각, 종류)
   final Map<Tile, int> tips = {}; // 바닥에 떨어진 팁
   int combo = 0; // 이어진 계산 수
@@ -456,10 +460,12 @@ class World {
     }
     // 고장: 옆에 멈춰 서 있으면 고친다
     final near = game.items.where((s) => s.broken && player.distTo(s.tile) < 1.6).toList();
+    repairing = player.moving ? const [] : near;
     if (player.moving || near.isEmpty) {
       _repairStill = 0;
     } else if ((_repairStill += dt) >= repairTime) {
       _repairStill = 0;
+      repairing = const [];
       for (final s in near) {
         s.broken = false;
         fx.add(Fx(FxKind.incident, s.c.toDouble(), s.r.toDouble(), amount: Incident.repaired.index));

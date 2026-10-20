@@ -638,6 +638,8 @@ const Map<String, String> kZh = {
   'reorder_done': 'Ordered! Arrives in {s} seconds',
   'reorder_left': '{n} left in the box now',
   'reorder_q': 'Order {n} {item}?\nArrives in {s} seconds',
+  'repair_stop': 'Stand still to fix',
+  'repairing': 'Fixing',
   'reset_confirm': '至今经营的店铺将会消失。确定要从头开始吗？',
   'rival_0': 'Mega Mart',
   'rival_1': 'Happy Super',
