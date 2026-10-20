@@ -850,5 +850,8 @@
   "wk_rival_won": "Ha! You've got a long way to catch MegaMart!",
   "wk_rival_friend": "Congrats, boss! Let's sell even more next week!",
   "wk_bori_win": "Boss, you're the best! Party tonight!",
-  "wk_bori_next": "It's okay, boss. We'll be number one next week!"
+  "wk_bori_next": "It's okay, boss. We'll be number one next week!",
+  "day_sub": "Target {t}, {s} served, {u} upset",
+  "day_plus": "Extra income",
+  "day_minus": "Expenses"
 }

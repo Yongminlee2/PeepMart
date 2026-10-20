@@ -1421,6 +1421,15 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
           DayTaskKind.calm => S.tn('task_calm', {'n': t.n}),
         };
     final perTask = (r.target * dayTaskReward).round();
+    final extra = r.bonus + (r.warPrize > 0 ? r.warPrize : 0) + r.chain + r.weekPrize + r.aid;
+    final spent = r.goods + r.wages + r.cost;
+    Widget small(String label, int v) => Padding(
+          padding: const EdgeInsets.only(left: 12, top: 1, bottom: 1),
+          child: Row(children: [
+            Expanded(child: Text(label, style: style.copyWith(fontSize: 12, color: Colors.black54))),
+            Coins(v, size: 11),
+          ]),
+        );
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -1448,10 +1457,9 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                 child: Text(S.t('day_best'), style: const TextStyle(color: Colors.white, fontSize: 13)),
               ),
             const SizedBox(height: 6),
-            row(S.t('day_sales'), Coins(r.sales, size: 16)),
-            row(S.t('day_target'), Text('${r.target}', style: style)),
-            row(S.t('day_served'), Text('${r.served}', style: style)),
-            row(S.t('day_upset'), Text('${r.upset}', style: style)),
+            Coins(r.sales, size: 30),
+            Text(S.tn('day_sub', {'t': r.target, 's': r.served, 'u': r.upset}),
+                textAlign: TextAlign.center, style: style.copyWith(fontSize: 13, color: Colors.black54)),
             if (r.missing.isNotEmpty)
               row(
                   S.t('day_missing'),
@@ -1469,22 +1477,26 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                   ok
                       ? Coins(perTask, size: 14)
                       : const Icon(Icons.close_rounded, size: 18, color: Color(0xFFE53935))),
-            if (r.bonus > 0) row(S.t('day_bonus'), Coins(r.bonus, size: 14)),
-            if (r.warPrize > 0) row(S.t('war_won'), Coins(r.warPrize, size: 14)),
-            if (r.warPrize < 0) row(S.t('war_lost'), const Icon(Icons.close_rounded, size: 18, color: Color(0xFFE53935))),
             if (r.chest > 0) _Chest(r.chest, r.jackpot),
-            if (r.chain > 0)
-              row(r.chainBoom != null ? S.tn('day_chain_boom', {'name': S.t('chain_${r.chainBoom}')}) : S.t('day_chain'),
-                  Coins(r.chain, size: 14)),
-            if (r.weekRank > 0)
-              row(S.tn(r.weekPrize > 0 ? 'week_done' : 'week_done_none', {'n': r.weekRank}),
-                  r.weekPrize > 0 ? Coins(r.weekPrize, size: 14) : const Icon(Icons.emoji_events_outlined, size: 18, color: Colors.black38)),
-            if (r.goods > 0) row(S.t('day_goods'), Coins(-r.goods, size: 14)),
-            if (r.wages > 0) row(S.t('day_wages'), Coins(-r.wages, size: 14)),
-            row(S.t('day_cost'), Coins(-r.cost, size: 14)),
+            // 더 받은 돈과 나간 돈은 합계 한 줄 + 작은 글씨 내역
+            if (extra > 0) ...[
+              row(S.t('day_plus'), Coins(extra, size: 15)),
+              if (r.bonus > 0) small(S.t('day_bonus'), r.bonus),
+              if (r.warPrize > 0) small(S.t('war_won'), r.warPrize),
+              if (r.chain > 0)
+                small(r.chainBoom != null ? S.tn('day_chain_boom', {'name': S.t('chain_${r.chainBoom}')}) : S.t('day_chain'), r.chain),
+              if (r.weekPrize > 0) small(S.tn('week_done', {'n': r.weekRank}), r.weekPrize),
+              if (r.aid > 0) small(S.t('day_aid'), r.aid),
+            ],
+            if (r.warPrize < 0) row(S.t('war_lost'), const Icon(Icons.close_rounded, size: 18, color: Color(0xFFE53935))),
+            if (r.weekRank > 0 && r.weekPrize == 0)
+              row(S.tn('week_done_none', {'n': r.weekRank}), const Icon(Icons.emoji_events_outlined, size: 18, color: Colors.black38)),
+            row(S.t('day_minus'), Coins(-spent, size: 15)),
+            if (r.goods > 0) small(S.t('day_goods'), -r.goods),
+            if (r.wages > 0) small(S.t('day_wages'), -r.wages),
+            small(S.t('day_cost'), -r.cost),
             if (r.quit != null)
               Text(S.t('day_quit'), style: style.copyWith(fontSize: 13, color: const Color(0xFFE53935))),
-            if (r.aid > 0) row(S.t('day_aid'), Coins(r.aid, size: 14)),
             if (r.wasted > 0)
               Text(S.tn('day_wasted', {'n': r.wasted, 'v': r.wasteValue}),
                   style: style.copyWith(fontSize: 13, color: const Color(0xFF8D6E63))),
