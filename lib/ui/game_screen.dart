@@ -114,7 +114,10 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     _last = now;
     clock += dt;
     // 이야기·창·메뉴가 떠 있는 동안은 시간이 멈춘다(읽는 사이에 손님이 화내지 않게)
-    if (_storyOpen || ModalRoute.of(context)?.isCurrent == false) return;
+    if (_storyOpen || ModalRoute.of(context)?.isCurrent == false) {
+      Music.fast(false);
+      return;
+    }
     world.tick(dt);
     if (building == null && _follow && widget.followCamera) {
       // 플레이어 쪽 60%, 가게 가운데 쪽 40%: 가게가 화면에 더 많이 들어온다
