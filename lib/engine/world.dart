@@ -1259,7 +1259,9 @@ class World {
       final box = game.boxOf(p);
       final n = player.carry.where((x) => x == p).length;
       player.carry.removeWhere((x) => x == p);
-      if (box != null) box.units += n;
+      if (box == null) continue;
+      box.units += n;
+      fx.add(Fx(FxKind.place, player.x, player.y, tx: box.c.toDouble(), ty: box.r.toDouble(), product: p)); // 돌려놓는 게 보이게
     }
   }
 
