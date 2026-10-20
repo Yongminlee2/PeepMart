@@ -1508,6 +1508,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                   style: style.copyWith(fontSize: 13, color: const Color(0xFF8D6E63))),
             const Divider(),
             row(S.t('day_profit'), Coins(r.profit, size: 18)),
+            const SizedBox(height: 8),
+            _advice(r),
           ]),
         ),
         actions: [
@@ -1529,6 +1531,25 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
       if (night) _openNight();
       setState(() {});
     }
+  }
+
+  /// 결과 창 아래 보리의 한마디: 오늘 손님이 실망한 가장 큰 까닭과 고칠 방법.
+  Widget _advice(DayResult r) {
+    final reasons = {...r.why, 'missing': r.missing.fold(0, (s, m) => s + m.$2)};
+    MapEntry<String, int>? top;
+    for (final e in reasons.entries) {
+      if (e.value >= 4 && (top == null || e.value > top.value)) top = e;
+    }
+    final text = top != null ? S.tn('advice_${top.key}', {'n': top.value}) : S.t(r.stars >= 3 ? 'advice_great' : 'advice_ok');
+    return Container(
+      padding: const EdgeInsets.fromLTRB(4, 6, 10, 6),
+      decoration: BoxDecoration(color: const Color(0xFFFFF8E1), borderRadius: BorderRadius.circular(14)),
+      child: Row(children: [
+        SizedBox(width: 40, height: 40, child: CustomPaint(painter: Portrait(cashierChar, anim: Anim.yes))),
+        const SizedBox(width: 6),
+        Expanded(child: Text(text, style: const TextStyle(fontSize: 13, color: inkColor, height: 1.35))),
+      ]),
+    );
   }
 
   /// 한 주가 끝나면 이장님이 동네 순위를 발표한다.

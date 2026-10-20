@@ -38,6 +38,7 @@ class DayResult {
   final int chest; // 보물 상자 상금 (상자가 없으면 0). 결과 창에서 열면 보여 준다(돈은 이미 들어왔다)
   final bool jackpot;
   final List<(String, int)> missing; // 손님이 찾았는데 가게에 없던 상품, 많이 찾은 순
+  final Map<String, int> why; // 손님이 실망한 까닭별 수: empty(빈·고장 진열대), price(비싸서), queue(줄이 길어서)
   final Staff? quit; // 돈이 모자라 그만둔 알바
   final int aid; // 할머니가 채워 준 돈
   final int wasted, wasteValue; // 유통기한이 지나 버린 개수와 그 도매가
@@ -47,7 +48,7 @@ class DayResult {
   final String? chainBoom; // 오늘 대박 난 체인점
   const DayResult(this.day, this.sales, this.target, this.served, this.upset, this.stars, this.bonus,
       this.taskReward, this.best, this.tasks,
-      {this.cost = 0, this.warPrize = 0, this.chest = 0, this.jackpot = false, this.goods = 0, this.wages = 0, this.missing = const [], this.quit, this.aid = 0, this.wasted = 0, this.wasteValue = 0, this.night = false, this.weekRank = 0, this.weekPrize = 0, this.chain = 0, this.chainBoom});
+      {this.cost = 0, this.warPrize = 0, this.chest = 0, this.jackpot = false, this.goods = 0, this.wages = 0, this.missing = const [], this.quit, this.aid = 0, this.wasted = 0, this.wasteValue = 0, this.night = false, this.weekRank = 0, this.weekPrize = 0, this.chain = 0, this.chainBoom, this.why = const {}});
 
   /// 오늘 남은 돈: 매출 + 보너스·상금 - 운영비 - 물건값 - 일당. (예전엔 물건값·일당을 빼지 않아 실제보다 크게 보였다)
   int get profit => sales + bonus + taskReward + (warPrize > 0 ? warPrize : 0) + chest + weekPrize + chain + aid - cost - goods - wages;
@@ -162,6 +163,7 @@ class World {
   DayPhase phase = DayPhase.closed;
   double dayTime = 0;
   int daySales = 0, dayServed = 0, dayUpset = 0, dayTarget = 0;
+  final Map<String, int> dayWhy = {}; // 실망한 까닭별 수 (결과 창 보리의 한마디)
   final Map<String, int> dayMissing = {}; // 오늘 손님이 찾았는데 가게에 없던 상품
   final Map<String, int> daySold = {};
   List<DayTask> tasks = [];
@@ -208,6 +210,7 @@ class World {
     dayTime = 0;
     daySales = dayServed = dayUpset = 0;
     dayMissing.clear();
+    dayWhy.clear();
     daySold.clear();
     result = null;
     weather = game.todayWeather;
@@ -240,6 +243,7 @@ class World {
     dayTime = dayLength - nightLength;
     daySales = dayServed = dayUpset = 0;
     dayMissing.clear();
+    dayWhy.clear();
     daySold.clear();
     tasks = [];
     dayTarget = 0;
@@ -862,7 +866,7 @@ class World {
     final (wasted, wasteValue) = game.ageShelves();
     result = DayResult(game.day, daySales, dayTarget, dayServed, dayUpset, stars, bonus, taskReward, best, done,
         cost: cost, warPrize: warPrize, chest: chest, jackpot: jackpot, goods: game.spentGoods, wages: game.spentWages, quit: quit, aid: aid, wasted: wasted, wasteValue: wasteValue,
-        weekRank: weekRank, weekPrize: weekPrize, chain: chainMoney, chainBoom: boom,
+        weekRank: weekRank, weekPrize: weekPrize, chain: chainMoney, chainBoom: boom, why: Map.of(dayWhy),
         missing: (dayMissing.entries.map((e) => (e.key, e.value)).toList()..sort((a, b) => b.$2.compareTo(a.$2))).take(3).toList());
     game.spentGoods = 0;
     game.spentWages = 0;
@@ -898,6 +902,8 @@ class World {
       (game.buzzDays > 0 ? buzzVisitors : 1.0) *
       (promo == Promo.flyer ? flyerVisitors : (promo == Promo.onePlusOne ? onePlusOneVisitors : 1.0)) *
       ruleOf(game.branch).visitors;
+
+  void _why(String k) => dayWhy[k] = (dayWhy[k] ?? 0) + 1;
 
   void _rate(int satisfaction) {
     game.rate(satisfaction);
@@ -1713,6 +1719,7 @@ class World {
           final lvl = s.price.clamp(0, priceBalk.length - 1);
           if (_rng.nextDouble() < priceBalk[lvl] + (priceWar ? priceWarBalk[lvl] : 0)) {
             // 너무 비싸다: 안 사고 다음 물건으로
+            _why('price');
             c
               ..missed += 1
               ..react = 0.8
@@ -1735,6 +1742,7 @@ class World {
           }
           _nextWant(c);
         } else if (c.timer > shelfPatience * c.patience * patienceFactor(game.rank) * ruleOf(game.branch).patience * (game.day <= 2 ? 1.5 : 1)) {
+          _why('empty');
           c
             ..missed += 1
             ..react = 0.8
@@ -1757,6 +1765,7 @@ class World {
         if (c.waited > (c.scanned == 0 ? limit : limit * 2)) {
           queues[c.register]?.remove(c);
           _rate(0);
+          _why('queue');
           fx.add(Fx(FxKind.angry, c.x, c.y));
           c
             ..react = 0.8

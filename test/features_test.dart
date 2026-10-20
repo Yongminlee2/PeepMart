@@ -530,4 +530,24 @@ void main() {
     expect(o.heartsOfDate('mina'), 0);
     expect(o.visitAffection('mina'), 0);
   });
+
+  test('결과에 손님이 실망한 까닭을 센다: 빈 진열대', () {
+    final g = Game();
+    g.owner.tutorial = TutorialStep.done;
+    for (final s in g.shelves) {
+      s.stock = 0;
+    }
+    for (final b in g.ofKind(ItemKind.box)) {
+      b.units = 0;
+    }
+    final w = World(g, seed: 4)..openDay();
+    w.bigEvent = null;
+    DayResult? r;
+    for (var i = 0; i < 4000 && r == null; i++) {
+      w.tick(0.1);
+      r = w.result;
+    }
+    expect(r, isNotNull);
+    expect(r!.why['empty'], greaterThan(0));
+  });
 }

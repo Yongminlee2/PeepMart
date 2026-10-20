@@ -854,5 +854,11 @@
   "day_sub": "Target {t}, {s} served, {u} upset",
   "day_plus": "Extra income",
   "day_minus": "Expenses",
-  "ppl_tab_regulars": "Regulars"
+  "ppl_tab_regulars": "Regulars",
+  "advice_empty": "Bori: {n} customers left at empty shelves. Hire a stocker or keep boxes near shelves!",
+  "advice_queue": "Bori: {n} customers got angry in line. Add a register or a cashier!",
+  "advice_price": "Bori: {n} customers found it too pricey. Maybe lower some price tags?",
+  "advice_missing": "Bori: {n} customers wanted things we don't sell. Stock the items listed above!",
+  "advice_great": "Bori: A perfect day, boss! Keep it up!",
+  "advice_ok": "Bori: Good work! Let's finish both tasks tomorrow."
 }
