@@ -531,6 +531,7 @@ const Map<String, String> kPt = {
   'placed_hint': 'Colocado! Toque num item colocado para mover ou vender',
   'placing': 'Colocando {item}',
   'ppl_tab_date': 'Get close',
+  'ppl_tab_regulars': 'Regulars',
   'ppl_tab_trainee': 'Raise trainee',
   'prep_lesson': 'Lesson ready',
   'prep_lesson_done': 'Lesson done',

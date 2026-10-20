@@ -200,14 +200,14 @@ class RegularsScreen extends StatelessWidget {
   const RegularsScreen(this.owner, {super.key});
 
   @override
-  Widget build(BuildContext context) => _Page(
-        S.t('btn_regulars'),
-        ListView(padding: const EdgeInsets.all(16), children: [
-          Text(S.t('regulars_hint'), style: const TextStyle(fontSize: 14, color: Colors.black54)),
-          const SizedBox(height: 10),
-          for (final r in regulars) _regularCard(context, r),
-        ]),
-      );
+  Widget build(BuildContext context) => _Page(S.t('btn_regulars'), list(context));
+
+  /// 단골 목록(사람들 화면의 '단골' 칸에도 쓴다).
+  Widget list(BuildContext context) => ListView(padding: const EdgeInsets.all(16), children: [
+        Text(S.t('regulars_hint'), style: const TextStyle(fontSize: 14, color: Colors.black54)),
+        const SizedBox(height: 10),
+        for (final r in regulars) _regularCard(context, r),
+      ]);
 
   Widget _regularCard(BuildContext context, Regular r) {
     final hearts = owner.heartsOf(r.id);
@@ -341,7 +341,7 @@ class HelpScreen extends StatelessWidget {
 
 // ------------------------------------------------------------------ 게임 중 메뉴
 
-enum MenuChoice { map, people, regulars, story, dex, help, settings, title }
+enum MenuChoice { map, people, story, dex, help, settings, title }
 
 Future<MenuChoice?> showGameMenu(BuildContext context) => showModalBottomSheet<MenuChoice>(
       context: context,
@@ -356,7 +356,6 @@ Future<MenuChoice?> showGameMenu(BuildContext context) => showModalBottomSheet<M
             for (final (m, icon, key) in const [
               (MenuChoice.map, Icons.map_rounded, 'btn_map'),
               (MenuChoice.people, Icons.diversity_1_rounded, 'btn_people'),
-              (MenuChoice.regulars, Icons.favorite_rounded, 'btn_regulars'),
               (MenuChoice.story, Icons.auto_stories_rounded, 'btn_story'),
               (MenuChoice.dex, Icons.collections_bookmark_rounded, 'btn_dex'),
               (MenuChoice.help, Icons.help_rounded, 'btn_help'),

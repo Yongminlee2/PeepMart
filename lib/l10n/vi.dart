@@ -531,6 +531,7 @@ const Map<String, String> kVi = {
   'placed_hint': 'Đặt xong rồi! Chạm vào đồ đã đặt để di chuyển hoặc bán',
   'placing': 'Đang đặt {item}',
   'ppl_tab_date': 'Get close',
+  'ppl_tab_regulars': 'Regulars',
   'ppl_tab_trainee': 'Raise trainee',
   'prep_lesson': 'Lesson ready',
   'prep_lesson_done': 'Lesson done',

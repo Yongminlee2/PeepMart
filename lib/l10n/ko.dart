@@ -531,6 +531,7 @@ const Map<String, String> kKo = {
   'placed_hint': '놓았어요! 놓은 물건을 누르면 옮기거나 팔 수 있어요',
   'placing': '{item} 놓는 중',
   'ppl_tab_date': '친해지기',
+  'ppl_tab_regulars': '단골',
   'ppl_tab_trainee': '견습생 키우기',
   'prep_lesson': '수업 남음',
   'prep_lesson_done': '수업 끝',

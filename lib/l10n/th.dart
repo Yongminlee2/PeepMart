@@ -531,6 +531,7 @@ const Map<String, String> kTh = {
   'placed_hint': 'วางแล้ว! แตะของที่วางไว้เพื่อย้ายหรือขาย',
   'placing': 'กำลังวาง{item}',
   'ppl_tab_date': 'Get close',
+  'ppl_tab_regulars': 'Regulars',
   'ppl_tab_trainee': 'Raise trainee',
   'prep_lesson': 'Lesson ready',
   'prep_lesson_done': 'Lesson done',

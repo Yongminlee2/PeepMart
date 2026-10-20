@@ -853,5 +853,6 @@
   "wk_bori_next": "It's okay, boss. We'll be number one next week!",
   "day_sub": "Target {t}, {s} served, {u} upset",
   "day_plus": "Extra income",
-  "day_minus": "Expenses"
+  "day_minus": "Expenses",
+  "ppl_tab_regulars": "Regulars"
 }

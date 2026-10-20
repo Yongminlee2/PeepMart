@@ -627,8 +627,6 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
       case MenuChoice.people:
         await nav.push(MaterialPageRoute(builder: (_) => PeopleScreen(game.owner)));
         setState(() {});
-      case MenuChoice.regulars:
-        nav.push(MaterialPageRoute(builder: (_) => RegularsScreen(game.owner)));
       case MenuChoice.help:
         nav.push(MaterialPageRoute(builder: (_) => const HelpScreen()));
       case MenuChoice.dex:

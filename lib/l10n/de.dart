@@ -531,6 +531,7 @@ const Map<String, String> kDe = {
   'placed_hint': 'Platziert! Tippe auf ein Objekt, um es zu verschieben oder zu verkaufen',
   'placing': '{item} wird platziert',
   'ppl_tab_date': 'Get close',
+  'ppl_tab_regulars': 'Regulars',
   'ppl_tab_trainee': 'Raise trainee',
   'prep_lesson': 'Lesson ready',
   'prep_lesson_done': 'Lesson done',

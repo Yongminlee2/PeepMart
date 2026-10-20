@@ -6,7 +6,7 @@ import '../engine/catalog.dart';
 import '../engine/game.dart';
 import '../engine/people.dart';
 import '../strings.dart';
-import 'hub_screens.dart' show Portrait;
+import 'hub_screens.dart' show Portrait, RegularsScreen;
 import 'scene.dart';
 import 'settings_sheet.dart' show confirm;
 import 'sprites.dart';
@@ -42,7 +42,7 @@ class _PeopleScreenState extends State<PeopleScreen> {
 
   @override
   Widget build(BuildContext context) => DefaultTabController(
-        length: 2,
+        length: 3,
         initialIndex: widget.tab,
         child: Scaffold(
           backgroundColor: bg,
@@ -53,10 +53,10 @@ class _PeopleScreenState extends State<PeopleScreen> {
             bottom: TabBar(
               labelColor: inkColor,
               indicatorColor: const Color(0xFFFF9800),
-              tabs: [Tab(text: S.t('ppl_tab_trainee')), Tab(text: S.t('ppl_tab_date'))],
+              tabs: [Tab(text: S.t('ppl_tab_trainee')), Tab(text: S.t('ppl_tab_date')), Tab(text: S.t('ppl_tab_regulars'))],
             ),
           ),
-          body: TabBarView(children: [_trainee(), _dating()]),
+          body: TabBarView(children: [_trainee(), _dating(), Builder(builder: (c) => RegularsScreen(o).list(c))]),
         ),
       );
 

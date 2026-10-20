@@ -531,6 +531,7 @@ const Map<String, String> kZhHant = {
   'placed_hint': '放好了！點擊已放的物品可以移動或賣掉',
   'placing': '正在放置{item}',
   'ppl_tab_date': 'Get close',
+  'ppl_tab_regulars': 'Regulars',
   'ppl_tab_trainee': 'Raise trainee',
   'prep_lesson': 'Lesson ready',
   'prep_lesson_done': 'Lesson done',

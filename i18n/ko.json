@@ -853,5 +853,6 @@
   "wk_bori_next": "괜찮아요 점장님, 다음 주엔 꼭 1등 해요!",
   "day_sub": "목표 {t}, 손님 {s}명, 실망 {u}명",
   "day_plus": "더 받은 돈",
-  "day_minus": "나간 돈"
+  "day_minus": "나간 돈",
+  "ppl_tab_regulars": "단골"
 }
