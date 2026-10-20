@@ -545,6 +545,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
               if (world.feverLeft > 0) Positioned.fill(child: IgnorePointer(child: _feverGlow())),
               if (b == null && game.owner.tutorial == TutorialStep.done && world.phase != DayPhase.closed && (world.combo >= 2 || world.feverLeft > 0))
                 Positioned(right: 8, top: 58, child: _comboChip()),
+              if (b == null && game.owner.tutorial == TutorialStep.done && world.phase == DayPhase.closed)
+                Positioned(left: 0, right: 0, bottom: 78, child: _prepCard()),
               if (_toast != null && _toastLeft > 0)
                 Align(
                   // 위에 안내·단골 카드가 떠 있으면 그 아래로
@@ -565,8 +567,6 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                     ),
                   ),
                 ),
-              if (b == null && game.owner.tutorial == TutorialStep.done && world.phase == DayPhase.closed)
-                Positioned(left: 0, right: 0, bottom: 78, child: _prepCard()),
               if (b == null && !_touched && world.phase != DayPhase.closed)
                 Align(
                   alignment: const Alignment(0, 0.9),
@@ -1181,6 +1181,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 0),
       padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+      constraints: BoxConstraints(maxHeight: max(260, _size.height * 0.5)),
       decoration: BoxDecoration(
         boxShadow: softShadow,
         color: const Color(0xFFFFFBF2),
@@ -1188,9 +1189,11 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
         border: Border.all(color: inkColor, width: 2),
       ),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Flexible(
+          child: SingleChildScrollView(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
         Text(S.tn('prep_title', {'n': game.day}), style: const TextStyle(fontSize: 17, color: inkColor)),
         const SizedBox(height: 6),
-        if (game.rank >= rankWeather) _forecast(),
         Wrap(alignment: WrapAlignment.center, spacing: 6, runSpacing: 6, children: [
           chip(Icons.emoji_events_rounded, const Color(0xFFFFA000),
               game.weekDone == 0 ? S.t('week_start') : S.tn('week_rank_short', {'n': game.weekRank, 'd': weekLength - game.weekDone}),
@@ -1213,12 +1216,17 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
           if (world.canOpenNight)
             chip(Icons.nightlight_round, const Color(0xFF5C6BC0), S.t('night_open'), _openNight),
         ]),
+        const SizedBox(height: 8),
+        if (game.rank >= rankWeather) _forecast(),
         if (next != null) ...[
           const SizedBox(height: 8),
           Text(S.tn('next_unlock', {'n': next.$1, 'list': next.$2.take(3).join(', ')}),
               textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 12, color: Colors.black54)),
         ],
+            ]),
+          ),
+        ),
         const SizedBox(height: 8),
         SizedBox(
           width: 230,
@@ -1336,7 +1344,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
         .toList();
     const style = TextStyle(fontSize: 14, color: inkColor);
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: EdgeInsets.zero,
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
       decoration: BoxDecoration(
         color: hol != null ? const Color(0xFFFCE4EC) : (sp == null ? Colors.white.withValues(alpha: 0.92) : const Color(0xFFFFF8E1)),
