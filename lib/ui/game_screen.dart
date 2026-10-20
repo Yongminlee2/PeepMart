@@ -1560,6 +1560,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
           final mayor = npcLooks[Npc.mayor]!, rival = npcLooks[Npc.rival]!, bori = npcLooks[Npc.bori]!;
           final friend = game.owner.story.contains('finale');
           await c.say(mayor, S.t('npc_mayor'), S.t('wk_open'), smile: true);
+          Sfx.cue(rank == 1 ? 'chest' : (prize > 0 ? 'good' : 'bad'), clock);
           await c.say(mayor, S.t('npc_mayor'),
               S.tn(rank == 1 ? 'wk_first' : (prize > 0 ? 'wk_prize' : 'wk_none'), {'n': rank, 'p': prize}), smile: true);
           await c.say(rival, S.t('npc_rival'), S.t(friend ? 'wk_rival_friend' : (rank == 1 ? 'wk_rival_lost' : 'wk_rival_won')),
