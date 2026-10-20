@@ -854,10 +854,11 @@ class World {
     }
     final aid = max(0, aidFloor - game.money);
     game.money += aid;
-    if (aid > 0) {
-      // 물건 살 돈도 없으면 팔 게 없어 더 못 버는 악순환에 갇힌다: 할머니가 빈 상자도 조금씩 채워 준다
+    if (aid > 0 && daySales < cost + game.spentWages) {
+      // 물건 살 돈도 없으면 팔 게 없어 더 못 버는 악순환에 갇힌다: 정말 어려운 날(매출 < 운영비+일당)엔
+      // 할머니가 빈 상자도 조금씩 채워 준다. 주문이 오는 중인 상자는 빼고(일부러 돈을 다 써서 받아 내지 못하게)
       for (final b in game.ofKind(ItemKind.box)) {
-        if (b.product != null && b.units < aidBoxUnits) b.units = aidBoxUnits;
+        if (b.product != null && b.incoming <= 0 && b.units < aidBoxUnits) b.units = aidBoxUnits;
       }
     }
     for (final s in game.items) {
@@ -866,7 +867,7 @@ class World {
     final (wasted, wasteValue) = game.ageShelves();
     result = DayResult(game.day, daySales, dayTarget, dayServed, dayUpset, stars, bonus, taskReward, best, done,
         cost: cost, warPrize: warPrize, chest: chest, jackpot: jackpot, goods: game.spentGoods, wages: game.spentWages, quit: quit, aid: aid, wasted: wasted, wasteValue: wasteValue,
-        weekRank: weekRank, weekPrize: weekPrize, chain: chainMoney, chainBoom: boom, why: Map.of(dayWhy),
+        weekRank: weekRank, weekPrize: weekPrize, chain: chainMoney, chainBoom: boom, why: {...dayWhy, 'missing': dayMissing.values.fold(0, (s, n) => s + n)},
         missing: (dayMissing.entries.map((e) => (e.key, e.value)).toList()..sort((a, b) => b.$2.compareTo(a.$2))).take(3).toList());
     game.spentGoods = 0;
     game.spentWages = 0;
@@ -1237,12 +1238,13 @@ class World {
     }
     if (!pick) return false;
     // 손이 닿는 상자 중 제일 가까운 하나에서만 집는다(옆 상자 물건까지 섞어 들지 않게)
+    // (제일 가까운 상자가 비었으면 아무것도 안 집는다: 옆 상자 물건을 대신 들고 가지 않게)
     Item? b;
     for (final x in game.ofKind(ItemKind.box)) {
-      if (x.product == null || x.units <= 0 || w.distTo(x.tile) > reach + 0.25) continue;
+      if (x.product == null || w.distTo(x.tile) > reach + 0.25) continue;
       if (b == null || w.distTo(x.tile) < w.distTo(b.tile)) b = x;
     }
-    if (b == null) return false;
+    if (b == null || b.units <= 0) return false;
     if (w == player && !w.carry.contains(b.product)) _returnUseless();
     if (w.carry.length >= arms) return false;
     w.carry.add(b.product!);
@@ -1260,7 +1262,7 @@ class World {
       final n = player.carry.where((x) => x == p).length;
       player.carry.removeWhere((x) => x == p);
       if (box == null) continue;
-      box.units += n;
+      box.units = min(boxMax, box.units + n);
       fx.add(Fx(FxKind.place, player.x, player.y, tx: box.c.toDouble(), ty: box.r.toDouble(), product: p)); // 돌려놓는 게 보이게
     }
   }
