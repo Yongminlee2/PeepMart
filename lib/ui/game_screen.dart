@@ -16,6 +16,7 @@ import '../engine/people.dart' show traineeLevel, datables, visitGain;
 import 'sprites.dart';
 import 'title_screen.dart';
 import 'settings_sheet.dart';
+import 'scene.dart';
 import 'sfx.dart';
 import 'store_painter.dart';
 import 'widgets.dart';
@@ -1351,6 +1352,10 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
           const SizedBox(height: 4),
           Text(S.t('war_forecast'), textAlign: TextAlign.center, style: style.copyWith(color: const Color(0xFFC62828), fontSize: 13)),
         ],
+        if (game.todayBig case final big? when big != BigEvent.blackout) ...[
+          const SizedBox(height: 4),
+          Text(S.t('rumor_${big.name}'), textAlign: TextAlign.center, style: style.copyWith(color: const Color(0xFF8E24AA), fontSize: 13)),
+        ],
         if (game.inspectionDay) ...[
           const SizedBox(height: 4),
           Text(S.t('inspect_forecast'), textAlign: TextAlign.center, style: style.copyWith(color: const Color(0xFF1565C0), fontSize: 13)),
@@ -1495,6 +1500,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     );
     world.result = null;
     if (!mounted) return;
+    if (r.weekRank > 0) await _weekScene(r.weekRank, r.weekPrize);
+    if (!mounted) return;
     // 저녁 시간: 할 게 있을 때만(견습생·만날 사람·야간 영업)
     final o = game.owner;
     if (o.hasTrainee || datables.any(o.metDate) || world.canOpenNight) {
@@ -1504,6 +1511,24 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
       setState(() {});
     }
   }
+
+  /// 한 주가 끝나면 이장님이 동네 순위를 발표한다.
+  Future<void> _weekScene(int rank, int prize) => playScene(
+        context,
+        SceneBg.ceremony,
+        (c) async {
+          final mayor = npcLooks[Npc.mayor]!, rival = npcLooks[Npc.rival]!, bori = npcLooks[Npc.bori]!;
+          final friend = game.owner.story.contains('finale');
+          await c.say(mayor, S.t('npc_mayor'), S.t('wk_open'), smile: true);
+          await c.say(mayor, S.t('npc_mayor'),
+              S.tn(rank == 1 ? 'wk_first' : (prize > 0 ? 'wk_prize' : 'wk_none'), {'n': rank, 'p': prize}), smile: true);
+          await c.say(rival, S.t('npc_rival'), S.t(friend ? 'wk_rival_friend' : (rank == 1 ? 'wk_rival_lost' : 'wk_rival_won')),
+              smile: friend || rank != 1);
+          await c.say(bori, S.t('npc_bori'), S.t(rank == 1 ? 'wk_bori_win' : 'wk_bori_next'), smile: true);
+        },
+        title: S.t('wk_title'),
+        skippable: true,
+      );
 
   void _showStandings() {
     final list = game.standings();

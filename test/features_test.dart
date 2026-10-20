@@ -509,4 +509,25 @@ void main() {
     expect(o.traineeEvent, isNull);
     expect(Game.fromJson(o.game.toJson()).owner.trainee.eventAt, traineeEventEvery);
   });
+
+  test('큰 이벤트는 아침 카드의 소문과 같은 것이 일어난다', () {
+    final g = Game()..level = 12;
+    g.owner.tutorial = TutorialStep.done;
+    var seen = 0;
+    for (var d = 1; d <= 40; d++) {
+      g.day = d;
+      final w = World(g, seed: d)..openDay();
+      expect(w.bigEvent, g.todayBig);
+      if (w.bigEvent != null) seen++;
+    }
+    expect(seen, inInclusiveRange(5, 30));
+  });
+
+  test('단골 친구가 들르면 호감도가 오르지만 하트는 넘지 않는다', () {
+    final o = Game().owner;
+    o.affection['mina'] = heartStep - 2;
+    expect(o.visitAffection('mina'), 1);
+    expect(o.heartsOfDate('mina'), 0);
+    expect(o.visitAffection('mina'), 0);
+  });
 }

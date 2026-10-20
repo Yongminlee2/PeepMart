@@ -963,6 +963,15 @@ class Game {
   /// 다음에 여는 날의 날씨. 동네 편의점 전에는 늘 맑음.
   Weather get todayWeather => rank >= rankWeather ? weather : Weather.sunny;
 
+  /// 다음에 여는 날의 큰 이벤트. 날짜로 정해져서 아침 카드에 소문으로 미리 뜬다. 명절엔 없다.
+  BigEvent? get todayBig {
+    if (todayHoliday != null || rank < 1) return null;
+    final r = Random(day * 7919 + branch.codeUnits.fold(0, (a, b) => a * 31 + b));
+    if (r.nextDouble() >= bigEventChance) return null;
+    final can = [for (final e in BigEvent.values) if (rank >= bigEventRank[e]!) e];
+    return can[r.nextInt(can.length)];
+  }
+
   /// 다음에 여는 날이 위생 점검 날인가.
   bool get inspectionDay => rank >= rankInspection && day % inspectEvery == 0;
 

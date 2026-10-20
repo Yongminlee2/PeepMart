@@ -263,9 +263,8 @@ class World {
     bigEvent = null;
     _bigDone = false;
     tvLeft = 0;
-    if (holiday != null || game.rank < 1 || _rng.nextDouble() >= bigEventChance) return;
-    final can = [for (final e in BigEvent.values) if (game.rank >= bigEventRank[e]!) e];
-    bigEvent = can[_rng.nextInt(can.length)];
+    bigEvent = game.todayBig;
+    if (bigEvent == null) return;
     _bigAt = bigEventWindow.$1 + _rng.nextDouble() * (bigEventWindow.$2 - bigEventWindow.$1);
   }
 
