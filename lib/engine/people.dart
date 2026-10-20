@@ -151,6 +151,7 @@ Datable datableById(String id) => datables.firstWhere((d) => d.id == id);
 
 const actionsPerDay = 2; // 하루(닫힌 동안)에 할 수 있는 만남
 const talkGain = 4;
+const visitGain = 3; // 단골로 들러 좋아하는 걸 사 가면
 const giftLike = 12, giftNormal = 5, giftDislike = -4;
 int giftCost(String product) => productById(product).price * 6;
 const datePlaces = {'cafe': 120, 'beach': 250, 'amusement': 400, 'concert': 600};

@@ -108,7 +108,7 @@ enum Incident {
   brokeDown, repaired, grumpyIn, grumpyCalmed, grumpyLeft,
   fever, inspectIn, inspectGood, inspectOk, inspectBad,
   boxEmpty, boxArrived, bulkIn, clawPlay, selfError,
-  idolIn, idolHappy, tvIn, tvGood, tvBad, blackout, tourIn, ytIn, ytGood, ytBad
+  idolIn, idolHappy, tvIn, tvGood, tvBad, blackout, tourIn, ytIn, ytGood, ytBad, friendLove
 }
 
 /// 배달 주문: 진열대를 돌며 상품을 챙기고(진열대에서 빠진다) 입구까지 들고 가면 끝.
@@ -1280,6 +1280,10 @@ class World {
     if (reg0 != null && c.carry.contains(c.wants.first)) {
       final h = game.giveHeart(reg0);
       fx.add(Fx(FxKind.regular, c.x, c.y, product: reg0, amount: h ?? 0));
+      // 친해지기 상대이기도 하면(민아·준) 호감도 조금
+      if (datables.any((d) => d.id == reg0) && game.owner.visitAffection(reg0) > 0) {
+        fx.add(Fx(FxKind.incident, c.x, c.y, amount: Incident.friendLove.index, product: reg0));
+      }
     }
     game.served++;
     daySales += paid;

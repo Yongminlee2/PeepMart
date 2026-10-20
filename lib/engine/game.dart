@@ -213,6 +213,15 @@ class Owner {
     return [for (var h = before + 1; h <= heartsOfDate(id); h++) h];
   }
 
+  /// 단골로 가게에 들러 좋아하는 걸 사 갔다: 호감도 [visitGain]. 하트 장면은 만나서 보도록 다음 하트 바로 앞까지만 채운다.
+  int visitAffection(String id) {
+    final a = affection[id] ?? 0;
+    final cap = min(heartStep * 5, (a ~/ heartStep + 1) * heartStep - 1);
+    final n = max(0, min(visitGain, cap - a));
+    affection[id] = a + n;
+    return n;
+  }
+
   /// 대화. (오른 호감도, 새 하트) 못 하면 null.
   (int, List<int>)? talk(Datable d, {Random? rng}) {
     if (!_useAction(d)) return null;

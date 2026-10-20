@@ -12,7 +12,7 @@ import '../strings.dart';
 import 'build_panel.dart';
 import 'hub_screens.dart';
 import 'people_screen.dart';
-import '../engine/people.dart' show traineeLevel;
+import '../engine/people.dart' show traineeLevel, datables, visitGain;
 import 'sprites.dart';
 import 'title_screen.dart';
 import 'settings_sheet.dart';
@@ -150,6 +150,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
         final k = Incident.values[e.amount];
         if (k == Incident.boxEmpty || k == Incident.boxArrived) {
           toast(S.tn('inc_${k.name}', {'item': S.t('p_${e.product}')}));
+        } else if (k == Incident.friendLove) {
+          toast(S.tn('inc_friendLove', {'name': S.t('dt_${e.product}'), 'n': visitGain}));
         } else if (k == Incident.inspectGood || k == Incident.inspectOk || k == Incident.inspectBad) {
           final parts = e.product.split('|');
           toast(S.tn('inc_${k.name}', {'s': parts[0], 'n': parts.length > 1 ? parts[1] : ''}));
@@ -161,7 +163,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
               Incident.thiefFlee || Incident.brokeDown || Incident.grumpyIn || Incident.boxEmpty || Incident.kidLost ||
                 Incident.selfError || Incident.blackout => 'alarm',
               Incident.idolIn || Incident.tourIn => 'fever',
-              Incident.idolHappy || Incident.tvGood || Incident.ytGood => 'chest',
+              Incident.idolHappy || Incident.tvGood || Incident.ytGood || Incident.friendLove => 'chest',
               Incident.tvBad || Incident.ytBad => 'bad',
               Incident.thiefCaught || Incident.kidFound || Incident.orderDone || Incident.repaired || Incident.grumpyCalmed ||
                 Incident.inspectGood => 'good',
@@ -529,7 +531,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                     left: 8,
                     top: 58,
                     child: world.phase == DayPhase.closed
-                        ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_goalCard(), _rankChip()])
+                        ? _goalCard()
                         : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                             _dayCard(),
                             if (world.order != null) _orderCard(world.order!),
@@ -562,7 +564,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                   ),
                 ),
               if (b == null && game.owner.tutorial == TutorialStep.done && world.phase == DayPhase.closed)
-                Align(alignment: const Alignment(0, 0.86), child: _openButton()),
+                Positioned(left: 0, right: 0, bottom: 78, child: _prepCard()),
               if (b == null && !_touched && world.phase != DayPhase.closed)
                 Align(
                   alignment: const Alignment(0, 0.9),
@@ -586,21 +588,6 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                     foregroundColor: inkColor,
                     onPressed: () => setState(() => _follow = true),
                     child: const Icon(Icons.my_location_rounded),
-                  ),
-                ),
-              if (b == null && game.owner.tutorial == TutorialStep.done && world.phase == DayPhase.closed)
-                Positioned(
-                  right: 14,
-                  bottom: 86,
-                  child: FloatingActionButton.small(
-                    heroTag: 'people',
-                    backgroundColor: const Color(0xFFF8BBD0),
-                    foregroundColor: inkColor,
-                    onPressed: () async {
-                      await Navigator.of(context).push(MaterialPageRoute(builder: (_) => PeopleScreen(game.owner)));
-                      setState(() {});
-                    },
-                    child: const Icon(Icons.diversity_1_rounded),
                   ),
                 ),
               if (b == null || ((b.ghostType == null || b.hover == null) && b.selected == null)) // 단추끼리 겹치지 않게
@@ -1167,34 +1154,70 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
   }
 
   /// 닫힌 동안: 다음 날 예보와 문 열기.
-  Widget _openButton() => Column(mainAxisSize: MainAxisSize.min, children: [
-        if (game.rank >= rankWeather) _forecast(),
-        _promoButton(),
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 40),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.85), borderRadius: BorderRadius.circular(12)),
-          child: Text(S.t('day_closed_hint'),
-              textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, color: Colors.black54)),
-        ),
-        const SizedBox(height: 8),
-        if (world.canOpenNight) ...[
-          SizedBox(
-            width: 230,
-            child: BubbleButton(
-              S.t('night_open'),
-              color: const Color(0xFF9FA8DA),
-              trailing: const Icon(Icons.nightlight_round, color: inkColor),
-              onTap: () {
-                world.openNight();
-                toast(S.tn('night_start', {'n': ((nightPay - 1) * 100).round()}));
-                Sfx.play(FxKind.levelUp, clock);
-                setState(() {});
-              },
+  /// 아침 준비 카드: 오늘 예보, 순위·홍보·야간·사람들, 다음에 열리는 것, 문 열기. 닫힌 동안 할 일을 한곳에 모은다.
+  Widget _prepCard() {
+    final next = _nextUnlock();
+    final o = game.owner;
+    final dates = datables.where(o.metDate).toList();
+    Widget chip(IconData icon, Color color, String text, VoidCallback? onTap, {bool done = false}) => Material(
+          color: done ? const Color(0xFFE8F5E9) : Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: color, width: 1.8)),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(done ? Icons.check_circle_rounded : icon, color: color, size: 18),
+                const SizedBox(width: 4),
+                Flexible(child: Text(text, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, color: inkColor))),
+              ]),
             ),
           ),
+        );
+    final p = game.promo;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 0),
+      padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+      decoration: BoxDecoration(
+        boxShadow: softShadow,
+        color: const Color(0xFFFFFBF2),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: inkColor, width: 2),
+      ),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Text(S.tn('prep_title', {'n': game.day}), style: const TextStyle(fontSize: 17, color: inkColor)),
+        const SizedBox(height: 6),
+        if (game.rank >= rankWeather) _forecast(),
+        Wrap(alignment: WrapAlignment.center, spacing: 6, runSpacing: 6, children: [
+          chip(Icons.emoji_events_rounded, const Color(0xFFFFA000),
+              game.weekDone == 0 ? S.t('week_start') : S.tn('week_rank_short', {'n': game.weekRank, 'd': weekLength - game.weekDone}),
+              _showStandings),
+          chip(
+              Icons.campaign_rounded,
+              const Color(0xFFE65100),
+              p == null
+                  ? S.t('promo_btn')
+                  : p == Promo.flyer
+                      ? S.t('promo_flyer_set')
+                      : S.tn('promo_1p1_set', {'item': S.t('p_${game.promoProduct}')}),
+              p == null ? _choosePromo : null,
+              done: p != null),
+          if (o.hasTrainee || dates.isNotEmpty)
+            chip(Icons.diversity_1_rounded, const Color(0xFFEC407A), _peopleLine(), () async {
+              await Navigator.of(context).push(MaterialPageRoute(builder: (_) => PeopleScreen(o, tab: o.hasTrainee && !o.lessonDone ? 0 : 1)));
+              setState(() {});
+            }),
+          if (world.canOpenNight)
+            chip(Icons.nightlight_round, const Color(0xFF5C6BC0), S.t('night_open'), _openNight),
+        ]),
+        if (next != null) ...[
           const SizedBox(height: 8),
+          Text(S.tn('next_unlock', {'n': next.$1, 'list': next.$2.take(3).join(', ')}),
+              textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12, color: Colors.black54)),
         ],
+        const SizedBox(height: 8),
         SizedBox(
           width: 230,
           child: BubbleButton(
@@ -1208,36 +1231,45 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
             },
           ),
         ),
-      ]);
-
-  /// 홍보: 정했으면 무엇인지, 아니면 고르는 단추.
-  Widget _promoButton() {
-    final p = game.promo;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: p == null ? const Color(0xFFFFF3E0) : const Color(0xFFE8F5E9),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: const BorderSide(color: inkColor, width: 2)),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(14),
-          onTap: p == null ? _choosePromo : null,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(p == null ? Icons.campaign_rounded : Icons.check_circle_rounded, color: const Color(0xFFE65100), size: 20),
-              const SizedBox(width: 6),
-              Text(
-                  p == null
-                      ? S.t('promo_btn')
-                      : p == Promo.flyer
-                          ? S.t('promo_flyer_set')
-                          : S.tn('promo_1p1_set', {'item': S.t('p_${game.promoProduct}')}),
-                  style: const TextStyle(fontSize: 14, color: inkColor)),
-            ]),
-          ),
-        ),
-      ),
+      ]),
     );
+  }
+
+  void _openNight() {
+    world.openNight();
+    toast(S.tn('night_start', {'n': ((nightPay - 1) * 100).round()}));
+    Sfx.play(FxKind.levelUp, clock);
+    setState(() {});
+  }
+
+  /// 사람들 칩: 오늘 남은 수업·만남.
+  String _peopleLine() {
+    final o = game.owner;
+    final parts = [
+      if (o.hasTrainee) o.lessonDone ? S.t('prep_lesson_done') : S.t('prep_lesson'),
+      if (datables.any(o.metDate)) S.tn('prep_meet', {'n': o.actionsLeft}),
+    ];
+    return parts.join(', ');
+  }
+
+  /// 다음에 열리는 것: (레벨, 이름들). 다 열렸으면 null.
+  (int, List<String>)? _nextUnlock() {
+    for (var l = game.level + 1; l <= maxLevel; l++) {
+      final n = [
+        if (rankLevels.contains(l)) S.t('rank_${rankOf(l)}'),
+        if (l == traineeLevel) S.t('ppl_tab_trainee'),
+        for (final d in datables)
+          if (d.level == l && !d.idol) S.t('dt_${d.id}'),
+        for (final s in chainSpots)
+          if (s.level == l) S.t('chain_${s.id}'),
+        for (final t in itemTypes)
+          if (t.level == l) S.t('i_${t.id}'),
+        for (final p in products)
+          if (p.level == l && p.holiday == null) S.t('p_${p.id}'),
+      ];
+      if (n.isNotEmpty) return (l, n);
+    }
+    return null;
   }
 
   Future<void> _choosePromo() async {
@@ -1302,11 +1334,9 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
         .toList();
     const style = TextStyle(fontSize: 14, color: inkColor);
     return Container(
-      margin: const EdgeInsets.fromLTRB(28, 0, 28, 8),
+      margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
       decoration: BoxDecoration(
-
-        boxShadow: softShadow,
         color: hol != null ? const Color(0xFFFCE4EC) : (sp == null ? Colors.white.withValues(alpha: 0.92) : const Color(0xFFFFF8E1)),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: sp == null ? inkColor.withValues(alpha: 0.5) : const Color(0xFFFFB300), width: 2),
@@ -1464,31 +1494,15 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
       ),
     );
     world.result = null;
-  }
-
-  /// 이번 주 동네 순위: 누르면 순위표.
-  Widget _rankChip() {
-    final rank = game.weekRank;
-    final left = weekLength - game.weekDone;
-    return GestureDetector(
-      onTap: _showStandings,
-      child: Container(
-        margin: const EdgeInsets.only(top: 6),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          boxShadow: softShadow,
-          color: const Color(0xFFFFF8E1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFFFB300), width: 1.5),
-        ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          const Icon(Icons.emoji_events_rounded, size: 16, color: Color(0xFFFFA000)),
-          const SizedBox(width: 4),
-          Text(game.weekDone == 0 ? S.t('week_start') : S.tn('week_rank', {'n': rank, 'd': left}),
-              style: const TextStyle(fontSize: 13, color: inkColor)),
-        ]),
-      ),
-    );
+    if (!mounted) return;
+    // 저녁 시간: 할 게 있을 때만(견습생·만날 사람·야간 영업)
+    final o = game.owner;
+    if (o.hasTrainee || datables.any(o.metDate) || world.canOpenNight) {
+      final night = await showEvening(context, o, r.day, canNight: world.canOpenNight);
+      if (!mounted) return;
+      if (night) _openNight();
+      setState(() {});
+    }
   }
 
   void _showStandings() {

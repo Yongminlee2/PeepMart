@@ -819,5 +819,22 @@
   "tr_react_study": "재고 계산하는 법, 이제 조금 알 것 같아요!",
   "tr_react_vocal": "라라라~ 오늘 고음이 올라갔어요!",
   "tr_react_practice": "손님 앞에 서 보니까 떨렸지만 재밌었어요!",
-  "tr_react_rest": "푹 쉬었더니 몸이 가벼워요~"
+  "tr_react_rest": "푹 쉬었더니 몸이 가벼워요~",
+  "prep_title": "{n}일째 아침, 오늘 준비",
+  "week_rank_short": "동네 {n}위 ({d}일 남음)",
+  "prep_lesson": "수업 남음",
+  "prep_lesson_done": "수업 끝",
+  "prep_meet": "만남 {n}번",
+  "next_unlock": "다음 레벨 {n}: {list}",
+  "eve_title": "{n}일째 저녁",
+  "eve_sub": "가게 문을 닫았어요. 오늘 저녁엔 뭘 할까요?",
+  "eve_trainee": "{name} 수업 시키기",
+  "eve_trainee_d": "수업 {n}/{m}, 능력치가 가게를 도와요",
+  "eve_trainee_done": "오늘 수업은 끝! 내일 또 해요",
+  "eve_meet": "만나러 가기",
+  "eve_meet_d": "오늘 {n}번: {list}",
+  "eve_meet_done": "오늘은 다 만났어요",
+  "eve_night_d": "1분 동안 값 {n}% 더, 대신 도둑과 진상 손님이 잦아요",
+  "eve_sleep": "푹 자고 내일 준비",
+  "inc_friendLove": "단골 {name}: 좋아하는 걸 사 갔어요! 호감 +{n}"
 }

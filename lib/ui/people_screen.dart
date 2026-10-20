@@ -484,3 +484,141 @@ SceneBg sceneOf(String place) => switch (place) {
       'amusement' => SceneBg.amusement,
       _ => SceneBg.concert,
     };
+
+/// 저녁 시간: 하루 장사를 마치면 견습생 수업·만나러 가기·야간 영업 중에서 고른다. 야간 영업을 고르면 true.
+Future<bool> showEvening(BuildContext context, Owner o, int day, {required bool canNight}) async =>
+    await Navigator.of(context).push<bool>(PageRouteBuilder(
+      opaque: false,
+      transitionDuration: const Duration(milliseconds: 400),
+      pageBuilder: (_, _, _) => _Evening(o, day, canNight),
+      transitionsBuilder: (_, a, _, child) => FadeTransition(opacity: a, child: child),
+    )) ??
+    false;
+
+class _Evening extends StatefulWidget {
+  final Owner o;
+  final int day;
+  final bool canNight;
+  const _Evening(this.o, this.day, this.canNight);
+
+  @override
+  State<_Evening> createState() => _EveningState();
+}
+
+class _EveningState extends State<_Evening> {
+  Owner get o => widget.o;
+
+  Future<void> _open(int tab) async {
+    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => PeopleScreen(o, tab: tab)));
+    setState(() {});
+  }
+
+  Widget _card({required Widget lead, required String title, required String sub, VoidCallback? onTap, bool done = false}) => Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Material(
+          color: done ? const Color(0xFFEDE7F6) : Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18), side: const BorderSide(color: inkColor, width: 2)),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(18),
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Row(children: [
+                lead,
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(title, style: const TextStyle(fontSize: 17, color: inkColor)),
+                    Text(sub, style: const TextStyle(fontSize: 13, color: Colors.black54)),
+                  ]),
+                ),
+                Icon(done ? Icons.check_circle_rounded : Icons.chevron_right_rounded,
+                    color: done ? const Color(0xFF7E57C2) : inkColor),
+              ]),
+            ),
+          ),
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final dates = datables.where(o.metDate).toList();
+    final t = o.trainee;
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xF0303F9F), Color(0xF07E57C2), Color(0xF0FF8A65)],
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            child: Column(children: [
+              const Icon(Icons.nights_stay_rounded, size: 46, color: Color(0xFFFFF59D)),
+              Text(S.tn('eve_title', {'n': widget.day}), style: const TextStyle(fontSize: 26, color: Colors.white)),
+              const SizedBox(height: 4),
+              Text(S.t('eve_sub'), textAlign: TextAlign.center, style: const TextStyle(fontSize: 15, color: Colors.white70)),
+              const SizedBox(height: 16),
+              Expanded(
+                child: Center(
+                  child: SingleChildScrollView(
+                    child: Column(children: [
+                  if (o.hasTrainee)
+                    _card(
+                      lead: SizedBox(width: 60, height: 60, child: CustomPaint(painter: Portrait(t.look, anim: o.lessonDone ? Anim.yes : Anim.idle))),
+                      title: S.tn('eve_trainee', {'name': S.t('tr_${t.name}')}),
+                      sub: o.lessonDone ? S.t('eve_trainee_done') : S.tn('eve_trainee_d', {'n': t.lessonsTaken, 'm': graduateAt}),
+                      onTap: () => _open(0),
+                      done: o.lessonDone,
+                    ),
+                  if (dates.isNotEmpty)
+                    _card(
+                      lead: SizedBox(
+                        width: 60,
+                        height: 60,
+                        child: Stack(children: [
+                          for (var i = 0; i < min(3, dates.length); i++)
+                            Positioned(
+                                left: i * 14.0,
+                                top: i * 6.0,
+                                width: 36,
+                                height: 36,
+                                child: CustomPaint(painter: Portrait(dates[i].look))),
+                        ]),
+                      ),
+                      title: S.t('eve_meet'),
+                      sub: o.actionsLeft > 0
+                          ? S.tn('eve_meet_d', {'n': o.actionsLeft, 'list': dates.map((d) => '${S.t('dt_${d.id}')}${'♥' * o.heartsOfDate(d.id)}').join(' ')})
+                          : S.t('eve_meet_done'),
+                      onTap: () => _open(1),
+                      done: o.actionsLeft == 0,
+                    ),
+                  if (widget.canNight)
+                    _card(
+                      lead: const SizedBox(width: 60, height: 60, child: Icon(Icons.nightlight_round, size: 40, color: Color(0xFF3949AB))),
+                      title: S.t('night_open'),
+                      sub: S.tn('eve_night_d', {'n': ((nightPay - 1) * 100).round()}),
+                      onTap: () => Navigator.pop(context, true),
+                    ),
+                    ]),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 260,
+                child: BubbleButton(S.t('eve_sleep'),
+                    color: const Color(0xFFFFE082),
+                    trailing: const Icon(Icons.bedtime_rounded, color: inkColor),
+                    onTap: () => Navigator.pop(context, false)),
+              ),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+}
