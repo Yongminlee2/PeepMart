@@ -337,7 +337,7 @@ class StorePainter extends CustomPainter {
     }
     final g = guide;
     if (g != null) {
-      final h = itemHeight(game.at(g)?.type ?? '') + 26;
+      final h = itemHeight(game.at(g)?.type ?? '') + (game.at(g)?.broken == true ? 50 : 26); // 고장 표시 위로
       final p = iso(g.$1 + 0.0, g.$2 + 0.0) + Offset(0, -h + sin(clock * 6) * 6);
       canvas.save();
       canvas.translate(p.dx, p.dy);

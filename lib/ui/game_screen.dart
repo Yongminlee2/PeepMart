@@ -668,8 +668,11 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
         return game.registers.firstOrNull?.till;
       case TutorialStep.collect:
         return (game.registers.where((r) => r.cash > 0).firstOrNull ?? game.registers.firstOrNull)?.tile;
-      case TutorialStep.build || TutorialStep.done:
+      case TutorialStep.build:
         return null;
+      case TutorialStep.done:
+        // 고장 난 게 있으면 화살표로 짚어 준다(가까이 가면 사라지고 진행 고리가 뜬다)
+        return game.items.where((i) => i.broken && world.player.distTo(i.tile) >= 1.6).firstOrNull?.tile;
     }
   }
 
