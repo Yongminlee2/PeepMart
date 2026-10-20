@@ -218,4 +218,24 @@ void main() {
     expect(w.time, greaterThan(t));
     await tester.pumpWidget(const SizedBox());
   });
+
+  testWidgets('장사 중에 메뉴를 열면 시간이 멈춘다', (tester) async {
+    tester.view.physicalSize = const Size(360, 760);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final g = Game();
+    g.owner.tutorial = TutorialStep.done;
+    g.owner.story.addAll(chapters.map((c) => c.id));
+    final w = World(g, seed: 8)..openDay();
+    await tester.pumpWidget(MaterialApp(home: GameScreen(g, world: w, followCamera: false)));
+    await runFor(tester, 1);
+    final t = w.dayTime;
+    expect(t, greaterThan(0));
+    await tester.tap(find.byIcon(Icons.menu_rounded));
+    await runFor(tester, 2);
+    final paused = w.dayTime;
+    await runFor(tester, 2);
+    expect(w.dayTime, paused);
+    await tester.pumpWidget(const SizedBox());
+  });
 }

@@ -113,7 +113,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     final dt = ((now - _last).inMicroseconds / 1e6).clamp(0.0, 0.1);
     _last = now;
     clock += dt;
-    if (_storyOpen) return; // 이야기를 읽는 동안은 시간이 멈춘다
+    // 이야기·창·메뉴가 떠 있는 동안은 시간이 멈춘다(읽는 사이에 손님이 화내지 않게)
+    if (_storyOpen || ModalRoute.of(context)?.isCurrent == false) return;
     world.tick(dt);
     if (building == null && _follow && widget.followCamera) {
       // 플레이어 쪽 60%, 가게 가운데 쪽 40%: 가게가 화면에 더 많이 들어온다
@@ -271,7 +272,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
       builder: (c) => AlertDialog(
         backgroundColor: bg,
         content: Column(mainAxisSize: MainAxisSize.min, children: [
-          SizedBox(width: 90, height: 90, child: CustomPaint(painter: Portrait(playerChar, anim: Anim.yes))),
+          SizedBox(width: 90, height: 90, child: CustomPaint(painter: Portrait(cashierChar, anim: Anim.yes))),
           const SizedBox(height: 6),
           Text(S.t('rank_up'), style: const TextStyle(fontSize: 15, color: Colors.black54)),
           const SizedBox(height: 6),
@@ -677,7 +678,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
             border: Border.all(color: const Color(0xFFFFB300), width: 2.5),
           ),
           child: Row(children: [
-            SizedBox(width: 54, height: 54, child: CustomPaint(painter: Portrait(stockerChar, anim: Anim.yes))),
+            SizedBox(width: 54, height: 54, child: CustomPaint(painter: Portrait(cashierChar, anim: Anim.yes))),
             const SizedBox(width: 8),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
